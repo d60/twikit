@@ -81,7 +81,7 @@ class Client:
             "Accept-Language": self.language,
         }
 
-        def execute_task(
+        def _execute_task(
             flow_token: str = None,
             subtask_input: dict = None,
             flow_name: str = None
@@ -101,9 +101,9 @@ class Client:
             ).json()
             return response
 
-        flow_token = execute_task(flow_name="login")["flow_token"]
-        flow_token = execute_task(flow_token)["flow_token"]
-        response = execute_task(
+        flow_token = _execute_task(flow_name="login")["flow_token"]
+        flow_token = _execute_task(flow_token)["flow_token"]
+        response = _execute_task(
             flow_token,
             {
                 "subtask_id": "LoginEnterUserIdentifierSSO",
@@ -122,7 +122,7 @@ class Client:
         task_id = response["subtasks"][0]["subtask_id"]
 
         if task_id == "LoginEnterAlternateIdentifierSubtask":
-            response = execute_task(
+            response = _execute_task(
                 flow_token,
                 {
                     "subtask_id": "LoginEnterAlternateIdentifierSubtask",
@@ -131,7 +131,7 @@ class Client:
             )
             flow_token = response["flow_token"]
 
-        response = execute_task(
+        response = _execute_task(
             flow_token,
             {
                 "subtask_id": "LoginEnterPassword",
@@ -140,7 +140,7 @@ class Client:
         )
         flow_token = response["flow_token"]
 
-        execute_task(
+        _execute_task(
             flow_token,
             {
                 "subtask_id": "AccountDuplicationCheck",
