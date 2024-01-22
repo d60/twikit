@@ -19,9 +19,9 @@ class Client:
 
     >>> # Specify two out of three: username, email, phone_number
     >>> client.login(
-    ...     guest_token='00000000000',
     ...     username='example_user',
-    ...     email='email@example.com'
+    ...     email='email@example.com',
+    ...     password='xxxxxxxx'
     ... )
 
     >>> # Save cookies to a file:
