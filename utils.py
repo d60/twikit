@@ -1,17 +1,62 @@
 from __future__ import annotations
 
-from typing import Callable, Generic, Iterator, TypeVar
+from typing import Any, Callable, Generic, Iterator, TypeVar
 
-TOKEN = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'
+TOKEN = ('AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xn'
+         'Zz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA')
+
+FEATURES = {
+    'creator_subscriptions_tweet_preview_api_enabled': True,
+    'c9s_tweet_anatomy_moderator_badge_enabled': True,
+    'tweetypie_unmention_optimization_enabled': True,
+    'responsive_web_edit_tweet_api_enabled': True,
+    'graphql_is_translatable_rweb_tweet_is_translatable_enabled': True,
+    'view_counts_everywhere_api_enabled': True,
+    'longform_notetweets_consumption_enabled': True,
+    'responsive_web_twitter_article_tweet_consumption_enabled': True,
+    'tweet_awards_web_tipping_enabled': False,
+    'longform_notetweets_rich_text_read_enabled': True,
+    'longform_notetweets_inline_media_enabled': True,
+    'rweb_video_timestamps_enabled': True,
+    'responsive_web_graphql_exclude_directive_enabled': True,
+    'verified_phone_label_enabled': False,
+    'freedom_of_speech_not_reach_fetch_enabled': True,
+    'standardized_nudges_misinfo': True,
+    'tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled': True,
+    'responsive_web_media_download_video_enabled': False,
+    'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
+    'responsive_web_graphql_timeline_navigation_enabled': True,
+    'responsive_web_enhance_cards_enabled': False
+}
+
+USER_FEATURES = {
+    'hidden_profile_likes_enabled': True,
+    'hidden_profile_subscriptions_enabled': True,
+    'responsive_web_graphql_exclude_directive_enabled': True,
+    'verified_phone_label_enabled': False,
+    'subscriptions_verification_info_is_identity_verified_enabled': True,
+    'subscriptions_verification_info_verified_since_enabled': True,
+    'highlights_tweets_tab_ui_enabled': True,
+    'responsive_web_twitter_article_notes_tab_enabled': False,
+    'creator_subscriptions_tweet_preview_api_enabled': True,
+    'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
+    'responsive_web_graphql_timeline_navigation_enabled': True
+}
 
 
 class Endpoint:
-    TASK = "https://api.twitter.com/1.1/onboarding/task.json"
-    LOGOUT = "https://api.twitter.com/1.1/account/logout.json"
+    TASK = 'https://api.twitter.com/1.1/onboarding/task.json'
+    LOGOUT = 'https://api.twitter.com/1.1/account/logout.json'
     CREATE_TWEET = 'https://twitter.com/i/api/graphql/SiM_cAu83R0wnrpmKQQSEw/CreateTweet'
     SEARCH_TIMELINE = 'https://twitter.com/i/api/graphql/HgiQ8U_E6g-HE_I6Pp_2UA/SearchTimeline'
     UPLOAD_MEDIA = 'https://upload.twitter.com/i/media/upload.json'
-    GET_GUEST_TOKEN = 'https://api.twitter.com/1.1/guest/activate.json'
+    GUEST_TOKEN = 'https://api.twitter.com/1.1/guest/activate.json'
+    CREATE_CARD = 'https://caps.twitter.com/v2/cards/create.json'
+    USER_BY_SCREEN_NAME = 'https://twitter.com/i/api/graphql/NimuplG1OB7Fd2btCLdBOw/UserByScreenName'
+    USER_TWEETS = 'https://twitter.com/i/api/graphql/QWF3SzpHmykQHsQMixG0cg/UserTweets'
+    USER_TWEETS_AND_REPLIES = 'https://twitter.com/i/api/graphql/vMkJyzx1wdmvOeeNG0n6Wg/UserTweetsAndReplies'
+    USER_MEDIA = 'https://twitter.com/i/api/graphql/2tLOJWwGuCTytDrGBg8VwQ/UserMedia'
+    USER_LIKES = 'https://twitter.com/i/api/graphql/IohM3gxQHfvWePH5E3KuNA/Likes'
 
 T = TypeVar('T')
 
@@ -21,14 +66,17 @@ class Result(Generic[T]):
         self,
         results: list[T],
         fetch_next_result: Callable = None,
-        cursor: str = None
+        token: str = None
     ) -> None:
         self.__results = results
-        self.cursor = cursor
+        self.token = token
         self.__fetch_next_result = fetch_next_result
 
     @property
     def next(self) -> Result[T]:
+        """
+        Retrieves the next result.
+        """
         return self.__fetch_next_result()
 
     def __iter__(self) -> Iterator[T]:
@@ -39,3 +87,17 @@ class Result(Generic[T]):
 
     def __repr__(self) -> str:
         return self.__results.__repr__()
+
+
+def find_dict(obj: list | dict, key: str | int) -> list[Any]:
+    """
+    Retrieves elements from a nested dictionary.
+    """
+    results = []
+    if isinstance(obj, dict):
+        if key in obj:
+            results.append(obj.get(key))
+    if isinstance(obj, (list, dict)):
+        for elem in (obj if isinstance(obj, list) else obj.values()):
+            results += find_dict(elem, key)
+    return results
