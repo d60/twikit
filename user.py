@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
-    from client import Client
-    from tweet import Tweet
-    from utils import Result
+    from .client import Client
+    from .tweet import Tweet
+    from .utils import Result
 
 
 class User:
@@ -119,8 +119,8 @@ class User:
 
     def get_tweets(
         self,
+        tweet_type: Literal['Tweets', 'Replies', 'Media', 'Likes'],
         count: int = 40,
-        get_replies: bool = False
     ) -> Result[Tweet]:
         """
         Retrieves the user's tweets.
@@ -129,8 +129,8 @@ class User:
         ----------
         count : int, default=40
             The number of tweets to retrieve.
-        get_replies : bool, default=False
-            Whether to include replies to the searched tweets.
+        tweet_type : {'Tweets', 'Replies', 'Media', 'Likes'}
+            The type of tweets to retrieve.
 
         Returns
         -------
@@ -140,23 +140,23 @@ class User:
         Examples
         --------
         >>> user = client.get_user_by_screen_name('example_user')
-        >>> tweets = user.get_tweets()
+        >>> tweets = user.get_tweets('Tweets', count=20)
         >>> for tweet in tweets:
         ...    print(tweet)
-        <Tweet id="tweet_1">
-        <Tweet id="tweet_2">
+        <Tweet id="...">
+        <Tweet id="...">
         ...
         ...
 
         >>> more_tweets = tweets.next  # Retrieve more tweets
         >>> for tweet in more_tweets:
         ...     print(tweet)
-        <Tweet id="more_tweet_1">
-        <Tweet id="more_tweet_2">
+        <Tweet id="...">
+        <Tweet id="...">
         ...
         ...
         """
-        return self._client.get_user_tweets(self.id, count, get_replies)
+        return self._client.get_user_tweets(self.id, tweet_type, count)
 
     def __repr__(self) -> str:
         return f'<User id="{self.id}">'

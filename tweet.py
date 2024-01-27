@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from client import Client
-    from user import User
+    from .client import Client
+    from .user import User
 
 
 class Tweet:
@@ -65,12 +65,83 @@ class Tweet:
         self.favorite_count: int = legacy['favorite_count']
         self.favorited: bool = legacy['favorited']
         self.retweet_count: int = legacy['retweet_count']
-        self.editable_until_msecs: int = data['edit_control']\
-                                    ['editable_until_msecs']
+        self.editable_until_msecs: int = data['edit_control'].get(
+            'editable_until_msecs')
         self.is_translatable: bool = data['is_translatable']
-        self.is_edit_eligible: bool = data['edit_control']['is_edit_eligible']
-        self.edits_remaining: int = data['edit_control']['edits_remaining']
+        self.is_edit_eligible: bool = data['edit_control'].get(
+            'is_edit_eligible')
+        self.edits_remaining: int = data['edit_control'].get('edits_remaining')
         self.state: str = data['views']['state']
+
+    def favorite(self) -> None:
+        """
+        Favorites the tweet.
+        """
+        self._client.favorite_tweet(self.id)
+
+    def unfavorite(self) -> None:
+        """
+        Favorites the tweet.
+        """
+        self._client.unfavorite_tweet(self.id)
+
+    def retweet(self) -> None:
+        """
+        Retweets the tweet.
+        """
+        self._client.retweet(self.id)
+
+    def delete_retweet(self) -> None:
+        """
+        Deletes the retweet.
+        """
+        self._client.delete_retweet(self.id)
+
+    def bookmark(self) -> None:
+        """
+        Adds the tweet to bookmarks.
+        """
+        self._client.bookmark_tweet(self.id)
+
+    def delete_bookmark(self) -> None:
+        """
+        Removes the tweet from bookmarks.
+        """
+        self._client.delete_bookmark(self.id)
+
+    def reply(
+        self,
+        text: str = '',
+        media_ids: list[str | int] = None
+    ) -> None:
+        """
+        Replies to the tweet.
+
+        Parameters
+        ----------
+        text : str, default=''
+            The text content of the reply.
+        media_ids : list[str | int], optional
+            A list of media IDs or URIs to attach to the reply.
+            Media IDs can be obtained by using the `upload_media` method.
+
+        Examples
+        --------
+        >>> tweet_text = 'Example text'
+        >>> media_ids = [
+        ...     client.upload_media('image1.png', 0),
+        ...     client.upload_media('image1.png', 1)
+        ... ]
+        >>> tweet.reply(
+        ...     tweet_text,
+        ...     media_ids=media_ids
+        ... )
+
+        See Also
+        --------
+        `Client.upload_media`
+        """
+        self._client.create_tweet(text, media_ids, reply_to=self.id)
 
     def __repr__(self) -> str:
         return f'<Tweet id="{self.id}">'
