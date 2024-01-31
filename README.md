@@ -3,8 +3,7 @@
 # Twikit
 A simple API wrapper to interact with twitter's internal API.
 Read the documentation for more information.
-- [Documentation (English)](#)
-- [Documentation (Japanese)](#)
+- [Documentation (English)](https://twikit.readthedocs.io/en/latest/twikit.html)
 
 ## Features
 ### No API Key Required
