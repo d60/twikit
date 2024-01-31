@@ -15,8 +15,8 @@ project = 'Twikit'
 copyright = '2024, Twikit'
 author = 'Twikit'
 
-version = '0.0.1'
-release = '0.0.1'
+version = '1.0.0'
+release = '1.0.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -26,7 +26,6 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
     'sphinx.ext.napoleon',
-    'sphinx_rtd_theme'
 ]
 
 templates_path = ['_templates']
