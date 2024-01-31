@@ -56,7 +56,7 @@ client.create_tweet(
 )
 ```
 
-For more examples, see [example.py](https://github.com/d60//blob/main/example.py).
+For more examples, see [example.py](https://github.com/d60/twikit/blob/main/example.py).
 
 ## Contributing
 This project is currently in beta, and we would love to hear your thoughts and suggestions.
