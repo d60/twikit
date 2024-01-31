@@ -36,7 +36,7 @@ language = 'en'
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'classic'
+html_theme = 'default'
 html_static_path = ['_static']
 
 # -- Options for todo extension ----------------------------------------------
