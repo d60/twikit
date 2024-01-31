@@ -576,7 +576,7 @@ class Client:
         text: str = '',
         media_ids: list[int] = None,
         poll_uri: str = None,
-        reply_to: str = None
+        reply_to: str = None,
     ) -> Response:
         """
         Creates a new tweet on Twitter with the specified
@@ -698,6 +698,44 @@ class Client:
         }
         response = self.http.get(
             Endpoint.USER_BY_SCREEN_NAME,
+            params=params,
+            headers=self._base_headers
+        ).json()
+        user_data = response['data']['user']['result']
+        return User(self, user_data)
+
+    def get_user_by_id(self, user_id: str) -> User:
+        """
+        Fetches a user by ID
+
+        Parameter
+        ---------
+        user_id : str
+            The ID of the Twitter user.
+
+        Returns
+        -------
+        User
+            An instance of the User class representing the
+            Twitter user.
+
+        Examples
+        --------
+        >>> target_screen_name = '000000000'
+        >>> user = client.get_user_by_id(target_screen_name)
+        >>> print(user)
+        <User id="000000000">
+        """
+        variables = {
+            'userId': user_id,
+            'withSafetyModeUserFields': True
+        }
+        params = {
+            'variables': json.dumps(variables),
+            'features': json.dumps(USER_FEATURES),
+        }
+        response = self.http.get(
+            Endpoint.USER_BY_REST_ID,
             params=params,
             headers=self._base_headers
         ).json()
@@ -1314,3 +1352,151 @@ class Client:
             results.append(Trend(self, trend_info))
 
         return results
+
+    def _get_user_friendship(
+        self,
+        user_id: str,
+        count: int,
+        endpoint: str
+    ) -> list[User]:
+        """
+        Base function to get friendship.
+        """
+        params = {
+            'variables': json.dumps({
+                'userId': user_id,
+                'count': count,
+                'includePromotedContent': False
+            }),
+            'features': json.dumps(FEATURES)
+        }
+        response = self.http.get(
+            endpoint,
+            params=params,
+            headers=self._base_headers
+        ).json()
+
+        items = find_dict(response, 'entries')[0]
+        results = []
+        for item in items:
+            if not item['entryId'].startswith('user-'):
+                continue
+            user_info = find_dict(item, 'result')[0]
+            results.append(User(self, user_info))
+        return results
+
+    def get_user_followers(self, user_id: str, count: int = 20) -> list[User]:
+        """
+        Retrieves a list of followers for a given user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user for whom to retrieve followers.
+        count : int, default=20
+            The number of followers to retrieve.
+
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the followers.
+        """
+        return self._get_user_friendship(
+            user_id,
+            count,
+            Endpoint.FOLLOWERS
+        )
+
+    def get_user_verified_followers(
+        self, user_id: str, count: int = 20
+    ) -> list[User]:
+        """
+        Retrieves a list of verified followers for a given user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user for whom to retrieve verified followers.
+        count : int, default=20
+            The number of verified followers to retrieve.
+
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the verified followers.
+        """
+        return self._get_user_friendship(
+            user_id,
+            count,
+            Endpoint.BLUE_VERIFIED_FOLLOWERS
+        )
+
+    def get_user_followers_you_know(
+        self, user_id: str, count: int = 20
+    ) -> list[User]:
+        """
+        Retrieves a list of common followers.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user for whom to retrieve followers you might know.
+        count : int, default=20
+            The number of followers you might know to retrieve.
+
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the followers you might know.
+        """
+        return self._get_user_friendship(
+            user_id,
+            count,
+            Endpoint.FOLLOWERS_YOU_KNOW
+        )
+
+    def get_user_following(self, user_id: str, count: int = 20) -> list[User]:
+        """
+        Retrieves a list of users whom the given user is following.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user for whom to retrieve the following users.
+        count : int, default=20
+            The number of following users to retrieve.
+
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the users being followed.
+        """
+        return self._get_user_friendship(
+            user_id,
+            count,
+            Endpoint.FOLLOWING
+        )
+
+    def get_user_subscriptions(
+        self, user_id: str, count: int = 20
+    ) -> list[User]:
+        """
+        Retrieves a list of users to which the specified user is subscribed.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user for whom to retrieve subscriptions.
+        count : int, default=20
+            The number of subscriptions to retrieve.
+
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the subscribed users.
+        """
+        return self._get_user_friendship(
+            user_id,
+            count,
+            Endpoint.SUBSCRIPTIONS
+        )

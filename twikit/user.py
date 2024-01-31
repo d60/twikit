@@ -190,6 +190,107 @@ class User:
         """
         return self._client.unfollow_user(self.id)
 
+    def get_followers(self, count: int = 20) -> list[User]:
+        """
+        Retrieves a list of followers for the user.
+
+        Parameters
+        ----------
+        count : int, default=20
+            The number of followers to retrieve.
+
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the followers.
+
+        See Also
+        --------
+        Client.get_user_followers
+        """
+        return self._client.get_user_followers(self.id, count)
+
+    def get_verified_followers(self, count: int = 20) -> list[User]:
+        """
+        Retrieves a list of verified followers for the user.
+
+        Parameters
+        ----------
+        count : int, default=20
+            The number of verified followers to retrieve.
+
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the verified followers.
+
+        See Also
+        --------
+        Client.get_user_verified_followers
+        """
+        return self._client.get_user_verified_followers(self.id, count)
+
+    def get_followers_you_know(self, count: int = 20) -> list[User]:
+        """
+        Retrieves a list of followers whom the user might know.
+
+        Parameters
+        ----------
+        count : int, default=20
+            The number of followers you might know to retrieve.
+
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the followers you might know.
+
+        See Also
+        --------
+        Client.get_user_followers_you_know
+        """
+        return self._client.get_user_followers_you_know(self.id, count)
+
+    def get_following(self, count: int = 20) -> list[User]:
+        """
+        Retrieves a list of users whom the user is following.
+
+        Parameters
+        ----------
+        count : int, default=20
+            The number of following users to retrieve.
+
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the users being followed.
+
+        See Also
+        --------
+        Client.get_user_following
+        """
+        return self._client.get_user_following(self.id, count)
+
+    def get_subscriptions(self, count: int = 20) -> list[User]:
+        """
+        Retrieves a list of users whom the user is subscribed to.
+
+        Parameters
+        ----------
+        count : int, default=20
+            The number of subscriptions to retrieve.
+
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the subscribed users.
+
+        See Also
+        --------
+        Client.get_user_subscriptions
+        """
+        return self._client.get_user_subscriptions(self.id, count)
+
+
     def __repr__(self) -> str:
         return f'<User id="{self.id}">'
 
