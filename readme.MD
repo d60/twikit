@@ -61,4 +61,4 @@ For more examples, see [example.py](https://github.com/d60//blob/main/example.py
 ## Contributing
 This project is currently in beta, and we would love to hear your thoughts and suggestions.
 If you have any features you'd like to see added or encounter any issues,
-please let us know in the [issues](#) section.
+please let us know in the [issues](https://github.com/d60/twikit/issues) section.
