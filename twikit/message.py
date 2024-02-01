@@ -39,11 +39,11 @@ class Message:
         self.text: str = data['text']
         if 'attachment' in data:
             attachment = list(data['attachment'].values())[0]
-            self.attachment: str = attachment['media_url_https']
+            self.attachment: str | None = attachment['media_url_https']
         else:
             self.attachment = None
 
-    def reply(self, text: str, media_id: str = None) -> Message:
+    def reply(self, text: str, media_id: str | None = None) -> Message:
         """Replies to the message.
 
         Parameters

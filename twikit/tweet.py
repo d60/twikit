@@ -77,6 +77,20 @@ class Tweet:
         self.edits_remaining: int = data['edit_control'].get('edits_remaining')
         self.state: str = data['views']['state']
 
+    def delete(self) -> Response:
+        """Deletes the tweet.
+
+        Returns
+        -------
+        requests.Response
+            Response returned from twitter api.
+
+        Examples
+        --------
+        >>> tweet.delete()
+        """
+        return self._client.delete_tweet(self.id)
+
     def favorite(self) -> Response:
         """
         Favorites the tweet.
@@ -92,7 +106,7 @@ class Tweet:
         """
         return self._client.favorite_tweet(self.id)
 
-    def unfavorite(self) -> None:
+    def unfavorite(self) -> Response:
         """
         Favorites the tweet.
 
@@ -170,7 +184,7 @@ class Tweet:
     def reply(
         self,
         text: str = '',
-        media_ids: list[str | int] = None
+        media_ids: list[str] | None = None
     ) -> Response:
         """
         Replies to the tweet.
@@ -179,7 +193,7 @@ class Tweet:
         ----------
         text : str, default=''
             The text content of the reply.
-        media_ids : list[str | int], default=None
+        media_ids : list[str], default=None
             A list of media IDs or URIs to attach to the reply.
             Media IDs can be obtained by using the `upload_media` method.
 

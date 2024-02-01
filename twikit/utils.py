@@ -52,6 +52,7 @@ class Endpoint:
     TASK = 'https://api.twitter.com/1.1/onboarding/task.json'
     LOGOUT = 'https://api.twitter.com/1.1/account/logout.json'
     CREATE_TWEET = 'https://twitter.com/i/api/graphql/SiM_cAu83R0wnrpmKQQSEw/CreateTweet'
+    DELETE_TWEET = 'https://twitter.com/i/api/graphql/VaenaVgh5q5ih7kvyVjgtg/DeleteTweet'
     SEARCH_TIMELINE = 'https://twitter.com/i/api/graphql/HgiQ8U_E6g-HE_I6Pp_2UA/SearchTimeline'
     UPLOAD_MEDIA = 'https://upload.twitter.com/i/media/upload.json'
     GUEST_TOKEN = 'https://api.twitter.com/1.1/guest/activate.json'
@@ -102,8 +103,8 @@ class Result(Generic[T]):
     def __init__(
         self,
         results: list[T],
-        fetch_next_result: Callable = None,
-        token: str = None
+        fetch_next_result: Callable | None = None,
+        token: str | None = None
     ) -> None:
         self.__results = results
         self.token = token

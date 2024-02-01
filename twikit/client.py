@@ -4,7 +4,7 @@ import io
 import json
 import os
 import pickle
-from typing import Literal
+from typing import Any, Literal
 
 from requests import Response
 
@@ -110,9 +110,9 @@ class Client:
         self,
         *,
         auth_info_1: str,
-        auth_info_2: str = None,
+        auth_info_2: str | None = None,
         password: str,
-    ) -> None:
+    ) -> dict:
         """
         Logs into the account using the specified login information.
         `auth_info_1` and `password` are required parameters.
@@ -149,9 +149,9 @@ class Client:
         headers.pop('X-Twitter-Auth-Type')
 
         def _execute_task(
-            flow_token: str = None,
-            subtask_input: dict = None,
-            flow_name: str = None
+            flow_token: str | None = None,
+            subtask_input: dict | None = None,
+            flow_name: str | None = None
         ) -> dict:
             url = Endpoint.TASK
             if flow_name is not None:
@@ -242,6 +242,10 @@ class Client:
         self._user_id = user_id
         return user_id
 
+    @property
+    def user(self) -> User:
+        return self.get_user_by_id(self.user_id)
+
     def save_cookies(self, path: str) -> None:
         """
         Save cookies to file in pickle format.
@@ -290,7 +294,7 @@ class Client:
         query: str,
         product: str,
         count: int,
-        cursor: str
+        cursor: str | None
     ) -> dict:
         """
         Base search function.
@@ -320,7 +324,7 @@ class Client:
         query: str,
         product: Literal['Top', 'Latest', 'Media'],
         count: int = 20,
-        cursor: str = None
+        cursor: str | None = None
     ) -> Result[Tweet]:
         """
         Searches for tweets based on the specified query and
@@ -399,7 +403,7 @@ class Client:
         self,
         query: str,
         count: int = 20,
-        cursor: str = None
+        cursor: str | None = None
     ) -> Result[User]:
         """
         Searches for users based on the provided query.
@@ -591,9 +595,9 @@ class Client:
     def create_tweet(
         self,
         text: str = '',
-        media_ids: list[int] = None,
-        poll_uri: str = None,
-        reply_to: str = None,
+        media_ids: list[str] | None = None,
+        poll_uri: str | None = None,
+        reply_to: str | None = None,
     ) -> Response:
         """
         Creates a new tweet on Twitter with the specified
@@ -603,7 +607,7 @@ class Client:
         ----------
         text : str, default=''
             The text content of the tweet.
-        media_ids : list[int], default=None
+        media_ids : list[str], default=None
             A list of media IDs or URIs to attach to the tweet.
             media IDs can be obtained by using the `upload_media` method.
         poll_uri : str, default=None
@@ -679,6 +683,38 @@ class Client:
             Endpoint.CREATE_TWEET,
             data=json.dumps(data),
             headers=self._base_headers,
+        )
+        return response
+
+    def delete_tweet(self, tweet_id: str) -> Response:
+        """Deletes a tweet.
+
+        Parameters
+        ----------
+        tweet_id : str
+            ID of the tweet to be deleted.
+
+        Returns
+        -------
+        requests.Response
+            Response returned from twitter api.
+
+        Examples
+        --------
+        >>> tweet_id = '0000000000'
+        >>> delete_tweet(tweet_id)
+        """
+        data = {
+            'variables': {
+                'tweet_id': tweet_id,
+                'dark_request': False
+            },
+            'queryId': get_query_id(Endpoint.DELETE_TWEET)
+        }
+        response = self.http.post(
+            Endpoint.DELETE_TWEET,
+            data=json.dumps(data),
+            headers=self._base_headers
         )
         return response
 
@@ -809,7 +845,7 @@ class Client:
         user_id: str,
         tweet_type: Literal['Tweets', 'Replies', 'Media', 'Likes'],
         count: int = 40,
-        cursor: str = None
+        cursor: str | None = None
     ) -> Result[Tweet]:
         """
         Fetches tweets from a specific user's timeline.
@@ -891,8 +927,9 @@ class Client:
             headers=self._base_headers
         ).json()
         instructions = find_dict(response, 'instructions')[0]
-
         items = instructions[-1]['entries']
+        if len(items) <= 2:
+            return Result([])
         next_cursor = items[-1]['content']['value']
         if tweet_type == 'Media':
             if cursor is None:
@@ -923,8 +960,8 @@ class Client:
     def get_timeline(
         self,
         count: int = 20,
-        seen_tweet_ids: list[str] = None,
-        cursor: str = None
+        seen_tweet_ids: list[str] | None = None,
+        cursor: str | None = None
     ) -> Result[Tweet]:
         """
         Retrieves the timeline.
@@ -1522,8 +1559,8 @@ class Client:
         self,
         user_id: str,
         text: str,
-        media_id: str = None,
-        reply_to: str = None
+        media_id: str | None = None,
+        reply_to: str | None = None
     ) -> Message:
         """
         Send a direct message to a user.
@@ -1624,7 +1661,7 @@ class Client:
     def get_dm_history(
         self,
         user_id: str,
-        max_id: str = None
+        max_id: str | None = None
     ) -> Result[Message]:
         """
         Retrieves the DM conversation history with a specific user.
@@ -1692,4 +1729,3 @@ class Client:
             messages,
             lambda:self.get_dm_history(user_id, messages[-1].id)
         )
-
