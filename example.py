@@ -61,6 +61,19 @@ more_user_tweets = user_tweets.next
 
 ###########################################
 
+# Send dm to a user
+media_id = client.upload_media('./image.png', 0)
+user.send_dm('dm text', media_id)
+
+# Get dm history
+messages = user.get_dm_history()
+for message in messages:
+    print(message)
+# Get more messages
+more_messages = messages.next
+
+###########################################
+
 # Get tweet by ID
 TWEET_ID = '0000000000'
 tweet = client.get_tweet_by_id(TWEET_ID)

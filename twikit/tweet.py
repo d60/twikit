@@ -83,7 +83,7 @@ class Tweet:
 
         Returns
         -------
-        httpx.Response
+        requests.Response
             Response returned from twitter api.
 
         See Also
@@ -98,7 +98,7 @@ class Tweet:
 
         Returns
         -------
-        httpx.Response
+        requests.Response
             Response returned from twitter api.
 
         See Also
@@ -113,7 +113,7 @@ class Tweet:
 
         Returns
         -------
-        httpx.Response
+        requests.Response
             Response returned from twitter api.
 
         See Also
@@ -128,7 +128,7 @@ class Tweet:
 
         Returns
         -------
-        httpx.Response
+        requests.Response
             Response returned from twitter api.
 
         See Also
@@ -143,7 +143,7 @@ class Tweet:
 
         Returns
         -------
-        httpx.Response
+        requests.Response
             Response returned from twitter api.
 
         See Also
@@ -158,7 +158,7 @@ class Tweet:
 
         Returns
         -------
-        httpx.Response
+        requests.Response
             Response returned from twitter api.
 
         See Also
@@ -185,7 +185,7 @@ class Tweet:
 
         Returns
         -------
-        httpx.Response
+        requests.Response
             Response returned from twitter api.
 
         Examples

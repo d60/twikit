@@ -48,6 +48,7 @@ class Endpoint:
     """
     A class containing Twitter API endpoints.
     """
+    ALL = 'https://twitter.com/i/api/2/notifications/all.json'
     TASK = 'https://api.twitter.com/1.1/onboarding/task.json'
     LOGOUT = 'https://api.twitter.com/1.1/account/logout.json'
     CREATE_TWEET = 'https://twitter.com/i/api/graphql/SiM_cAu83R0wnrpmKQQSEw/CreateTweet'
@@ -77,6 +78,10 @@ class Endpoint:
     FOLLOWING = 'https://twitter.com/i/api/graphql/2vUj-_Ek-UmBVDNtd8OnQA/Following'
     FOLLOWERS_YOU_KNOW = 'https://twitter.com/i/api/graphql/f2tbuGNjfOE8mNUO5itMew/FollowersYouKnow'
     SUBSCRIPTIONS = 'https://twitter.com/i/api/graphql/Wsm5ZTCYtg2eH7mXAXPIgw/UserCreatorSubscriptions'
+    SEND_DM = 'https://twitter.com/i/api/1.1/dm/new2.json'
+    DELETE_DM = 'https://twitter.com/i/api/graphql/BJ6DtxA2llfjnRoRjaiIiw/DMMessageDeleteMutation'
+    INBOX_INITIAL_STATE = 'https://twitter.com/i/api/1.1/dm/inbox_initial_state.json'
+    CONVERSASION = 'https://twitter.com/i/api/1.1/dm/conversation/{}.json'
 
 T = TypeVar('T')
 
@@ -109,6 +114,8 @@ class Result(Generic[T]):
         """
         The next result.
         """
+        if self.__fetch_next_result is None:
+            return Result([])
         return self.__fetch_next_result()
 
     def __iter__(self) -> Iterator[T]:

@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from requests import Response
 
     from .client import Client
+    from .message import Message
     from .tweet import Tweet
     from .utils import Result
 
@@ -166,7 +167,7 @@ class User:
 
         Returns
         -------
-        httpx.Response
+        requests.Response
             Response returned from twitter api.
 
         See Also
@@ -181,7 +182,7 @@ class User:
 
         Returns
         -------
-        httpx.Response
+        requests.Response
             Response returned from twitter api.
 
         See Also
@@ -290,6 +291,77 @@ class User:
         """
         return self._client.get_user_subscriptions(self.id, count)
 
+    def send_dm(
+        self, text: str, media_id: str = None, reply_to = None
+    ) -> Message:
+        """
+        Send a direct message to the user.
+
+        Parameters
+        ----------
+        text : str
+            The text content of the direct message.
+        media_id : str, default=None
+            The media ID associated with any media content
+            to be included in the message.
+            Media ID can be received by using the :func:`.upload_media` method.
+        reply_to : str, default=None
+            Message ID to reply to.
+
+        Returns
+        -------
+        Message
+            `Message` object containing information about the message sent.
+
+        Examples
+        --------
+        >>> # send DM with media
+        >>> media_id = client.upload_media('image.png', 0)
+        >>> message = user.send_dm('text', media_id)
+        >>> print(message)
+        <Message id='...'>
+
+        See Also
+        --------
+        Client.upload_media
+        Client.send_dm
+        """
+        return self._client.send_dm(self.id, text, media_id, reply_to)
+
+    def get_dm_history(self, max_id: str = None) -> Result[Message]:
+        """
+        Retrieves the DM conversation history with the user.
+
+        Parameters
+        ----------
+        max_id : str, default=None
+            If specified, retrieves messages older than the specified max_id.
+
+        Returns
+        -------
+        Result[Message]
+            A Result object containing a list of Message objects representing
+            the DM conversation history.
+
+        Examples
+        --------
+        >>> messages = user.get_dm_history()
+        >>> for message in messages:
+        >>>     print(message)
+        <Message id="...">
+        <Message id="...">
+        ...
+        ...
+
+        >>> more_messages = messages.next  # Retrieve more messages
+        >>> for message in more_messages:
+        >>>     print(message)
+        <Message id="...">
+        <Message id="...">
+        ...
+        ...
+        """
+        return self._client.get_dm_history(self.id, max_id)
 
     def __repr__(self) -> str:
         return f'<User id="{self.id}">'

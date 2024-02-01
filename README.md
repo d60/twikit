@@ -61,3 +61,5 @@ For more examples, see [example.py](https://github.com/d60/twikit/blob/main/exam
 This project is currently in beta, and we would love to hear your thoughts and suggestions.
 If you have any features you'd like to see added or encounter any issues,
 please let us know in the [issues](https://github.com/d60/twikit/issues) section.
+
+Additionally, if you find this library useful, spreading the word by starring it would be greatly appreciated and serve as motivation for further development. Thank you!

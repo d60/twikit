@@ -22,6 +22,7 @@ from .utils import (
     get_query_id,
     urlencode
 )
+from .message import Message
 
 
 class Client:
@@ -43,6 +44,7 @@ class Client:
         self._token = TOKEN
         self.language = language
         self.http = HTTPClient(**kwargs)
+        self._user_id = None
 
     def _get_guest_token(self) -> str:
         headers = self._base_headers
@@ -102,6 +104,7 @@ class Client:
             The CSRF token as a string.
         """
         return self.http.client.cookies.get('ct0')
+
 
     def login(
         self,
@@ -224,7 +227,20 @@ class Client:
             },
         )
 
+        self._user_id = find_dict(response, 'id_str')[0]
         return response
+
+    @property
+    def user_id(self) -> str:
+        if self._user_id is not None:
+            return self._user_id
+        response = self.http.get(
+            Endpoint.ALL,
+            headers=self._base_headers
+        ).json()
+        user_id = find_dict(response, 'id_str')[0]
+        self._user_id = user_id
+        return user_id
 
     def save_cookies(self, path: str) -> None:
         """
@@ -505,6 +521,7 @@ class Client:
             headers=headers,
             files=files
         )
+        binary_stream.close()
         # ========== FINALIZE ===========
         params = {
             'command': 'FINALIZE',
@@ -597,7 +614,7 @@ class Client:
 
         Returns
         -------
-        httpx.Response
+        requests.Response
             Response returned from twitter api.
 
         Examples
@@ -784,7 +801,7 @@ class Client:
             headers=self._base_headers
         ).json()
         tweet_info = find_dict(response, 'result')[0]
-        user_info = tweet_info["core"]["user_results"]["result"]
+        user_info = tweet_info['core']['user_results']['result']
         return Tweet(self, tweet_info, User(self, user_info))
 
     def get_user_tweets(
@@ -876,10 +893,10 @@ class Client:
         instructions = find_dict(response, 'instructions')[0]
 
         items = instructions[-1]['entries']
-        next_cursor = items[-1]["content"]["value"]
+        next_cursor = items[-1]['content']['value']
         if tweet_type == 'Media':
             if cursor is None:
-                items = items[0]["content"]["items"]
+                items = items[0]['content']['items']
             else:
                 items = instructions[0]['moduleItems']
         if tweet_type != 'Likes':
@@ -993,7 +1010,7 @@ class Client:
 
         Returns
         -------
-        httpx.Response
+        requests.Response
             Response returned from twitter api.
 
         Examples
@@ -1027,7 +1044,7 @@ class Client:
 
         Returns
         -------
-        httpx.Response
+        requests.Response
             Response returned from twitter api.
 
         Examples
@@ -1061,7 +1078,7 @@ class Client:
 
         Returns
         -------
-        httpx.Response
+        requests.Response
             Response returned from twitter api.
 
         Examples
@@ -1095,7 +1112,7 @@ class Client:
 
         Returns
         -------
-        https.Response
+        requests.Response
             Response returned from twitter api.
 
         Examples
@@ -1129,7 +1146,7 @@ class Client:
 
         Returns
         -------
-        https.Response
+        requests.Response
             Response returned from twitter api.
 
         Examples
@@ -1164,7 +1181,7 @@ class Client:
 
         Returns
         -------
-        https.Response
+        requests.Response
             Response returned from twitter api.
 
         Examples
@@ -1198,7 +1215,7 @@ class Client:
 
         Returns
         -------
-        https.Response
+        requests.Response
             Response returned from twitter api.
 
         Examples
@@ -1246,7 +1263,7 @@ class Client:
 
         Returns
         -------
-        https.Response
+        requests.Response
             Response returned from twitter api.
 
         Examples
@@ -1500,3 +1517,179 @@ class Client:
             count,
             Endpoint.SUBSCRIPTIONS
         )
+
+    def send_dm(
+        self,
+        user_id: str,
+        text: str,
+        media_id: str = None,
+        reply_to: str = None
+    ) -> Message:
+        """
+        Send a direct message to a user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user to whom the direct message will be sent.
+        text : str
+            The text content of the direct message.
+        media_id : str, default=None
+            The media ID associated with any media content
+            to be included in the message.
+            Media ID can be received by using the :func:`.upload_media` method.
+        reply_to : str, default=None
+            Message ID to reply to.
+
+        Returns
+        -------
+        Message
+            `Message` object containing information about the message sent.
+
+        Examples
+        --------
+        >>> # send DM with media
+        >>> user_id = '000000000'
+        >>> media_id = client.upload_media('image.png', 0)
+        >>> message = client.send_dm(user_id, 'text', media_id)
+        >>> print(message)
+        <Message id='...'>
+
+        See Also
+        --------
+        .upload_media
+        .delete_dm
+        """
+        data = {
+            'cards_platform': 'Web-12',
+            'conversation_id': f'{user_id}-{self.user_id}',
+            'dm_users': False,
+            'include_cards': 1,
+            'include_quote_count': True,
+            'recipient_ids': False,
+            'text': text
+        }
+        if media_id is not None:
+            data['media_id'] = media_id
+        if reply_to is not None:
+            data['reply_to_dm_id'] = reply_to
+
+        response = self.http.post(
+            Endpoint.SEND_DM,
+            data=json.dumps(data),
+            headers=self._base_headers
+        ).json()
+
+        message_data = find_dict(response, 'message_data')[0]
+        users = list(response['users'].values())
+        return Message(
+            self,
+            message_data,
+            users[0]['id_str'],
+            users[1]['id_str']
+        )
+
+    def delete_dm(self, message_id: str) -> Response:
+        """
+        Deletes a direct message with the specified message ID.
+
+        Parameters
+        ----------
+        message_id : str
+            The ID of the direct message to be deleted.
+
+        Returns
+        -------
+        requests.Response
+            Response returned from twitter api.
+
+        Examples
+        --------
+        >>> client.delete_dm('0000000000')
+        """
+
+        data = {
+            'variables': {
+                'messageId': message_id
+            },
+            'queryId': get_query_id(Endpoint.DELETE_DM)
+        }
+        response = self.http.post(
+            Endpoint.DELETE_DM,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )
+        return response
+
+    def get_dm_history(
+        self,
+        user_id: str,
+        max_id: str = None
+    ) -> Result[Message]:
+        """
+        Retrieves the DM conversation history with a specific user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user with whom the DM conversation
+            history will be retrieved.
+        max_id : str, default=None
+            If specified, retrieves messages older than the specified max_id.
+
+        Returns
+        -------
+        Result[Message]
+            A Result object containing a list of Message objects representing
+            the DM conversation history.
+
+        Examples
+        --------
+        >>> messages = client.get_dm_history('0000000000')
+        >>> for message in messages:
+        >>>     print(message)
+        <Message id="...">
+        <Message id="...">
+        ...
+        ...
+
+        >>> more_messages = messages.next  # Retrieve more messages
+        >>> for message in more_messages:
+        >>>     print(message)
+        <Message id="...">
+        <Message id="...">
+        ...
+        ...
+        """
+        params = {
+            'context': 'FETCH_DM_CONVERSATION_HISTORY'
+        }
+        if max_id is not None:
+            params['max_id'] = max_id
+
+        response = self.http.get(
+            Endpoint.CONVERSASION.format(f'{user_id}-{self.user_id}'),
+            params=params,
+            headers=self._base_headers
+        ).json()
+
+        status = response['conversation_timeline']['status']
+        if status == 'AT_END':
+            # If there are no more messages, an empty result list is returned.
+            return Result([])
+
+        items = response['conversation_timeline']['entries']
+        messages = []
+        for item in items:
+            message_info = item['message']['message_data']
+            messages.append(Message(
+                self,
+                message_info,
+                message_info['sender_id'],
+                message_info['recipient_id']
+            ))
+        return Result(
+            messages,
+            lambda:self.get_dm_history(user_id, messages[-1].id)
+        )
+
