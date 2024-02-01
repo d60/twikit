@@ -40,6 +40,15 @@ twikit.trend module
    :show-inheritance:
    :member-order: bysource
 
+twikit.message module
+-------------------
+
+.. automodule:: twikit.message
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
 twikit.utils module
 -------------------
 
