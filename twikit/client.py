@@ -1290,443 +1290,443 @@ class Client:
         )
         return response
 
-    # def unfollow_user(self, user_id: str) -> Response:
-    #     """
-    #     Unfollows a user.
+    def unfollow_user(self, user_id: str) -> Response:
+        """
+        Unfollows a user.
 
-    #     Parameters
-    #     ----------
-    #     user_id : str
-    #         The ID of the user to unfollow.
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user to unfollow.
 
-    #     Returns
-    #     -------
-    #     httpx.Response
-    #         Response returned from twitter api.
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
 
-    #     Examples
-    #     --------
-    #     >>> user_id = '...'
-    #     >>> client.unfollow_user(user_id)
+        Examples
+        --------
+        >>> user_id = '...'
+        >>> client.unfollow_user(user_id)
 
-    #     See Also
-    #     --------
-    #     .follow_user
-    #     """
-    #     data = urlencode({
-    #         'include_profile_interstitial_type': 1,
-    #         'include_blocking': 1,
-    #         'include_blocked_by': 1,
-    #         'include_followed_by': 1,
-    #         'include_want_retweets': 1,
-    #         'include_mute_edge': 1,
-    #         'include_can_dm': 1,
-    #         'include_can_media_tag': 1,
-    #         'include_ext_is_blue_verified': 1,
-    #         'include_ext_verified_type': 1,
-    #         'include_ext_profile_image_shape': 1,
-    #         'skip_status': 1,
-    #         'user_id': user_id
-    #     })
-    #     headers = self._base_headers | {
-    #         'content-type': 'application/x-www-form-urlencoded'
-    #     }
-    #     response = self.http.post(
-    #         Endpoint.DESTROY_FRIENDSHIPS,
-    #         data=data,
-    #         headers=headers
-    #     )
-    #     return response
+        See Also
+        --------
+        .follow_user
+        """
+        data = urlencode({
+            'include_profile_interstitial_type': 1,
+            'include_blocking': 1,
+            'include_blocked_by': 1,
+            'include_followed_by': 1,
+            'include_want_retweets': 1,
+            'include_mute_edge': 1,
+            'include_can_dm': 1,
+            'include_can_media_tag': 1,
+            'include_ext_is_blue_verified': 1,
+            'include_ext_verified_type': 1,
+            'include_ext_profile_image_shape': 1,
+            'skip_status': 1,
+            'user_id': user_id
+        })
+        headers = self._base_headers | {
+            'content-type': 'application/x-www-form-urlencoded'
+        }
+        response = self.http.post(
+            Endpoint.DESTROY_FRIENDSHIPS,
+            data=data,
+            headers=headers
+        )
+        return response
 
-    # def get_trends(
-    #     self,
-    #     category: Literal[
-    #         'trending', 'for-you', 'news', 'sports', 'entertainment'
-    #     ],
-    #     count: int = 20
-    # ) -> list[Trend]:
-    #     """
-    #     Retrieves trending topics on Twitter.
+    def get_trends(
+        self,
+        category: Literal[
+            'trending', 'for-you', 'news', 'sports', 'entertainment'
+        ],
+        count: int = 20
+    ) -> list[Trend]:
+        """
+        Retrieves trending topics on Twitter.
 
-    #     Parameters
-    #     ----------
-    #     category : {'trending', 'for-you', 'news', 'sports', 'entertainment'}
-    #         The category of trends to retrieve. Valid options include:
-    #         - 'trending': General trending topics.
-    #         - 'for-you': Trends personalized for the user.
-    #         - 'news': News-related trends.
-    #         - 'sports': Sports-related trends.
-    #         - 'entertainment': Entertainment-related trends.
-    #     count : int, default=20
-    #         The number of trends to retrieve.
+        Parameters
+        ----------
+        category : {'trending', 'for-you', 'news', 'sports', 'entertainment'}
+            The category of trends to retrieve. Valid options include:
+            - 'trending': General trending topics.
+            - 'for-you': Trends personalized for the user.
+            - 'news': News-related trends.
+            - 'sports': Sports-related trends.
+            - 'entertainment': Entertainment-related trends.
+        count : int, default=20
+            The number of trends to retrieve.
 
-    #     Returns
-    #     -------
-    #     list[Trend]
-    #         A list of Trend objects representing the retrieved trends.
+        Returns
+        -------
+        list[Trend]
+            A list of Trend objects representing the retrieved trends.
 
-    #     Examples
-    #     --------
-    #     >>> trends = client.get_trends('trending')
-    #     >>> for trend in trends:
-    #     ...     print(trend)
-    #     <Trend name="...">
-    #     <Trend name="...">
-    #     ...
-    #     """
-    #     category = category.lower()
-    #     if category in ['news', 'sports', 'entertainment']:
-    #         category += '_unified'
-    #     params = {
-    #         'count': count,
-    #         'include_page_configuration': True,
-    #         'initial_tab_id': category
-    #     }
-    #     response = self.http.get(
-    #         Endpoint.TREND,
-    #         params=params,
-    #         headers=self._base_headers
-    #     ).json()
+        Examples
+        --------
+        >>> trends = client.get_trends('trending')
+        >>> for trend in trends:
+        ...     print(trend)
+        <Trend name="...">
+        <Trend name="...">
+        ...
+        """
+        category = category.lower()
+        if category in ['news', 'sports', 'entertainment']:
+            category += '_unified'
+        params = {
+            'count': count,
+            'include_page_configuration': True,
+            'initial_tab_id': category
+        }
+        response = self.http.get(
+            Endpoint.TREND,
+            params=params,
+            headers=self._base_headers
+        ).json()
 
-    #     entry_id_prefix = 'trends' if category == 'trending' else 'Guide'
-    #     entries = [
-    #         i for i in find_dict(response, 'entries')[0]
-    #         if i['entryId'].startswith(entry_id_prefix)
-    #     ]
+        entry_id_prefix = 'trends' if category == 'trending' else 'Guide'
+        entries = [
+            i for i in find_dict(response, 'entries')[0]
+            if i['entryId'].startswith(entry_id_prefix)
+        ]
 
-    #     if not entries:
-    #         # Recall the method again, as the trend information
-    #         # may not be returned due to a Twitter error.
-    #         return self.get_trends(category, count)
+        if not entries:
+            # Recall the method again, as the trend information
+            # may not be returned due to a Twitter error.
+            return self.get_trends(category, count)
 
-    #     items = entries[-1]['content']['timelineModule']['items']
+        items = entries[-1]['content']['timelineModule']['items']
 
-    #     results = []
-    #     for item in items:
-    #         trend_info = item['item']['content']['trend']
-    #         results.append(Trend(self, trend_info))
+        results = []
+        for item in items:
+            trend_info = item['item']['content']['trend']
+            results.append(Trend(self, trend_info))
 
-    #     return results
+        return results
 
-    # def _get_user_friendship(
-    #     self,
-    #     user_id: str,
-    #     count: int,
-    #     endpoint: str
-    # ) -> list[User]:
-    #     """
-    #     Base function to get friendship.
-    #     """
-    #     params = {
-    #         'variables': json.dumps({
-    #             'userId': user_id,
-    #             'count': count,
-    #             'includePromotedContent': False
-    #         }),
-    #         'features': json.dumps(FEATURES)
-    #     }
-    #     response = self.http.get(
-    #         endpoint,
-    #         params=params,
-    #         headers=self._base_headers
-    #     ).json()
+    def _get_user_friendship(
+        self,
+        user_id: str,
+        count: int,
+        endpoint: str
+    ) -> list[User]:
+        """
+        Base function to get friendship.
+        """
+        params = {
+            'variables': json.dumps({
+                'userId': user_id,
+                'count': count,
+                'includePromotedContent': False
+            }),
+            'features': json.dumps(FEATURES)
+        }
+        response = self.http.get(
+            endpoint,
+            params=params,
+            headers=self._base_headers
+        ).json()
 
-    #     items = find_dict(response, 'entries')[0]
-    #     results = []
-    #     for item in items:
-    #         if not item['entryId'].startswith('user-'):
-    #             continue
-    #         user_info = find_dict(item, 'result')[0]
-    #         results.append(User(self, user_info))
-    #     return results
+        items = find_dict(response, 'entries')[0]
+        results = []
+        for item in items:
+            if not item['entryId'].startswith('user-'):
+                continue
+            user_info = find_dict(item, 'result')[0]
+            results.append(User(self, user_info))
+        return results
 
-    # def get_user_followers(self, user_id: str, count: int = 20) -> list[User]:
-    #     """
-    #     Retrieves a list of followers for a given user.
+    def get_user_followers(self, user_id: str, count: int = 20) -> list[User]:
+        """
+        Retrieves a list of followers for a given user.
 
-    #     Parameters
-    #     ----------
-    #     user_id : str
-    #         The ID of the user for whom to retrieve followers.
-    #     count : int, default=20
-    #         The number of followers to retrieve.
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user for whom to retrieve followers.
+        count : int, default=20
+            The number of followers to retrieve.
 
-    #     Returns
-    #     -------
-    #     list[User]
-    #         A list of User objects representing the followers.
-    #     """
-    #     return self._get_user_friendship(
-    #         user_id,
-    #         count,
-    #         Endpoint.FOLLOWERS
-    #     )
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the followers.
+        """
+        return self._get_user_friendship(
+            user_id,
+            count,
+            Endpoint.FOLLOWERS
+        )
 
-    # def get_user_verified_followers(
-    #     self, user_id: str, count: int = 20
-    # ) -> list[User]:
-    #     """
-    #     Retrieves a list of verified followers for a given user.
+    def get_user_verified_followers(
+        self, user_id: str, count: int = 20
+    ) -> list[User]:
+        """
+        Retrieves a list of verified followers for a given user.
 
-    #     Parameters
-    #     ----------
-    #     user_id : str
-    #         The ID of the user for whom to retrieve verified followers.
-    #     count : int, default=20
-    #         The number of verified followers to retrieve.
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user for whom to retrieve verified followers.
+        count : int, default=20
+            The number of verified followers to retrieve.
 
-    #     Returns
-    #     -------
-    #     list[User]
-    #         A list of User objects representing the verified followers.
-    #     """
-    #     return self._get_user_friendship(
-    #         user_id,
-    #         count,
-    #         Endpoint.BLUE_VERIFIED_FOLLOWERS
-    #     )
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the verified followers.
+        """
+        return self._get_user_friendship(
+            user_id,
+            count,
+            Endpoint.BLUE_VERIFIED_FOLLOWERS
+        )
 
-    # def get_user_followers_you_know(
-    #     self, user_id: str, count: int = 20
-    # ) -> list[User]:
-    #     """
-    #     Retrieves a list of common followers.
+    def get_user_followers_you_know(
+        self, user_id: str, count: int = 20
+    ) -> list[User]:
+        """
+        Retrieves a list of common followers.
 
-    #     Parameters
-    #     ----------
-    #     user_id : str
-    #         The ID of the user for whom to retrieve followers you might know.
-    #     count : int, default=20
-    #         The number of followers you might know to retrieve.
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user for whom to retrieve followers you might know.
+        count : int, default=20
+            The number of followers you might know to retrieve.
 
-    #     Returns
-    #     -------
-    #     list[User]
-    #         A list of User objects representing the followers you might know.
-    #     """
-    #     return self._get_user_friendship(
-    #         user_id,
-    #         count,
-    #         Endpoint.FOLLOWERS_YOU_KNOW
-    #     )
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the followers you might know.
+        """
+        return self._get_user_friendship(
+            user_id,
+            count,
+            Endpoint.FOLLOWERS_YOU_KNOW
+        )
 
-    # def get_user_following(self, user_id: str, count: int = 20) -> list[User]:
-    #     """
-    #     Retrieves a list of users whom the given user is following.
+    def get_user_following(self, user_id: str, count: int = 20) -> list[User]:
+        """
+        Retrieves a list of users whom the given user is following.
 
-    #     Parameters
-    #     ----------
-    #     user_id : str
-    #         The ID of the user for whom to retrieve the following users.
-    #     count : int, default=20
-    #         The number of following users to retrieve.
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user for whom to retrieve the following users.
+        count : int, default=20
+            The number of following users to retrieve.
 
-    #     Returns
-    #     -------
-    #     list[User]
-    #         A list of User objects representing the users being followed.
-    #     """
-    #     return self._get_user_friendship(
-    #         user_id,
-    #         count,
-    #         Endpoint.FOLLOWING
-    #     )
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the users being followed.
+        """
+        return self._get_user_friendship(
+            user_id,
+            count,
+            Endpoint.FOLLOWING
+        )
 
-    # def get_user_subscriptions(
-    #     self, user_id: str, count: int = 20
-    # ) -> list[User]:
-    #     """
-    #     Retrieves a list of users to which the specified user is subscribed.
+    def get_user_subscriptions(
+        self, user_id: str, count: int = 20
+    ) -> list[User]:
+        """
+        Retrieves a list of users to which the specified user is subscribed.
 
-    #     Parameters
-    #     ----------
-    #     user_id : str
-    #         The ID of the user for whom to retrieve subscriptions.
-    #     count : int, default=20
-    #         The number of subscriptions to retrieve.
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user for whom to retrieve subscriptions.
+        count : int, default=20
+            The number of subscriptions to retrieve.
 
-    #     Returns
-    #     -------
-    #     list[User]
-    #         A list of User objects representing the subscribed users.
-    #     """
-    #     return self._get_user_friendship(
-    #         user_id,
-    #         count,
-    #         Endpoint.SUBSCRIPTIONS
-    #     )
+        Returns
+        -------
+        list[User]
+            A list of User objects representing the subscribed users.
+        """
+        return self._get_user_friendship(
+            user_id,
+            count,
+            Endpoint.SUBSCRIPTIONS
+        )
 
-    # def send_dm(
-    #     self,
-    #     user_id: str,
-    #     text: str,
-    #     media_id: str | None = None,
-    #     reply_to: str | None = None
-    # ) -> Message:
-    #     """
-    #     Send a direct message to a user.
+    def send_dm(
+        self,
+        user_id: str,
+        text: str,
+        media_id: str | None = None,
+        reply_to: str | None = None
+    ) -> Message:
+        """
+        Send a direct message to a user.
 
-    #     Parameters
-    #     ----------
-    #     user_id : str
-    #         The ID of the user to whom the direct message will be sent.
-    #     text : str
-    #         The text content of the direct message.
-    #     media_id : str, default=None
-    #         The media ID associated with any media content
-    #         to be included in the message.
-    #         Media ID can be received by using the :func:`.upload_media` method.
-    #     reply_to : str, default=None
-    #         Message ID to reply to.
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user to whom the direct message will be sent.
+        text : str
+            The text content of the direct message.
+        media_id : str, default=None
+            The media ID associated with any media content
+            to be included in the message.
+            Media ID can be received by using the :func:`.upload_media` method.
+        reply_to : str, default=None
+            Message ID to reply to.
 
-    #     Returns
-    #     -------
-    #     Message
-    #         `Message` object containing information about the message sent.
+        Returns
+        -------
+        Message
+            `Message` object containing information about the message sent.
 
-    #     Examples
-    #     --------
-    #     >>> # send DM with media
-    #     >>> user_id = '000000000'
-    #     >>> media_id = client.upload_media('image.png', 0)
-    #     >>> message = client.send_dm(user_id, 'text', media_id)
-    #     >>> print(message)
-    #     <Message id='...'>
+        Examples
+        --------
+        >>> # send DM with media
+        >>> user_id = '000000000'
+        >>> media_id = client.upload_media('image.png', 0)
+        >>> message = client.send_dm(user_id, 'text', media_id)
+        >>> print(message)
+        <Message id='...'>
 
-    #     See Also
-    #     --------
-    #     .upload_media
-    #     .delete_dm
-    #     """
-    #     data = {
-    #         'cards_platform': 'Web-12',
-    #         'conversation_id': f'{user_id}-{self.user_id}',
-    #         'dm_users': False,
-    #         'include_cards': 1,
-    #         'include_quote_count': True,
-    #         'recipient_ids': False,
-    #         'text': text
-    #     }
-    #     if media_id is not None:
-    #         data['media_id'] = media_id
-    #     if reply_to is not None:
-    #         data['reply_to_dm_id'] = reply_to
+        See Also
+        --------
+        .upload_media
+        .delete_dm
+        """
+        data = {
+            'cards_platform': 'Web-12',
+            'conversation_id': f'{user_id}-{self.user_id}',
+            'dm_users': False,
+            'include_cards': 1,
+            'include_quote_count': True,
+            'recipient_ids': False,
+            'text': text
+        }
+        if media_id is not None:
+            data['media_id'] = media_id
+        if reply_to is not None:
+            data['reply_to_dm_id'] = reply_to
 
-    #     response = self.http.post(
-    #         Endpoint.SEND_DM,
-    #         data=json.dumps(data),
-    #         headers=self._base_headers
-    #     ).json()
+        response = self.http.post(
+            Endpoint.SEND_DM,
+            data=json.dumps(data),
+            headers=self._base_headers
+        ).json()
 
-    #     message_data = find_dict(response, 'message_data')[0]
-    #     users = list(response['users'].values())
-    #     return Message(
-    #         self,
-    #         message_data,
-    #         users[0]['id_str'],
-    #         users[1]['id_str']
-    #     )
+        message_data = find_dict(response, 'message_data')[0]
+        users = list(response['users'].values())
+        return Message(
+            self,
+            message_data,
+            users[0]['id_str'],
+            users[1]['id_str']
+        )
 
-    # def delete_dm(self, message_id: str) -> Response:
-    #     """
-    #     Deletes a direct message with the specified message ID.
+    def delete_dm(self, message_id: str) -> Response:
+        """
+        Deletes a direct message with the specified message ID.
 
-    #     Parameters
-    #     ----------
-    #     message_id : str
-    #         The ID of the direct message to be deleted.
+        Parameters
+        ----------
+        message_id : str
+            The ID of the direct message to be deleted.
 
-    #     Returns
-    #     -------
-    #     httpx.Response
-    #         Response returned from twitter api.
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
 
-    #     Examples
-    #     --------
-    #     >>> client.delete_dm('0000000000')
-    #     """
+        Examples
+        --------
+        >>> client.delete_dm('0000000000')
+        """
 
-    #     data = {
-    #         'variables': {
-    #             'messageId': message_id
-    #         },
-    #         'queryId': get_query_id(Endpoint.DELETE_DM)
-    #     }
-    #     response = self.http.post(
-    #         Endpoint.DELETE_DM,
-    #         data=json.dumps(data),
-    #         headers=self._base_headers
-    #     )
-    #     return response
+        data = {
+            'variables': {
+                'messageId': message_id
+            },
+            'queryId': get_query_id(Endpoint.DELETE_DM)
+        }
+        response = self.http.post(
+            Endpoint.DELETE_DM,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )
+        return response
 
-    # def get_dm_history(
-    #     self,
-    #     user_id: str,
-    #     max_id: str | None = None
-    # ) -> Result[Message]:
-    #     """
-    #     Retrieves the DM conversation history with a specific user.
+    def get_dm_history(
+        self,
+        user_id: str,
+        max_id: str | None = None
+    ) -> Result[Message]:
+        """
+        Retrieves the DM conversation history with a specific user.
 
-    #     Parameters
-    #     ----------
-    #     user_id : str
-    #         The ID of the user with whom the DM conversation
-    #         history will be retrieved.
-    #     max_id : str, default=None
-    #         If specified, retrieves messages older than the specified max_id.
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user with whom the DM conversation
+            history will be retrieved.
+        max_id : str, default=None
+            If specified, retrieves messages older than the specified max_id.
 
-    #     Returns
-    #     -------
-    #     Result[Message]
-    #         A Result object containing a list of Message objects representing
-    #         the DM conversation history.
+        Returns
+        -------
+        Result[Message]
+            A Result object containing a list of Message objects representing
+            the DM conversation history.
 
-    #     Examples
-    #     --------
-    #     >>> messages = client.get_dm_history('0000000000')
-    #     >>> for message in messages:
-    #     >>>     print(message)
-    #     <Message id="...">
-    #     <Message id="...">
-    #     ...
-    #     ...
+        Examples
+        --------
+        >>> messages = client.get_dm_history('0000000000')
+        >>> for message in messages:
+        >>>     print(message)
+        <Message id="...">
+        <Message id="...">
+        ...
+        ...
 
-    #     >>> more_messages = messages.next  # Retrieve more messages
-    #     >>> for message in more_messages:
-    #     >>>     print(message)
-    #     <Message id="...">
-    #     <Message id="...">
-    #     ...
-    #     ...
-    #     """
-    #     params = {
-    #         'context': 'FETCH_DM_CONVERSATION_HISTORY'
-    #     }
-    #     if max_id is not None:
-    #         params['max_id'] = max_id
+        >>> more_messages = messages.next  # Retrieve more messages
+        >>> for message in more_messages:
+        >>>     print(message)
+        <Message id="...">
+        <Message id="...">
+        ...
+        ...
+        """
+        params = {
+            'context': 'FETCH_DM_CONVERSATION_HISTORY'
+        }
+        if max_id is not None:
+            params['max_id'] = max_id
 
-    #     response = self.http.get(
-    #         Endpoint.CONVERSASION.format(f'{user_id}-{self.user_id}'),
-    #         params=params,
-    #         headers=self._base_headers
-    #     ).json()
+        response = self.http.get(
+            Endpoint.CONVERSASION.format(f'{user_id}-{self.user_id}'),
+            params=params,
+            headers=self._base_headers
+        ).json()
 
-    #     status = response['conversation_timeline']['status']
-    #     if status == 'AT_END':
-    #         # If there are no more messages, an empty result list is returned.
-    #         return Result([])
+        status = response['conversation_timeline']['status']
+        if status == 'AT_END':
+            # If there are no more messages, an empty result list is returned.
+            return Result([])
 
-    #     items = response['conversation_timeline']['entries']
-    #     messages = []
-    #     for item in items:
-    #         message_info = item['message']['message_data']
-    #         messages.append(Message(
-    #             self,
-    #             message_info,
-    #             message_info['sender_id'],
-    #             message_info['recipient_id']
-    #         ))
-    #     return Result(
-    #         messages,
-    #         lambda:self.get_dm_history(user_id, messages[-1].id)
-    #     )
+        items = response['conversation_timeline']['entries']
+        messages = []
+        for item in items:
+            message_info = item['message']['message_data']
+            messages.append(Message(
+                self,
+                message_info,
+                message_info['sender_id'],
+                message_info['recipient_id']
+            ))
+        return Result(
+            messages,
+            lambda:self.get_dm_history(user_id, messages[-1].id)
+        )
