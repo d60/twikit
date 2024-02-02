@@ -11,6 +11,7 @@ twikit.twikit\_async.client module
    :members:
    :undoc-members:
    :show-inheritance:
+   :member-order: bysource
 
 .. twikit.twikit\_async.http module
 .. --------------------------------
@@ -27,6 +28,7 @@ twikit.twikit\_async.tweet module
    :members:
    :undoc-members:
    :show-inheritance:
+   :member-order: bysource
 
 twikit.twikit\_async.user module
 --------------------------------
@@ -35,6 +37,7 @@ twikit.twikit\_async.user module
    :members:
    :undoc-members:
    :show-inheritance:
+   :member-order: bysource
 
 twikit.twikit\_async.message module
 -----------------------------------
@@ -43,6 +46,7 @@ twikit.twikit\_async.message module
    :members:
    :undoc-members:
    :show-inheritance:
+   :member-order: bysource
 
 twikit.twikit\_async.trend module
 ---------------------------------
@@ -51,6 +55,7 @@ twikit.twikit\_async.trend module
    :members:
    :undoc-members:
    :show-inheritance:
+   :member-order: bysource
 
 twikit.twikit\_async.utils module
 ---------------------------------
@@ -59,6 +64,7 @@ twikit.twikit\_async.utils module
    :members:
    :undoc-members:
    :show-inheritance:
+   :member-order: bysource
 
 twikit.twikit\_async.errors module
 ----------------------------------
@@ -67,6 +73,7 @@ twikit.twikit\_async.errors module
    :members:
    :undoc-members:
    :show-inheritance:
+   :member-order: bysource
 
 Module contents
 ---------------
@@ -75,3 +82,4 @@ Module contents
    :members:
    :undoc-members:
    :show-inheritance:
+   :member-order: bysource
