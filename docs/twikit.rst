@@ -13,15 +13,6 @@ twikit.client module
    :show-inheritance:
    :member-order: bysource
 
-.. twikit.http module
-.. ------------------
-
-.. .. automodule:: twikit.http
-..    :members:
-..    :undoc-members:
-..    :show-inheritance:
-..    :member-order: bysource
-
 twikit.tweet module
 -------------------
 
@@ -35,15 +26,6 @@ twikit.user module
 ------------------
 
 .. automodule:: twikit.user
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :member-order: bysource
-
-twikit.message module
----------------------
-
-.. automodule:: twikit.message
    :members:
    :undoc-members:
    :show-inheritance:
@@ -66,6 +48,7 @@ twikit.utils module
    :undoc-members:
    :show-inheritance:
    :member-order: bysource
+   :exclude-members: find_dict, get_query_id, urlencode, Endpoint
 
 twikit.errors module
 --------------------
@@ -75,6 +58,15 @@ twikit.errors module
    :undoc-members:
    :show-inheritance:
    :member-order: bysource
+
+.. twikit.http module
+.. ------------------
+
+.. .. automodule:: twikit.http
+..    :members:
+..    :undoc-members:
+..    :show-inheritance:
+..    :member-order: bysource
 
 Module contents
 ---------------
