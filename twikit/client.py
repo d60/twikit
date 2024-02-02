@@ -3,10 +3,9 @@ from __future__ import annotations
 import io
 import json
 import os
-import pickle
-from typing import Any, Literal
+from typing import Literal
 
-from requests import Response
+from httpx import Response
 
 from .http import HTTPClient
 from .trend import Trend
@@ -248,7 +247,7 @@ class Client:
 
     def save_cookies(self, path: str) -> None:
         """
-        Save cookies to file in pickle format.
+        Save cookies to file in json format.
         You can skip the login procedure by loading the saved cookies
         using the :func:`load_cookies` method.
 
@@ -259,14 +258,14 @@ class Client:
 
         Examples
         --------
-        >>> client.save_cookies('cookies.pickle')
+        >>> client.save_cookies('cookies.json')
 
         See Also
         --------
         .load_cookies
         """
-        with open(path, 'wb') as f:
-            pickle.dump(self.http.client.cookies, f)
+        with open(path, 'w') as f:
+            json.dump(dict(self.http.client.cookies), f)
 
     def load_cookies(self, path: str) -> None:
         """
@@ -280,14 +279,14 @@ class Client:
 
         Examples
         --------
-        >>> client.load_cookies('cookies.pickle')
+        >>> client.load_cookies('cookies.json')
 
         See Also
         --------
         .save_cookies
         """
-        with open(path, 'rb') as f:
-            self.http.client.cookies = pickle.load(f)
+        with open(path, 'r', encoding='utf-8') as f:
+            self.http.client.cookies = json.load(f)
 
     def _search(
         self,
@@ -598,7 +597,7 @@ class Client:
         media_ids: list[str] | None = None,
         poll_uri: str | None = None,
         reply_to: str | None = None,
-    ) -> Response:
+    ) -> Tweet:
         """
         Creates a new tweet on Twitter with the specified
         text, media, and poll.
@@ -618,8 +617,8 @@ class Client:
 
         Returns
         -------
-        requests.Response
-            Response returned from twitter api.
+        Tweet
+            The Created Tweet.
 
         Examples
         --------
@@ -683,8 +682,10 @@ class Client:
             Endpoint.CREATE_TWEET,
             data=json.dumps(data),
             headers=self._base_headers,
-        )
-        return response
+        ).json()
+        tweet_info = find_dict(response, 'result')[0]
+        user_info = tweet_info['core']['user_results']['result']
+        return Tweet(self, tweet_info, User(self, user_info))
 
     def delete_tweet(self, tweet_id: str) -> Response:
         """Deletes a tweet.
@@ -696,7 +697,7 @@ class Client:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         Examples
@@ -1047,7 +1048,7 @@ class Client:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         Examples
@@ -1081,7 +1082,7 @@ class Client:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         Examples
@@ -1115,7 +1116,7 @@ class Client:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         Examples
@@ -1149,7 +1150,7 @@ class Client:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         Examples
@@ -1183,7 +1184,7 @@ class Client:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         Examples
@@ -1218,7 +1219,7 @@ class Client:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         Examples
@@ -1252,7 +1253,7 @@ class Client:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         Examples
@@ -1300,7 +1301,7 @@ class Client:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         Examples
@@ -1637,7 +1638,7 @@ class Client:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         Examples

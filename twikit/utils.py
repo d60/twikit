@@ -125,6 +125,9 @@ class Result(Generic[T]):
     def __getitem__(self, index: int) -> T:
         return self.__results[index]
 
+    def __len__(self) -> int:
+        return len(self.__results)
+
     def __repr__(self) -> str:
         return self.__results.__repr__()
 

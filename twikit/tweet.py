@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from requests import Response
+    from httpx import Response
 
     from .client import Client
     from .user import User
@@ -51,12 +51,14 @@ class Tweet:
         The state of the tweet views.
     """
 
-    def __init__(self, client: Client, data: dict, user: User) -> None:
+    def __init__(self, client: Client, data: dict, user: User = None) -> None:
         self._client = client
+        self._data = data
         self.user = user
-        legacy = data['legacy']
 
-        self.id: str = legacy['id_str']
+        self.id: str = data['rest_id']
+
+        legacy = data['legacy']
         self.text: str = legacy['full_text']
         self.lang: str = legacy['lang']
         self.is_quote_status: bool = legacy['is_quote_status']
@@ -82,7 +84,7 @@ class Tweet:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         Examples
@@ -97,7 +99,7 @@ class Tweet:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         See Also
@@ -112,7 +114,7 @@ class Tweet:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         See Also
@@ -127,7 +129,7 @@ class Tweet:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         See Also
@@ -142,7 +144,7 @@ class Tweet:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         See Also
@@ -157,7 +159,7 @@ class Tweet:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         See Also
@@ -172,7 +174,7 @@ class Tweet:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         See Also
@@ -185,7 +187,7 @@ class Tweet:
         self,
         text: str = '',
         media_ids: list[str] | None = None
-    ) -> Response:
+    ) -> Tweet:
         """
         Replies to the tweet.
 
@@ -199,8 +201,8 @@ class Tweet:
 
         Returns
         -------
-        requests.Response
-            Response returned from twitter api.
+        Tweet
+            The created tweet.
 
         Examples
         --------

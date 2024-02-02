@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from requests import Response
+    from httpx import Response
 
     from .client import Client
 
@@ -78,7 +78,7 @@ class Message:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         See Also
@@ -86,6 +86,12 @@ class Message:
         Client.delete_dm
         """
         return self._client.delete_dm(self.id)
+
+    def __eq__(self, __value: object) -> bool:
+        return isinstance(__value, Message) and self.id == __value.id
+
+    def __ne__(self, __value: object) -> bool:
+        return not self == __value
 
     def __repr__(self) -> str:
         return f'<Message id="{self.id}">'

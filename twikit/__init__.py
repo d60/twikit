@@ -22,4 +22,4 @@ from .trend import Trend
 from .tweet import Tweet
 from .user import User
 
-__version__ = '1.0.6'
+__version__ = '1.0.7'

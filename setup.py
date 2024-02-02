@@ -5,9 +5,11 @@ with open('README.md') as f:
 
 setup(
     name='twikit',
-    version='1.0.6',
-    install_requires=['requests'],
+    version='1.0.7',
+    install_requires=['httpx'],
     description='Twitter API wrapper for python with **no API key required**.',
     long_description=long_description,
-    long_description_content_type='text/markdown'
+    long_description_content_type='text/markdown',
+    license='MIT',
+    url='https://github.com/d60/twikit'
 )

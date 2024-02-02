@@ -15,8 +15,8 @@ project = 'Twikit'
 copyright = '2024, Twikit'
 author = 'Twikit'
 
-version = '1.0.6'
-release = '1.0.6'
+version = '1.0.7'
+release = '1.0.7'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

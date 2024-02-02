@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
-    from requests import Response
+    from httpx import Response
 
     from .client import Client
     from .message import Message
@@ -167,7 +167,7 @@ class User:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         See Also
@@ -182,7 +182,7 @@ class User:
 
         Returns
         -------
-        requests.Response
+        httpx.Response
             Response returned from twitter api.
 
         See Also
