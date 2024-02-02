@@ -110,7 +110,6 @@ class Result(Generic[T]):
         self.token = token
         self.__fetch_next_result = fetch_next_result
 
-    @property
     def next(self) -> Result[T]:
         """
         The next result.

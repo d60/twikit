@@ -21,7 +21,7 @@ tweets = client.search_tweet('query', 'Latest')
 for tweet in tweets:
     print(tweet)
 # Search more tweets
-more_tweets = tweets.next
+more_tweets = tweets.next()
 
 ###########################################
 
@@ -30,7 +30,7 @@ users = client.search_user('query')
 for user in users:
     print(user)
 # Search more users
-more_users = users.next
+more_users = users.next()
 
 ###########################################
 
@@ -57,7 +57,7 @@ user_tweets = user.get_tweets('Tweets')
 for tweet in tweets:
     print(tweet)
 # Get more tweets
-more_user_tweets = user_tweets.next
+more_user_tweets = user_tweets.next()
 
 ###########################################
 
@@ -70,7 +70,7 @@ messages = user.get_dm_history()
 for message in messages:
     print(message)
 # Get more messages
-more_messages = messages.next
+more_messages = messages.next()
 
 ###########################################
 

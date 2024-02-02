@@ -151,7 +151,7 @@ class User:
         ...
         ...
 
-        >>> more_tweets = tweets.next  # Retrieve more tweets
+        >>> more_tweets = tweets.next()  # Retrieve more tweets
         >>> for tweet in more_tweets:
         ...     print(tweet)
         <Tweet id="...">
@@ -353,7 +353,7 @@ class User:
         ...
         ...
 
-        >>> more_messages = messages.next  # Retrieve more messages
+        >>> more_messages = messages.next()  # Retrieve more messages
         >>> for message in more_messages:
         >>>     print(message)
         <Message id="...">

@@ -229,8 +229,10 @@ class Client:
         self._user_id = find_dict(response, 'id_str')[0]
         return response
 
-    @property
     def user_id(self) -> str:
+        """
+        Retrieves the user ID associated with the authenticated account.
+        """
         if self._user_id is not None:
             return self._user_id
         response = self.http.get(
@@ -241,9 +243,11 @@ class Client:
         self._user_id = user_id
         return user_id
 
-    @property
     def user(self) -> User:
-        return self.get_user_by_id(self.user_id)
+        """
+        Retrieve detailed information about the authenticated user.
+        """
+        return self.get_user_by_id(self.user_id())
 
     def save_cookies(self, path: str) -> None:
         """
@@ -356,7 +360,7 @@ class Client:
         ...
         ...
 
-        >>> more_tweets = tweets.next  # Retrieve more tweets
+        >>> more_tweets = tweets.next()  # Retrieve more tweets
         >>> for tweet in more_tweets:
         ...     print(tweet)
         <Tweet id="...">
@@ -432,7 +436,7 @@ class Client:
         ...
         ...
 
-        >>> more_results = result.next  # Retrieve more search results
+        >>> more_results = result.next()  # Retrieve more search results
         >>> for user in more_results:
         ...     print(user)
         <User id="...">
@@ -886,7 +890,7 @@ class Client:
         ...
         ...
 
-        >>> more_tweets = tweets.next  # Retrieve more tweets
+        >>> more_tweets = tweets.next()  # Retrieve more tweets
         >>> for tweet in more_tweets:
         ...     print(tweet)
         <Tweet id="...">
@@ -990,7 +994,7 @@ class Client:
         <Tweet id="...">
         ...
         ...
-        >>> more_tweets = tweets.next # Retrieve more tweets
+        >>> more_tweets = tweets.next() # Retrieve more tweets
         >>> for tweet in more_tweets:
         ...     print(tweet)
         <Tweet id="...">
@@ -1600,7 +1604,7 @@ class Client:
         """
         data = {
             'cards_platform': 'Web-12',
-            'conversation_id': f'{user_id}-{self.user_id}',
+            'conversation_id': f'{user_id}-{self.user_id()}',
             'dm_users': False,
             'include_cards': 1,
             'include_quote_count': True,
@@ -1691,7 +1695,7 @@ class Client:
         ...
         ...
 
-        >>> more_messages = messages.next  # Retrieve more messages
+        >>> more_messages = messages.next()  # Retrieve more messages
         >>> for message in more_messages:
         >>>     print(message)
         <Message id="...">
@@ -1706,7 +1710,7 @@ class Client:
             params['max_id'] = max_id
 
         response = self.http.get(
-            Endpoint.CONVERSASION.format(f'{user_id}-{self.user_id}'),
+            Endpoint.CONVERSASION.format(f'{user_id}-{self.user_id()}'),
             params=params,
             headers=self._base_headers
         ).json()

@@ -64,7 +64,7 @@ class Message:
         --------
         Client.send_dm
         """
-        user_id = self._client.user_id
+        user_id = self._client.user_id()
         send_to = (
             self.recipient_id
             if user_id == self.sender_id else
