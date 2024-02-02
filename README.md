@@ -12,7 +12,7 @@ The library uses an unofficial API and therefore does **not require an API key**
 ### Completely Free
 The service is entirely free to use.
 ### Both Synchronous and Asynchronous Support
-Whether you prefer synchronous or asynchronous programming,
+Whether you prefer **synchronous** or **asynchronous** programming,
 Twikit supports both, providing flexibility for different use cases.
 
 ## Functionality
