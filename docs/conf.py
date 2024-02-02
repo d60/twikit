@@ -40,3 +40,4 @@ html_static_path = ['_static']
 # https://www.sphinx-doc.org/en/master/usage/extensions/todo.html#configuration
 
 todo_include_todos = True
+html_theme = 'sphinx_rtd_theme'
