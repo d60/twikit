@@ -30,3 +30,4 @@ sphinx:
 python:
   install:
     - requirements: "docs/requirements.txt"
+    setup_py_install: true
