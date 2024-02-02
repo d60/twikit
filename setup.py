@@ -10,6 +10,5 @@ setup(
     description='Twitter API wrapper for python with **no API key required**.',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    license='MIT',
-    url='https://github.com/d60/twikit'
+    license='MIT'
 )
