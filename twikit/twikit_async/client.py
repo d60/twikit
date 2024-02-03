@@ -945,6 +945,7 @@ class Client:
         >>> user_id = '...'
 
         If you only have the screen name, you can get the user id as follows:
+
         >>> screen_name = 'example_user'
         >>> user = await client.get_user_by_screen_name(screen_name)
         >>> user_id = user.id
