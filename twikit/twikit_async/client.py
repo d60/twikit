@@ -725,6 +725,7 @@ class Client:
         Examples
         --------
         Create a tweet with media:
+
         >>> scheduled_time = int(time.time()) + 3600  # One hour from now
         >>> tweet_text = 'Example text'
         >>> media_ids = [
