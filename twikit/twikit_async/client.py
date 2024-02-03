@@ -7,21 +7,21 @@ from typing import Literal
 
 from httpx import Response
 
-from .http import HTTPClient
-from .trend import Trend
-from .tweet import Tweet
-from .user import User
-from .utils import (
+from ..utils import (
     FEATURES,
     TOKEN,
     USER_FEATURES,
     Endpoint,
-    Result,
     find_dict,
     get_query_id,
     urlencode
 )
+from .http import HTTPClient
 from .message import Message
+from .trend import Trend
+from .tweet import Tweet
+from .user import User
+from .utils import Result
 
 
 class Client:
@@ -698,6 +698,64 @@ class Client:
         tweet_info = find_dict(response, 'result')[0]
         user_info = tweet_info['core']['user_results']['result']
         return Tweet(self, tweet_info, User(self, user_info))
+
+    async def create_scheduled_tweet(
+        self,
+        scheduled_at: int,
+        text: str = '',
+        media_ids: list[str] | None = None,
+    ) -> str:
+        """
+        Schedules a tweet to be posted at a specified timestamp.
+
+        Parameters
+        ----------
+        scheduled_at : int
+            The timestamp when the tweet should be scheduled for posting.
+        text : str, default=''
+            The text content of the tweet, by default an empty string.
+        media_ids : list[str], default=None
+            A list of media IDs to be attached to the tweet, by default None.
+
+        Returns
+        -------
+        str
+            The ID of the scheduled tweet.
+
+        Examples
+        --------
+        Create a tweet with media:
+        >>> scheduled_time = int(time.time()) + 3600  # One hour from now
+        >>> tweet_text = 'Example text'
+        >>> media_ids = [
+        ...     await client.upload_media('image1.png', 0),
+        ...     await client.upload_media('image1.png', 1)
+        ... ]
+        >>> await client.create_scheduled_tweet(
+        ...     scheduled_time
+        ...     tweet_text,
+        ...     media_ids=media_ids
+        ... )
+        """
+        variables = {
+            'post_tweet_request': {
+            'auto_populate_reply_metadata': False,
+            'status': text,
+            'exclude_reply_user_ids': [],
+            'media_ids': media_ids
+            },
+            'execute_at': scheduled_at
+        }
+        data = {
+            'variables': variables,
+            'queryId': get_query_id(Endpoint.CREATE_SCHEDULED_TWEET),
+        }
+        response = (await self.http.post(
+            Endpoint.CREATE_SCHEDULED_TWEET,
+            data=json.dumps(data),
+            headers=self._base_headers,
+        )).json()
+        return response['data']['tweet']['rest_id']
 
     async def delete_tweet(self, tweet_id: str) -> Response:
         """Deletes a tweet.

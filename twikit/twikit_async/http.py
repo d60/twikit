@@ -1,6 +1,6 @@
 import httpx
 
-from .errors import (
+from ..errors import (
     TwitterException,
     BadRequest,
     Unauthorized,

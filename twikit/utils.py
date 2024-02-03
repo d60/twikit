@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable, Generic, Iterator, TypeVar
 from urllib import parse
 
+# This token is common to all accounts and does not need to be changed.
 TOKEN = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'
 
 FEATURES = {
@@ -83,6 +84,7 @@ class Endpoint:
     DELETE_DM = 'https://twitter.com/i/api/graphql/BJ6DtxA2llfjnRoRjaiIiw/DMMessageDeleteMutation'
     INBOX_INITIAL_STATE = 'https://twitter.com/i/api/1.1/dm/inbox_initial_state.json'
     CONVERSASION = 'https://twitter.com/i/api/1.1/dm/conversation/{}.json'
+    CREATE_SCHEDULED_TWEET = 'https://twitter.com/i/api/graphql/LCVzRQGxOaGnOnYH01NQXg/CreateScheduledTweet'
 
 T = TypeVar('T')
 
