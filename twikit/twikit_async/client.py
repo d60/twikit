@@ -1015,8 +1015,19 @@ class Client:
 
         results = []
         for item in items:
-            if tweet_type != 'Media' and 'itemContent' not in item['content']:
+            if (
+                tweet_type not in {'Media', 'Replies'}
+                and 'itemContent' not in item['content']
+            ):
                 continue
+
+            if tweet_type == 'Replies':
+                entry_id = item['entryId']
+                if not entry_id.startswith(('profile-conversation', 'tweet')):
+                    continue
+                if entry_id.startswith('profile-conversation'):
+                    item = find_dict(item, 'items')[0]
+
             tweet_info = find_dict(item, 'result')[0]
             if tweet_type == 'Likes':
                 user_info = tweet_info['core']['user_results']['result']
