@@ -1385,7 +1385,10 @@ class Client:
             headers=self._base_headers
         )).json()
 
-        items = find_dict(response, 'entries')[0]
+        items_ = find_dict(response, 'entries')
+        if not items_:
+            return Result([])
+        items = items_[0]
         next_cursor = items[-1]['content']['value']
 
         results = []
