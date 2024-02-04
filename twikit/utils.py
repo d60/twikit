@@ -85,6 +85,8 @@ class Endpoint:
     INBOX_INITIAL_STATE = 'https://twitter.com/i/api/1.1/dm/inbox_initial_state.json'
     CONVERSASION = 'https://twitter.com/i/api/1.1/dm/conversation/{}.json'
     CREATE_SCHEDULED_TWEET = 'https://twitter.com/i/api/graphql/LCVzRQGxOaGnOnYH01NQXg/CreateScheduledTweet'
+    BOOKMARKS = 'https://twitter.com/i/api/graphql/qToeLeMs43Q8cr7tRYXmaQ/Bookmarks'
+    BOOKMARKS_ALL_DELETE = 'https://twitter.com/i/api/graphql/skiACZKC1GDYli-M8RzEPQ/BookmarksAllDelete'
 
 T = TypeVar('T')
 

@@ -1332,6 +1332,103 @@ class Client:
         )
         return response
 
+    async def get_bookmarks(
+        self, count: int = 20, cursor: str | None = None
+    ) -> Result[Tweet]:
+        """
+        Retrieves bookmarks from the authenticated user's Twitter account.
+
+        Parameters
+        ----------
+        count : int, default=20
+            The number of bookmarks to retrieve (default is 20).
+        cursor : str, default=None
+            A cursor to paginate through the bookmarks (default is None).
+
+        Returns
+        -------
+        Result[Tweet]
+            A Result object containing a list of Tweet objects
+            representing bookmarks.
+
+        Example
+        -------
+        >>> bookmarks = await client.get_bookmarks()
+        >>> for bookmark in bookmarks:
+        ...     print(bookmark)
+        <Tweet id="...">
+        <Tweet id="...">
+
+        >>> # To retrieve more bookmarks
+        >>> more_bookmarks = await bookmarks.next()
+        >>> for bookmark in more_bookmarks:
+        ...     print(bookmark)
+        <Tweet id="...">
+        <Tweet id="...">
+        """
+        variables = {
+            'count': count,
+            'includePromotedContent': True
+        }
+        if cursor is not None:
+            variables['cursor'] = cursor
+        features = FEATURES | {
+            'graphql_timeline_v2_bookmark_timeline': True
+        }
+        params = {
+            'variables': json.dumps(variables),
+            'features': json.dumps(features)
+        }
+        response = (await self.http.get(
+            Endpoint.BOOKMARKS,
+            params=params,
+            headers=self._base_headers
+        )).json()
+
+        items = find_dict(response, 'entries')[0]
+        next_cursor = items[-1]['content']['value']
+
+        results = []
+        for item in items:
+            if not item['entryId'].startswith('tweet'):
+                continue
+            tweet_info = find_dict(item, 'tweet_results')[0]['result']
+            user_info = tweet_info['core']['user_results']['result']
+            results.append(Tweet(self, tweet_info, User(self, user_info)))
+
+        async def _fetch_next_result():
+            return await self.get_bookmarks(count, next_cursor)
+
+        return Result(
+            results,
+            _fetch_next_result,
+            next_cursor
+        )
+
+    async def delete_all_bookmarks(self) -> Response:
+        """
+        Deleted all bookmarks.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        Examples
+        --------
+        >>> await client.delete_all_bookmarks()
+        """
+        data = {
+            'variables': {},
+            'queryId': get_query_id(Endpoint.BOOKMARKS_ALL_DELETE)
+        }
+        response = await self.http.post(
+            Endpoint.BOOKMARKS_ALL_DELETE,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )
+        return response
+
     async def follow_user(self, user_id: str) -> Response:
         """
         Follows a user.

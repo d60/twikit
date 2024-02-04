@@ -67,4 +67,4 @@ This project is currently in beta, and we would love to hear your thoughts and s
 If you have any features you'd like to see added or encounter any issues,
 please let us know in the [issues](https://github.com/d60/twikit/issues) section.
 
-Additionally, if you find this library useful, spreading the word by starring it would be greatly appreciated and serve as motivation for further development. Thank you!
+Additionally, if you find this library useful, I would appreciate it if you would star this repository or share this library! Thank you very much!
