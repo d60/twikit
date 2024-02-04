@@ -600,7 +600,9 @@ class Client:
         text: str = '',
         media_ids: list[str] | None = None,
         poll_uri: str | None = None,
-        reply_to: str | None = None
+        reply_to: str | None = None,
+        conversation_control: Literal[
+            'followers', 'verified', 'mentioned'] | None = None
     ) -> Tweet:
         """
         Creates a new tweet on Twitter with the specified
@@ -618,6 +620,11 @@ class Client:
             Poll URIs can be obtained by using the `create_poll` method.
         reply_to : str, default=None
             The ID of the tweet to which this tweet is a reply.
+        conversation_control : {'followers', 'verified', 'mentioned'}
+            The type of conversation control for the tweet:
+            - 'followers': Limits replies to followers only.
+            - 'verified': Limits replies to verified accounts only.
+            - 'mentioned': Limits replies to mentioned accounts only.
 
         Returns
         -------
@@ -675,6 +682,17 @@ class Client:
             variables['reply'] = {
                 'in_reply_to_tweet_id': reply_to,
                 'exclude_reply_user_ids': []
+            }
+
+        if conversation_control is not None:
+            conversation_control = conversation_control.lower()
+            limit_mode = {
+                'followers': 'Community',
+                'verified': 'Verified',
+                'mentioned': 'ByInvitation'
+            }[conversation_control]
+            variables['conversation_control'] = {
+                'mode': limit_mode
             }
 
         data = {
