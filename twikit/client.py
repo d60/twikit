@@ -997,6 +997,9 @@ class Client:
             params=params,
             headers=self._base_headers
         ).json()
+        # from jlog import log
+        # log(response)
+
         instructions = find_dict(response, 'instructions')[0]
         items = instructions[-1]['entries']
         if len(items) <= 2:
@@ -1007,6 +1010,7 @@ class Client:
                 items = items[0]['content']['items']
             else:
                 items = instructions[0]['moduleItems']
+
         if tweet_type != 'Likes':
             user_info = find_dict(items, 'user_results')[0]['result']
             user = User(self, user_info)
@@ -1019,6 +1023,10 @@ class Client:
             ):
                 continue
 
+            if tweet_type == 'Tweets':
+                if not item['entryId'].startswith('tweet'):
+                    continue
+
             if tweet_type == 'Replies':
                 entry_id = item['entryId']
                 if not entry_id.startswith(('profile-conversation', 'tweet')):
@@ -1030,6 +1038,7 @@ class Client:
             if tweet_type == 'Likes':
                 user_info = tweet_info['core']['user_results']['result']
                 user = User(self, user_info)
+
             results.append(Tweet(self, tweet_info, user))
 
         return Result(
