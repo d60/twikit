@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Generic, Iterator, TypeVar
+from typing import (
+    Any, Callable, Generic, Iterator,
+    Literal, TypedDict, TypeVar
+)
 from urllib import parse
 
 # This token is common to all accounts and does not need to be changed.
@@ -168,3 +171,150 @@ def urlencode(data: dict[str, Any]) -> str:
     data_encoded = parse.urlencode(data)
     # replace single quote to double quote.
     return data_encoded.replace('%27', '%22')
+
+
+FILTERS = Literal[
+    'media',
+    'retweets',
+    'native_video',
+    'periscope',
+    'vine',
+    'images',
+    'twimg',
+    'links'
+]
+
+
+class SearchOptions(TypedDict):
+    exact_phrases: list[str]
+    or_keywords: list[str]
+    exclude_keywords: list[str]
+    hashtags: list[str]
+    from_user: str
+    to_user: str
+    mentioned_users: list[str]
+    filters: list[FILTERS]
+    exclude_filters: list[FILTERS]
+    urls: list[str]
+    since: str
+    until: str
+    positive: bool
+    negative: bool
+    question: bool
+
+
+def build_query(text: str, options: SearchOptions) -> str:
+    """
+    Builds a search query based on the given text and search options.
+
+    Parameters
+    ----------
+    text : str
+        The base text of the search query.
+    options : SearchOptions
+        A dictionary containing various search options.
+        - exact_phrases: list[str]
+            List of exact phrases to include in the search query.
+        - or_keywords: list[str]
+            List of keywords where tweets must contain at least
+            one of these keywords.
+        - exclude_keywords: list[str]
+            A list of keywords that the tweet must contain these keywords.
+        - hashtags: list[str]
+            List of hashtags to include in the search query.
+        - from_user: str
+            Specify a username. Only tweets from this user will
+            be includedin the search.
+        - to_user: str
+            Specify a username. Only tweets sent to this user will
+            be included in the search.
+        - mentioned_users: list[str]
+            List of usernames. Only tweets mentioning these users will
+            be included in the search.
+        - filters: list[FILTERS]
+            List of tweet filters to include in the search query.
+        - exclude_filters: list[FILTERS]
+            List of tweet filters to exclude from the search query.
+        - urls: list[str]
+            List of URLs. Only tweets containing these URLs will be
+            included in the search.
+        - since: str
+            Specify a date (formatted as 'YYYY-MM-DD'). Only tweets since
+            this date will be included in the search.
+        - until: str
+            Specify a date (formatted as 'YYYY-MM-DD'). Only tweets until
+            this date will be included in the search.
+        - positive: bool
+            Include positive sentiment in the search.
+        - negative: bool
+            Include negative sentiment in the search.
+        - question: bool
+            Search for tweets in questionable form.
+
+        https://developer.twitter.com/en/docs/twitter-api/v1/rules-and-filtering/search-operators
+
+    Returns
+    -------
+    str
+        The constructed Twitter search query.
+    """
+    if exact_phrases := options.get('exact_phrases'):
+        text += ' ' + ' '.join(
+            [f'"{i}"' for i in exact_phrases]
+        )
+
+    if or_keywords := options.get('or_keywords'):
+        text += ' ' + ' OR '.join(or_keywords)
+
+    if exclude_keywords := options.get('exclude_keywords'):
+        text += ' ' + ' '.join(
+            [f'-"{i}"' for i in exclude_keywords]
+        )
+
+    if hashtags := options.get('hashtags'):
+        text += ' ' + ' '.join(
+            [f'#{i}' for i in hashtags]
+        )
+
+    if from_user := options.get('from_user'):
+        text +=f' from:{from_user}'
+
+    if to_user := options.get('to_user'):
+        text += f' to:{to_user}'
+
+    if mentioned_users := options.get('mentioned_users'):
+        text += ' ' + ' '.join(
+            [f'@{i}' for i in mentioned_users]
+        )
+
+    if filters := options.get('filters'):
+        text += ' ' + ' '.join(
+            [f'filter:{i}' for i in filters]
+        )
+
+    if exclude_filters := options.get('exclude_filters'):
+        text += ' ' + ' '.join(
+            [f'-filter:{i}' for i in exclude_filters]
+        )
+
+    if urls := options.get('urls'):
+        text += ' ' + ' '.join(
+            [f'url:{i}' for i in urls]
+        )
+
+    if since := options.get('since'):
+        text += f' since:{since}'
+
+    if until := options.get('until'):
+        text += f' until:{until}'
+
+    if options.get('positive') == True:
+        text += f' :)'
+
+    if options.get('negative') == True:
+        text += f' :('
+
+    if options.get('question') == True:
+        text += f' ?'
+
+    return text
