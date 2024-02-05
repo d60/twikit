@@ -5,6 +5,7 @@ import json
 import os
 from typing import Literal
 
+from fake_useragent import UserAgent
 from httpx import Response
 
 from .http import HTTPClient
@@ -44,6 +45,7 @@ class Client:
         self.language = language
         self.http = HTTPClient(**kwargs)
         self._user_id = None
+        self._user_agent = UserAgent().random
 
     def _get_guest_token(self) -> str:
         headers = self._base_headers
@@ -70,21 +72,7 @@ class Client:
             'X-Twitter-Active-User': 'yes',
             'X-Twitter-Client-Language': self.language,
             'Referer': 'https://twitter.com/',
-            'Sec-Ch-Ua-Platform': "Windows",
-            'Sec-Fetch-Dest': 'empty',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Site': 'same-origin',
-            'User-Agent': (
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                'AppleWebKit/537.36 (KHTML, like Gecko) '
-                'Chrome/120.0.0.0 Safari/537.36'
-            ),
-            'Sec-Ch-Ua': (
-                '"Not_A Brand";v="8", '
-                '"Chromium";v="120", '
-                '"Google Chrome";v="120"'
-            ),
-            'Sec-Ch-Ua-Mobile': '?0'
+            'User-Agent': self._user_agent,
         }
 
         csrf_token = self._get_csrf_token()
