@@ -1027,6 +1027,10 @@ class Client:
             ):
                 continue
 
+            if tweet_type == 'Tweets':
+                if not item['entryId'].startswith('tweet'):
+                    continue
+
             if tweet_type == 'Replies':
                 entry_id = item['entryId']
                 if not entry_id.startswith(('profile-conversation', 'tweet')):
