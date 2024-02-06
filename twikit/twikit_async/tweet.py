@@ -15,6 +15,8 @@ class Tweet:
     ----------
     id : str
         The unique identifier of the tweet.
+    created_at : str
+        The date and time when the tweet was created.
     user: User
         Author of the tweet.
     text : str
@@ -59,6 +61,7 @@ class Tweet:
         self.id: str = data['rest_id']
 
         legacy = data['legacy']
+        self.created_at: str = legacy['created_at']
         self.text: str = legacy['full_text']
         self.lang: str = legacy['lang']
         self.is_quote_status: bool = legacy['is_quote_status']
