@@ -1,11 +1,16 @@
+import re
+
 from setuptools import setup
 
 with open('README.md') as f:
     long_description = f.read()
 
+with open('./twikit/__init__.py') as f:
+    version = re.findall(r"__version__ = '(.+)'", f.read())[0]
+
 setup(
     name='twikit',
-    version='1.1.8',
+    version=version,
     install_requires=['httpx', 'fake_useragent'],
     description='Twitter API wrapper for python with **no API key required**.',
     long_description=long_description,

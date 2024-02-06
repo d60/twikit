@@ -23,4 +23,4 @@ from .tweet import Tweet
 from .user import User
 from .utils import build_query
 
-__version__ = '1.1.8'
+__version__ = '1.1.9'
