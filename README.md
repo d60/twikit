@@ -6,8 +6,7 @@ Read the documentation for more information.
 - [Documentation (English)](https://twikit.readthedocs.io/en/latest/twikit.html)
 - [Async Documentation](https://twikit.readthedocs.io/en/latest/twikit.twikit_async.html)
   
-If you have any questions, please ask on Reddit.
-- https://www.reddit.com/r/Python/comments/1aj53tt/twitter_api_wrapper_for_python_without_api_keys/
+If you have any questions, please ask on [Reddit](https://www.reddit.com/r/Python/comments/1aj53tt/twitter_api_wrapper_for_python_without_api_keys/).
 
 ## Features
 ### No API Key Required
