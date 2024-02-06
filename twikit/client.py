@@ -997,8 +997,6 @@ class Client:
             params=params,
             headers=self._base_headers
         ).json()
-        # from jlog import log
-        # log(response)
 
         instructions = find_dict(response, 'instructions')[0]
         items = instructions[-1]['entries']
