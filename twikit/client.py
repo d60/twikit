@@ -1121,7 +1121,7 @@ class Client:
                 items = instructions[0]['moduleItems']
 
         if tweet_type != 'Likes':
-            user_info = find_dict(items, 'user_results')[0]['result']
+            user_info = find_dict(items[0], 'user_results')[-1]['result']
             user = User(self, user_info)
 
         results = []
