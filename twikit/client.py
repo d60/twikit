@@ -1141,7 +1141,7 @@ class Client:
                 if not entry_id.startswith(('profile-conversation', 'tweet')):
                     continue
                 if entry_id.startswith('profile-conversation'):
-                    item = find_dict(item, 'items')[0]
+                    item = find_dict(item, 'items')[0][-1]
 
             tweet_info = find_dict(item, 'result')[0]
             if tweet_type == 'Likes':
