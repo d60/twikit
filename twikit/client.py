@@ -907,8 +907,119 @@ class Client:
             headers=self._base_headers
         ).json()
         tweet_info = find_dict(response, 'result')[0]
+        if 'tweet' in tweet_info:
+            tweet_info = tweet_info['tweet']
         user_info = tweet_info['core']['user_results']['result']
         return Tweet(self, tweet_info, User(self, user_info))
+
+    def _get_tweet_engagements(
+        self, tweet_id: str, count: int, cursor: str, endpoint: str,
+    ) -> Result[User]:
+        """
+        Base function to get tweet engagements.
+        """
+        variables = {
+            'tweetId': tweet_id,
+            'count': count,
+            'includePromotedContent': True
+        }
+        if cursor is not None:
+            variables['cursor'] = cursor
+        params = {
+            'variables': json.dumps(variables),
+            'features': json.dumps(FEATURES)
+        }
+        response = self.http.get(
+            endpoint,
+            params=params,
+            headers=self._base_headers
+        ).json()
+        items = find_dict(response, 'entries')[0]
+        next_cursor = items[-1]['content']['value']
+
+        results = []
+        for item in items:
+            if not item['entryId'].startswith('user'):
+                continue
+            user_info = find_dict(item, 'result')[0]
+            results.append(User(self, user_info))
+
+        return Result(
+            results,
+            lambda:self._get_tweet_engagements(
+                tweet_id, count, next_cursor, endpoint),
+            next_cursor
+        )
+
+    def get_retweeters(
+        self, tweet_id: str, count: int = 40, cursor: str | None = None
+    ) -> Result[User]:
+        """
+        Retrieve users who retweeted a specific tweet.
+
+        Parameters
+        ----------
+        tweet_id : str
+            The ID of the tweet.
+        count : int, default=40
+            The maximum number of users to retrieve.
+        cursor : str, default=None
+            A string indicating the position of the cursor for pagination.
+
+        Returns
+        -------
+        Result[User]
+            A list of users who retweeted the tweet.
+
+        Examples
+        --------
+        >>> tweet_id = '...'
+        >>> retweeters = client.get_retweeters(tweet_id)
+        >>> print(retweeters)
+        [<User id="...">, <User id="...">, ..., <User id="...">]
+
+        >>> more_retweeters = retweeters.next()  # Retrieve more retweeters.
+        >>> print(more_retweeters)
+        [<User id="...">, <User id="...">, ..., <User id="...">]
+        """
+        return self._get_tweet_engagements(
+            tweet_id, count, cursor, Endpoint.RETWEETERS
+        )
+
+    def get_favoriters(
+        self, tweet_id: str, count: int = 40, cursor: str | None = None
+    ) -> Result[User]:
+        """
+        Retrieve users who favorited a specific tweet.
+
+        Parameters
+        ----------
+        tweet_id : str
+            The ID of the tweet.
+        count : int, default=40
+            The maximum number of users to retrieve.
+        cursor : str, default=None
+            A string indicating the position of the cursor for pagination.
+
+        Returns
+        -------
+        Result[User]
+            A list of users who favorited the tweet.
+
+        Examples
+        --------
+        >>> tweet_id = '...'
+        >>> favoriters = client.get_favoriters(tweet_id)
+        >>> print(favoriters)
+        [<User id="...">, <User id="...">, ..., <User id="...">]
+
+        >>> more_favoriters = favoriters.next()  # Retrieve more favoriters.
+        >>> print(more_favoriters)
+        [<User id="...">, <User id="...">, ..., <User id="...">]
+        """
+        return self._get_tweet_engagements(
+            tweet_id, count, cursor, Endpoint.FAVORITERS
+        )
 
     def get_user_tweets(
         self,

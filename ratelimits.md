@@ -168,6 +168,16 @@ Rate Limits
             <td>900</td>
             <td>get_dm_history</td>
         </tr>
+        <tr>
+            <td>Favoriters</td>
+            <td>500</td>
+            <td>get_favoriters</td>
+        </tr>
+        <tr>
+            <td>Retweeters</td>
+            <td>500</td>
+            <td>get_retweeters</td>
+        </tr>
     </tbody>
 </table>
 

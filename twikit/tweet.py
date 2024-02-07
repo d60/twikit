@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from httpx import Response
 
     from .client import Client
-    from .user import User
+    from .user import Result, User
 
 
 class Tweet:
@@ -39,6 +39,8 @@ class Tweet:
         The count of favorites or likes for the tweet.
     favorited : bool
         Indicates if the tweet is favorited.
+    view_count: int
+        The count of views.
     retweet_count : int
         The count of retweets for the tweet.
     editable_until_msecs : int
@@ -73,6 +75,7 @@ class Tweet:
         self.reply_count: int = legacy['reply_count']
         self.favorite_count: int = legacy['favorite_count']
         self.favorited: bool = legacy['favorited']
+        self.view_count: int = data['views'].get('count')
         self.retweet_count: int = legacy['retweet_count']
         self.editable_until_msecs: int = data['edit_control'].get(
             'editable_until_msecs')
@@ -224,6 +227,70 @@ class Tweet:
         `Client.upload_media`
         """
         return self._client.create_tweet(text, media_ids, reply_to=self.id)
+
+    def get_retweeters(
+        self, count: str = 40, cursor: str | None = None
+    ) -> Result[User]:
+        """
+        Retrieve users who retweeted the tweet.
+
+        Parameters
+        ----------
+        count : int, default=40
+            The maximum number of users to retrieve.
+        cursor : str, default=None
+            A string indicating the position of the cursor for pagination.
+
+        Returns
+        -------
+        Result[User]
+            A list of users who retweeted the tweet.
+
+        Examples
+        --------
+        >>> tweet_id = '...'
+        >>> retweeters = tweet.get_retweeters()
+        >>> print(retweeters)
+        [<User id="...">, <User id="...">, ..., <User id="...">]
+
+        >>> more_retweeters = retweeters.next()  # Retrieve more retweeters.
+        >>> print(more_retweeters)
+        [<User id="...">, <User id="...">, ..., <User id="...">]
+        """
+        return self._client.get_retweeters(self.id, count, cursor)
+
+    def get_favoriters(
+        self, count: str = 40, cursor: str | None = None
+    ) -> Result[User]:
+        """
+        Retrieve users who favorited a specific tweet.
+
+        Parameters
+        ----------
+        tweet_id : str
+            The ID of the tweet.
+        count : int, default=40
+            The maximum number of users to retrieve.
+        cursor : str, default=None
+            A string indicating the position of the cursor for pagination.
+
+        Returns
+        -------
+        Result[User]
+            A list of users who favorited the tweet.
+
+        Examples
+        --------
+        >>> tweet_id = '...'
+        >>> favoriters = tweet.get_favoriters()
+        >>> print(favoriters)
+        [<User id="...">, <User id="...">, ..., <User id="...">]
+
+        >>> more_favoriters = favoriters.next()  # Retrieve more favoriters.
+        >>> print(more_favoriters)
+        [<User id="...">, <User id="...">, ..., <User id="...">]
+        """
+        return self._client.get_favoriters(self.id, count, cursor)
 
     def __repr__(self) -> str:
         return f'<Tweet id="{self.id}">'
