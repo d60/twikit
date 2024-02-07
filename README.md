@@ -62,11 +62,11 @@ client.create_tweet(
 ```
 
 For more examples, see [example.py](https://github.com/d60/twikit/blob/main/example.py).
-See [example_async.py](https://github.com/d60/twikit/blob/main/example_async.py) for an example of Async.
+See [example_async.py](https://github.com/d60/twikit/blob/main/example_async.py) for examples of Async.
 
 ## Contributing
-This project is currently in beta, and we would love to hear your thoughts and suggestions.
+This project is currently in beta, and I would like to hear your thoughts and suggestions.
 If you have any features you'd like to see added or encounter any issues,
-please let us know in the [issues](https://github.com/d60/twikit/issues) section.
+please let me know in the [issues](https://github.com/d60/twikit/issues) section.
 
 Additionally, if you find this library useful, I would appreciate it if you would star this repository or share this library! Thank you very much!
