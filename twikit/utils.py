@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 from typing import (
-    Any, Callable, Generic, Iterator,
-    Literal, TypedDict, TypeVar
+    Any,
+    Callable,
+    Generic,
+    Iterator,
+    Literal,
+    TypedDict,
+    TypeVar
 )
 from urllib import parse
 
@@ -92,6 +97,8 @@ class Endpoint:
     BOOKMARKS_ALL_DELETE = 'https://twitter.com/i/api/graphql/skiACZKC1GDYli-M8RzEPQ/BookmarksAllDelete'
     RETWEETERS = 'https://twitter.com/i/api/graphql/X-XEqG5qHQSAwmvy00xfyQ/Retweeters'
     FAVORITERS = 'https://twitter.com/i/api/graphql/LLkw5EcVutJL6y-2gkz22A/Favoriters'
+    ADD_MEMBER_TO_GROUP = 'https://twitter.com/i/api/graphql/oBwyQ0_xVbAQ8FAyG0pCRA/AddParticipantsMutation'
+    CHANGE_GROUP_NAME = 'https://twitter.com/i/api/1.1/dm/conversation/{}/update_name.json'
 
 T = TypeVar('T')
 

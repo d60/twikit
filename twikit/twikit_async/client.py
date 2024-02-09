@@ -17,6 +17,7 @@ from ..utils import (
     get_query_id,
     urlencode
 )
+from .group import Group, GroupMessage
 from .http import HTTPClient
 from .message import Message
 from .trend import Trend
@@ -1877,6 +1878,56 @@ class Client:
             Endpoint.SUBSCRIPTIONS
         )
 
+    async def _send_dm(
+        self,
+        conversation_id: str,
+        text: str,
+        media_id: str | None,
+        reply_to: str | None
+    ) -> dict:
+        """
+        Base function to send dm.
+        """
+        data = {
+            'cards_platform': 'Web-12',
+            'conversation_id': conversation_id,
+            'dm_users': False,
+            'include_cards': 1,
+            'include_quote_count': True,
+            'recipient_ids': False,
+            'text': text
+        }
+        if media_id is not None:
+            data['media_id'] = media_id
+        if reply_to is not None:
+            data['reply_to_dm_id'] = reply_to
+
+        return (await self.http.post(
+            Endpoint.SEND_DM,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )).json()
+
+    async def _get_dm_history(
+        self,
+        conversation_id: str,
+        max_id: str | None = None
+    ) -> dict:
+        """
+        Base function to get dm history.
+        """
+        params = {
+            'context': 'FETCH_DM_CONVERSATION_HISTORY'
+        }
+        if max_id is not None:
+            params['max_id'] = max_id
+
+        return (await self.http.get(
+            Endpoint.CONVERSASION.format(conversation_id),
+            params=params,
+            headers=self._base_headers
+        )).json()
+
     async def send_dm(
         self,
         user_id: str,
@@ -1909,7 +1960,7 @@ class Client:
         --------
         >>> # send DM with media
         >>> user_id = '000000000'
-        >>> media_id = client.upload_media('image.png', 0)
+        >>> media_id = await client.upload_media('image.png', 0)
         >>> message = await client.send_dm(user_id, 'text', media_id)
         >>> print(message)
         <Message id='...'>
@@ -1919,25 +1970,9 @@ class Client:
         .upload_media
         .delete_dm
         """
-        data = {
-            'cards_platform': 'Web-12',
-            'conversation_id': f'{user_id}-{await self.user_id()}',
-            'dm_users': False,
-            'include_cards': 1,
-            'include_quote_count': True,
-            'recipient_ids': False,
-            'text': text
-        }
-        if media_id is not None:
-            data['media_id'] = media_id
-        if reply_to is not None:
-            data['reply_to_dm_id'] = reply_to
-
-        response = (await self.http.post(
-            Endpoint.SEND_DM,
-            data=json.dumps(data),
-            headers=self._base_headers
-        )).json()
+        response = await self._send_dm(
+            f'{user_id}-{await self.user_id()}', text, media_id, reply_to
+        )
 
         message_data = find_dict(response, 'message_data')[0]
         users = list(response['users'].values())
@@ -2020,17 +2055,9 @@ class Client:
         ...
         ...
         """
-        params = {
-            'context': 'FETCH_DM_CONVERSATION_HISTORY'
-        }
-        if max_id is not None:
-            params['max_id'] = max_id
-
-        response = (await self.http.get(
-            Endpoint.CONVERSASION.format(f'{user_id}-{await self.user_id()}'),
-            params=params,
-            headers=self._base_headers
-        )).json()
+        response = await self._get_dm_history(
+            f'{user_id}-{self.user_id()}', max_id
+        )
 
         status = response['conversation_timeline']['status']
         if status == 'AT_END':
@@ -2055,3 +2082,198 @@ class Client:
             messages,
             _fetch_next_result
         )
+
+    async def send_dm_to_group(
+        self,
+        group_id: str,
+        text: str,
+        media_id: str | None = None,
+        reply_to: str | None = None
+    ) -> GroupMessage:
+        """
+        Sends a message to a group.
+
+        Parameters
+        ----------
+        group_id : str
+            The ID of the group in which the direct message will be sent.
+        text : str
+            The text content of the direct message.
+        media_id : str, default=None
+            The media ID associated with any media content
+            to be included in the message.
+            Media ID can be received by using the :func:`.upload_media` method.
+        reply_to : str, default=None
+            Message ID to reply to.
+
+        Returns
+        -------
+        GroupMessage
+            `GroupMessage` object containing information about
+            the message sent.
+
+        Examples
+        --------
+        >>> # send DM with media
+        >>> group_id = '000000000'
+        >>> media_id = await client.upload_media('image.png', 0)
+        >>> message = await client.send_dm_to_group(group_id, 'text', media_id)
+        >>> print(message)
+        <GroupMessage id='...'>
+
+        See Also
+        --------
+        .upload_media
+        .delete_dm
+        """
+        response = await self._send_dm(
+            group_id, text, media_id, reply_to
+        )
+
+        message_data = find_dict(response, 'message_data')[0]
+        users = list(response['users'].values())
+        return GroupMessage(
+            self,
+            message_data,
+            users[0]['id_str'],
+            group_id
+        )
+
+    async def get_group_dm_history(
+        self,
+        group_id: str,
+        max_id: str | None = None
+    ) -> Result[GroupMessage]:
+        """
+        Retrieves the DM conversation history in a group.
+
+        Parameters
+        ----------
+        group_id : str
+            The ID of the group in which the DM conversation
+            history will be retrieved.
+        max_id : str, default=None
+            If specified, retrieves messages older than the specified max_id.
+
+        Returns
+        -------
+        Result[GroupMessage]
+            A Result object containing a list of GroupMessage objects
+            representing the DM conversation history.
+
+        Examples
+        --------
+        >>> messages = await client.get_group_dm_history('0000000000')
+        >>> for message in messages:
+        >>>     print(message)
+        <GroupMessage id="...">
+        <GroupMessage id="...">
+        ...
+        ...
+
+        >>> more_messages = await messages.next()  # Retrieve more messages
+        >>> for message in more_messages:
+        >>>     print(message)
+        <GroupMessage id="...">
+        <GroupMessage id="...">
+        ...
+        ...
+        """
+        response = await self._get_dm_history(group_id, max_id)
+
+        items = response['conversation_timeline']['entries']
+        messages = []
+        for item in items:
+            if 'message' not in item:
+                continue
+            message_info = item['message']['message_data']
+            messages.append(GroupMessage(
+                self,
+                message_info,
+                message_info['sender_id'],
+                group_id
+            ))
+
+        async def _fetch_next_result():
+            return await self.get_group_dm_history(group_id, messages[-1].id)
+
+        return Result(
+            messages,
+            _fetch_next_result
+        )
+
+    async def get_group(self, group_id: str) -> Group:
+        params = {
+            'context': 'FETCH_DM_CONVERSATION_HISTORY',
+            'include_conversation_info': True,
+        }
+        response = (await self.http.get(
+            Endpoint.CONVERSASION.format(group_id),
+            params=params,
+            headers=self._base_headers
+        )).json()
+        return Group(self, group_id, response)
+
+    async def add_members_to_group(
+        self, group_id: str, user_ids: list[str]
+    ) -> Response:
+        """Adds members to a group.
+
+        Parameters
+        ----------
+        group_id : str
+            ID of the group to which the member is to be added.
+        user_ids : list[str]
+            List of IDs of users to be added.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        Examples
+        --------
+        >>> group_id = '...'
+        >>> members = ['...']
+        >>> await client.add_members_to_group(group_id, members)
+        """
+        data = {
+            'variables': {
+                'addedParticipants': user_ids,
+                'conversationId': group_id
+            },
+            'queryId': get_query_id(Endpoint.ADD_MEMBER_TO_GROUP)
+        }
+        response = await self.http.post(
+            Endpoint.ADD_MEMBER_TO_GROUP,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )
+        return response
+
+    async def change_group_name(self, group_id: str, name: str) -> Response:
+        """Changes group name
+
+        Parameters
+        ----------
+        group_id : str
+            ID of the group to be renamed.
+        name : str
+            New name.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+        """
+        data = urlencode({
+            'name': name
+        })
+        headers = self._base_headers
+        headers['content-type'] = 'application/x-www-form-urlencoded'
+        response = await self.http.post(
+            Endpoint.CHANGE_GROUP_NAME.format(group_id),
+            data=data,
+            headers=headers
+        )
+        return response

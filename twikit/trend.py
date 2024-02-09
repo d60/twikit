@@ -26,7 +26,7 @@ class Trend:
         metadata: dict = data['trendMetadata']
         self.name: str = data['name']
         self.tweets_count: int | None = metadata.get('metaDescription')
-        self.domain_context: str = metadata['domainContext']
+        self.domain_context: str = metadata.get('domainContext')
         self.grouped_trends: list[str] = [
             trend['name'] for trend in data.get('groupedTrends', [])
         ]
