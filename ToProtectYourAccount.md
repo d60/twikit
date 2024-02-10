@@ -24,6 +24,9 @@ After the second time, load the saved cookies.
 client.load_cookies('cookies.json')
 ```
 
+## Do not send too many messages.
+Twitter seems to monitor messages carefully, so it is best to refrain from excessive messaging.
+
 ## Don't tweet sensitive content.
 You should not tweet sensitive content, especially content related to sexuality, violence, politics, discrimination, or hate speech. This is because such content violates Twitter's terms and conditions and may be banned.
 
