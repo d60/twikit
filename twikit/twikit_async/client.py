@@ -1168,6 +1168,8 @@ class Client:
                     item = find_dict(item, 'items')[0][-1]
 
             tweet_info = find_dict(item, 'result')[0]
+            if tweet_info['__typename'] == 'TweetWithVisibilityResults':
+                tweet_info = tweet_info['tweet']
             if tweet_type == 'Likes':
                 user_info = tweet_info['core']['user_results']['result']
                 user = User(self, user_info)
@@ -1254,6 +1256,8 @@ class Client:
             if 'itemContent' not in item['content']:
                 continue
             tweet_info = find_dict(item, 'result')[0]
+            if tweet_info['__typename'] == 'TweetWithVisibilityResults':
+                tweet_info = tweet_info['tweet']
             user_info = tweet_info['core']['user_results']['result']
             results.append(Tweet(self, tweet_info, user_info))
 
@@ -2067,7 +2071,7 @@ class Client:
         ...
         """
         response = await self._get_dm_history(
-            f'{user_id}-{self.user_id()}', max_id
+            f'{user_id}-{await self.user_id()}', max_id
         )
 
         status = response['conversation_timeline']['status']

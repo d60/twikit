@@ -1156,8 +1156,10 @@ class Client:
                     item = find_dict(item, 'items')[0][-1]
 
             tweet_info = find_dict(item, 'result')[0]
+            if tweet_info['__typename'] == 'TweetWithVisibilityResults':
+                tweet_info = tweet_info['tweet']
             if tweet_type == 'Likes':
-                user_info = tweet_info['core']['user_results']['result']
+                user_info = find_dict(tweet_info, 'result')[0]
                 user = User(self, user_info)
 
             results.append(Tweet(self, tweet_info, user))
@@ -1239,6 +1241,8 @@ class Client:
             if 'itemContent' not in item['content']:
                 continue
             tweet_info = find_dict(item, 'result')[0]
+            if tweet_info['__typename'] == 'TweetWithVisibilityResults':
+                tweet_info = tweet_info['tweet']
             user_info = tweet_info['core']['user_results']['result']
             results.append(Tweet(self, tweet_info, user_info))
 
