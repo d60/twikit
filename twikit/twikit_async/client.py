@@ -95,7 +95,6 @@ class Client:
         """
         return self.http.client.cookies.get('ct0')
 
-
     async def login(
         self,
         *,
@@ -220,6 +219,16 @@ class Client:
         self._user_id = find_dict(response, 'id_str')[0]
         return response
 
+    async def logout(self) -> Response:
+        """
+        Logs out of the currently logged-in account.
+        """
+        response = await self.http.post(
+            Endpoint.LOGOUT,
+            headers=self._base_headers
+        )
+        return response
+
     async def user_id(self) -> str:
         """
         Retrieves the user ID associated with the authenticated account.
@@ -259,7 +268,7 @@ class Client:
         --------
         .load_cookies
         """
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             json.dump(dict(self.http.client.cookies), f)
 
     def load_cookies(self, path: str) -> None:
@@ -2203,6 +2212,19 @@ class Client:
         )
 
     async def get_group(self, group_id: str) -> Group:
+        """
+        Fetches a guild by ID.
+
+        Parameters
+        ----------
+        group_id : str
+            The ID of the group to retrieve information for.
+
+        Returns
+        -------
+        Group
+            An object representing the retrieved group.
+        """
         params = {
             'context': 'FETCH_DM_CONVERSATION_HISTORY',
             'include_conversation_info': True,
