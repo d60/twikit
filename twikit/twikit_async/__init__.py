@@ -17,6 +17,7 @@ from ..errors import (
 from ..utils import build_query
 from .client import Client
 from .group import Group, GroupMessage
+from .list import List
 from .message import Message
 from .trend import Trend
 from .tweet import Tweet

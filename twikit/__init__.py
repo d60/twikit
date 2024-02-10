@@ -8,6 +8,7 @@ A Python library for interacting with the Twitter API.
 
 from .client import Client
 from .group import Group, GroupMessage
+from .list import List
 from .errors import (
     BadRequest,
     Forbidden,
@@ -24,4 +25,4 @@ from .tweet import Tweet
 from .user import User
 from .utils import build_query
 
-__version__ = '1.1.15'
+__version__ = '1.1.16'

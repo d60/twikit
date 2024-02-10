@@ -52,6 +52,13 @@ USER_FEATURES = {
     'responsive_web_graphql_timeline_navigation_enabled': True
 }
 
+LIST_FEATURES = {
+    'responsive_web_graphql_exclude_directive_enabled': True,
+    'verified_phone_label_enabled': False,
+    'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
+    'responsive_web_graphql_timeline_navigation_enabled': True
+}
+
 
 class Endpoint:
     """
@@ -99,6 +106,18 @@ class Endpoint:
     FAVORITERS = 'https://twitter.com/i/api/graphql/LLkw5EcVutJL6y-2gkz22A/Favoriters'
     ADD_MEMBER_TO_GROUP = 'https://twitter.com/i/api/graphql/oBwyQ0_xVbAQ8FAyG0pCRA/AddParticipantsMutation'
     CHANGE_GROUP_NAME = 'https://twitter.com/i/api/1.1/dm/conversation/{}/update_name.json'
+    CREATE_LIST = 'https://twitter.com/i/api/graphql/EYg7JZU3A1eJ-wr2eygPHQ/CreateList'
+    LIST_ADD_MEMBER = 'https://twitter.com/i/api/graphql/lLNsL7mW6gSEQG6rXP7TNw/ListAddMember'
+    LIST_LATEST_TWEETS = 'https://twitter.com/i/api/graphql/HjsWc-nwwHKYwHenbHm-tw/ListLatestTweetsTimeline'
+    UPDATE_LIST = 'https://twitter.com/i/api/graphql/dIEI1sbSAuZlxhE0ggrezA/UpdateList'
+    LIST_MEMBERS = 'https://twitter.com/i/api/graphql/BQp2IEYkgxuSxqbTAr1e1g/ListMembers'
+    LIST_SUBSCRIBERS = 'https://twitter.com/i/api/graphql/74wGEkaBxrdoXakWTWMxRQ/ListSubscribers'
+    MUTE_LIST = 'https://twitter.com/i/api/graphql/ZYyanJsskNUcltu9bliMLA/MuteList'
+    UNMUTE_LIST = 'https://twitter.com/i/api/graphql/pMZrHRNsmEkXgbn3tOyr7Q/UnmuteList'
+    EDIT_LIST_BANNER = 'https://twitter.com/i/api/graphql/t_DsROHldculsB0B9BUAWw/EditListBanner'
+    DELETE_LIST_BANNER = 'https://twitter.com/i/api/graphql/Y90WuxdWugtMRJhkXTdvzg/DeleteListBanner'
+    LIST_REMOVE_MEMBER = 'https://twitter.com/i/api/graphql/cvDFkG5WjcXV0Qw5nfe1qQ/ListRemoveMember'
+    LIST_BY_REST_ID = 'https://twitter.com/i/api/graphql/9hbYpeVBMq8-yB8slayGWQ/ListByRestId'
 
 T = TypeVar('T')
 

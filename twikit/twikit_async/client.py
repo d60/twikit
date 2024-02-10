@@ -10,6 +10,7 @@ from httpx import Response
 
 from ..utils import (
     FEATURES,
+    LIST_FEATURES,
     TOKEN,
     USER_FEATURES,
     Endpoint,
@@ -19,6 +20,7 @@ from ..utils import (
 )
 from .group import Group, GroupMessage
 from .http import HTTPClient
+from .list import List
 from .message import Message
 from .trend import Trend
 from .tweet import Tweet
@@ -2299,3 +2301,333 @@ class Client:
             headers=headers
         )
         return response
+
+    async def create_list(
+        self, name: str, description: str = '', is_private: bool = False
+    ) -> List:
+        """
+        Creates a list.
+
+        Parameters
+        ----------
+        name : str
+            The name of the list.
+        description : str, default=''
+            The description of the list.
+        is_private : bool, default=False
+            Indicates whether the list is private (True) or public (False).
+
+        Returns
+        -------
+        List
+            The created list.
+
+        Examples
+        --------
+        >>> list = await client.create_list(
+        ...     'list name',
+        ...     'list description',
+        ...     is_private=True
+        ... )
+        >>> print(list)
+        <List id="...">
+        """
+        variables = {
+            'isPrivate': is_private,
+            'name': name,
+            'description': description
+        }
+        data = {
+            'variables': variables,
+            'features': LIST_FEATURES,
+            'queryId': get_query_id(Endpoint.CREATE_LIST)
+        }
+        response = (await self.http.post(
+            Endpoint.CREATE_LIST,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )).json()
+        list_info = find_dict(response, 'list')[0]
+        return List(self, list_info)
+
+    async def edit_list_banner(self, list_id: str, media_id: str) -> Response:
+        """
+        Edit the banner image of a list.
+
+        Parameters
+        ----------
+        list_id : str
+            The ID of the list.
+        media_id : str
+            The ID of the media to use as the new banner image.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        Examples
+        --------
+        >>> list_id = '...'
+        >>> media_id = await client.upload_media('image.png', 0)
+        >>> await client.edit_list_banner(list_id, media_id)
+        """
+        variables = {
+            'listId': list_id,
+            'mediaId': media_id
+        }
+        data = {
+            'variables': variables,
+            'features': LIST_FEATURES,
+            'queryId': get_query_id(Endpoint.EDIT_LIST_BANNER)
+        }
+        response = await self.http.post(
+            Endpoint.EDIT_LIST_BANNER,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )
+        return response
+
+    async def delete_list_banner(self, list_id: str) -> Response:
+        data = {
+            'variables': {
+                'listId': list_id
+            },
+            'features': LIST_FEATURES,
+            'queryId': get_query_id(Endpoint.DELETE_LIST_BANNER)
+        }
+        response = await self.http.post(
+            Endpoint.DELETE_LIST_BANNER,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )
+        return response
+
+    async def edit_list(
+        self,
+        list_id: str,
+        name: str | None = None,
+        description: str | None = None,
+        is_private: bool | None = None
+    ) -> List:
+        """
+        Edits list information.
+
+        Parameters
+        ----------
+        list_id : str
+            The ID of the list to edit.
+        name : str, default=None
+            The new name for the list.
+        description : str, default=None
+            The new description for the list.
+        is_private : bool, default=None
+            Indicates whether the list should be private
+            (True) or public (False).
+
+        Returns
+        -------
+        List
+            The updated Twitter list.
+
+        Examples
+        --------
+        >>> await client.edit_list(
+        ...     'new name', 'new description', True
+        ... )
+        """
+        variables = {
+            'listId': list_id
+        }
+        if name is not None:
+            variables['name'] = name
+        if description is not None:
+            variables['description'] = description
+        if is_private is not None:
+            variables['isPrivate'] = is_private
+        data = {
+            'variables': variables,
+            'features': LIST_FEATURES,
+            'queryId': get_query_id(Endpoint.UPDATE_LIST)
+        }
+        response = (await self.http.post(
+            Endpoint.UPDATE_LIST,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )).json()
+        list_info = find_dict(response, 'list')[0]
+        return List(self, list_info)
+
+    async def add_list_member(self, list_id: str, user_id: str) -> Response:
+        """
+        Adds a user to a list.
+
+        Parameters
+        ----------
+        list_id : str
+            The ID of the list.
+        user_id : str
+            The ID of the user to add to the list.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        Examples
+        --------
+        >>> await client.add_list_member('list id', 'user id')
+        """
+        variables = {
+            'listId': list_id,
+            'userId': user_id
+        }
+        data = {
+            'variables': variables,
+            'features': LIST_FEATURES,
+            'queryId': get_query_id(Endpoint.LIST_ADD_MEMBER)
+        }
+        response = await self.http.post(
+            Endpoint.LIST_ADD_MEMBER,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )
+        return response
+
+    async def remove_list_member(self, list_id: str, user_id: str) -> Response:
+        """
+        Removes a user from a list.
+
+        Parameters
+        ----------
+        list_id : str
+            The ID of the list.
+        user_id : str
+            The ID of the user to remove from the list.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        Examples
+        --------
+        >>> await client.remove_list_member('list id', 'user id')
+        """
+        variables = {
+            'listId': list_id,
+            'userId': user_id
+        }
+        data = {
+            'variables': variables,
+            'features': LIST_FEATURES,
+            'queryId': get_query_id(Endpoint.LIST_REMOVE_MEMBER)
+        }
+        response = await self.http.post(
+            Endpoint.LIST_REMOVE_MEMBER,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )
+        return response
+
+    async def get_list(self, list_id: str) -> List:
+        """
+        Retrieve list by ID.
+
+        Parameters
+        ----------
+        list_id : str
+            The ID of the list to retrieve.
+
+        Returns
+        -------
+        List
+            List object.
+        """
+        params = {
+            'variables': json.dumps({'listId': list_id}),
+            'features': json.dumps(LIST_FEATURES)
+        }
+        response = (await self.http.get(
+            Endpoint.LIST_BY_REST_ID,
+            params=params,
+            headers=self._base_headers
+        )).json()
+        list_info = find_dict(response, 'list')[0]
+        return List(self, list_info)
+
+    async def get_list_tweets(
+        self, list_id: str, count: int = 20, cursor: str | None = None
+    ) -> Result[Tweet]:
+        """
+        Retrieves tweets from a list.
+
+        Parameters
+        ----------
+        list_id : str
+            The ID of the list to retrieve tweets from.
+        count : int, default=20
+            The number of tweets to retrieve.
+        cursor : str, default=None
+            The cursor for pagination.
+
+        Returns
+        -------
+        Result[Tweet]
+            A Result object containing the retrieved tweets.
+
+        Examples
+        --------
+        >>> tweets = await client.get_list_tweets('list id')
+        >>> for tweet in tweets:
+        ...    print(tweet)
+        <Tweet id="...">
+        <Tweet id="...">
+        ...
+        ...
+
+        >>> more_tweets = await tweets.next()  # Retrieve more tweets
+        >>> for tweet in more_tweets:
+        ...     print(tweet)
+        <Tweet id="...">
+        <Tweet id="...">
+        ...
+        ...
+        """
+        variables = {
+            'listId': list_id,
+            'count': count
+        }
+        if cursor is not None:
+            variables['cursor'] = cursor
+        params = {
+            'variables': json.dumps(variables),
+            'features': json.dumps(FEATURES)
+        }
+        response = (await self.http.get(
+            Endpoint.LIST_LATEST_TWEETS,
+            params=params,
+            headers=self._base_headers
+        )).json()
+
+        items = find_dict(response, 'entries')[0]
+        next_cursor = items[-1]['content']['value']
+
+        results = []
+        for item in items:
+            if not item['entryId'].startswith('tweet'):
+                continue
+            tweet_info = find_dict(item, 'result')[0]
+            if tweet_info['__typename'] == 'TweetWithVisibilityResults':
+                tweet_info = tweet_info['tweet']
+            user_info = find_dict(tweet_info, 'result')[0]
+            results.append(Tweet(self, tweet_info, User(self, user_info)))
+
+        async def _fetch_next_result():
+            return await self.get_list_tweets(list_id, count, next_cursor)
+
+        return Result(
+            results,
+            _fetch_next_result,
+            next_cursor
+        )
