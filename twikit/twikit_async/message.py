@@ -20,8 +20,8 @@ class Message:
         The timestamp of the message.
     text : str
         The text content of the message.
-    attachment : str
-        The media URL associated with any attachment in the message.
+    attachment : dict
+        Attachment Information.
     """
     def __init__(
         self,
@@ -37,11 +37,7 @@ class Message:
         self.id: str = data['id']
         self.time: str = data['time']
         self.text: str = data['text']
-        if 'attachment' in data:
-            attachment = list(data['attachment'].values())[0]
-            self.attachment: str | None = attachment['media_url_https']
-        else:
-            self.attachment = None
+        self.attachment: dict | None = data.get('attachment')
 
     async def reply(self, text: str, media_id: str | None = None) -> Message:
         """Replies to the message.
