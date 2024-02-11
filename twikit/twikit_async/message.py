@@ -82,7 +82,7 @@ class Message:
         httpx.Response
             Response returned from twitter api.
         """
-        user_id = self._client.user_id()
+        user_id = await self._client.user_id()
         partner_id = (
             self.recipient_id
             if user_id == self.sender_id else
@@ -107,7 +107,7 @@ class Message:
         httpx.Response
             Response returned from twitter api.
         """
-        user_id = self._client.user_id()
+        user_id = await self._client.user_id()
         partner_id = (
             self.recipient_id
             if user_id == self.sender_id else

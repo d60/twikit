@@ -2134,7 +2134,7 @@ class Client:
         Examples
         --------
         >>> message_id = '00000000'
-        >>> conversation_id = f'00000001-{client.user_id()}'
+        >>> conversation_id = f'00000001-{await client.user_id()}'
         >>> await client.add_reaction_to_message(
         ...    message_id, conversation_id, 'Emoji here'
         ... )
@@ -2180,7 +2180,7 @@ class Client:
         Examples
         --------
         >>> message_id = '00000000'
-        >>> conversation_id = f'00000001-{client.user_id()}'
+        >>> conversation_id = f'00000001-{await client.user_id()}'
         >>> await client.remove_reaction_from_message(
         ...    message_id, conversation_id, 'Emoji here'
         ... )
