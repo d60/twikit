@@ -122,6 +122,8 @@ class Endpoint:
     UNBLOCK_USER = 'https://twitter.com/i/api/1.1/blocks/destroy.json'
     MUTE_USER = 'https://twitter.com/i/api/1.1/mutes/users/create.json'
     UNMUTE_USER = 'https://twitter.com/i/api/1.1/mutes/users/destroy.json'
+    MESSAGE_ADD_REACTION = 'https://twitter.com/i/api/graphql/VyDyV9pC2oZEj6g52hgnhA/useDMReactionMutationAddMutation'
+    MESSAGE_REMOVE_REACTION = 'https://twitter.com/i/api/graphql/bV_Nim3RYHsaJwMkTXJ6ew/useDMReactionMutationRemoveMutation'
 
 T = TypeVar('T')
 

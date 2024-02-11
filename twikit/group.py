@@ -210,5 +210,41 @@ class GroupMessage(Message):
             self.group_id, text, media_id, self.id
         )
 
+    def add_reaction(self, emoji: str) -> Response:
+        """
+        Adds a reaction to the message.
+
+        Parameters
+        ----------
+        emoji : str
+            The emoji to be added as a reaction.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+        """
+        return self._client.add_reaction_to_message(
+            self.id, self.group_id, emoji
+        )
+
+    def remove_reaction(self, emoji: str) -> Response:
+        """
+        Removes a reaction from the message.
+
+        Parameters
+        ----------
+        emoji : str
+            The emoji to be removed.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+        """
+        return self._client.remove_reaction_from_message(
+            self.id, self.group_id, emoji
+        )
+
     def __repr__(self) -> str:
         return f'<GroupMessage id="{self.id}">'

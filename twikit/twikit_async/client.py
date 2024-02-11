@@ -2110,6 +2110,98 @@ class Client:
             users[1]['id_str']
         )
 
+    async def add_reaction_to_message(
+        self, message_id: str, conversation_id: str, emoji: str
+    ) -> Response:
+        """
+        Adds a reaction emoji to a specific message in a conversation.
+
+        Parameters
+        ----------
+        message_id : str
+            The ID of the message to which the reaction emoji will be added.
+            Group ID ('00000000') or partner_ID-your_ID ('00000000-00000001')
+        conversation_id : str
+            The ID of the conversation containing the message.
+        emoji : str
+            The emoji to be added as a reaction.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        Examples
+        --------
+        >>> message_id = '00000000'
+        >>> conversation_id = f'00000001-{client.user_id()}'
+        >>> await client.add_reaction_to_message(
+        ...    message_id, conversation_id, 'Emoji here'
+        ... )
+        """
+        variables = {
+            'messageId': message_id,
+            'conversationId': conversation_id,
+            'reactionTypes': ['Emoji'],
+            'emojiReactions': [emoji]
+        }
+        data = {
+            'variables': variables,
+            'queryId': get_query_id(Endpoint.MESSAGE_ADD_REACTION)
+        }
+        response = await self.http.post(
+            Endpoint.MESSAGE_ADD_REACTION,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )
+        return response
+
+    async def remove_reaction_from_message(
+        self, message_id: str, conversation_id: str, emoji: str
+    ) -> Response:
+        """
+        Remove a reaction from a message.
+
+        Parameters
+        ----------
+        message_id : str
+            The ID of the message from which to remove the reaction.
+        conversation_id : str
+            The ID of the conversation where the message is located.
+            Group ID ('00000000') or partner_ID-your_ID ('00000000-00000001')
+        emoji : str
+            The emoji to remove as a reaction.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        Examples
+        --------
+        >>> message_id = '00000000'
+        >>> conversation_id = f'00000001-{client.user_id()}'
+        >>> await client.remove_reaction_from_message(
+        ...    message_id, conversation_id, 'Emoji here'
+        ... )
+        """
+        variables = {
+            'conversationId': conversation_id,
+            'messageId': message_id,
+            'reactionTypes': ['Emoji'],
+            'emojiReactions': [emoji]
+        }
+        data = {
+            'variables': variables,
+            'queryId': get_query_id(Endpoint.MESSAGE_REMOVE_REACTION)
+        }
+        response = await self.http.post(
+            Endpoint.MESSAGE_REMOVE_REACTION,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )
+        return response
+
     async def delete_dm(self, message_id: str) -> Response:
         """
         Deletes a direct message with the specified message ID.
