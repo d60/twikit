@@ -216,7 +216,23 @@ class Client:
             },
         )
 
+        flow_token = response['flow_token']
+        task_id = response['subtasks'][0]['subtask_id']
         self._user_id = find_dict(response, 'id_str')[0]
+
+        if task_id == 'LoginAcid':
+            print(find_dict(response, 'secondary_text')[0]['text'])
+            response = _execute_task(
+                flow_token,
+                {
+                    'subtask_id': 'LoginAcid',
+                    'enter_text': {
+                        'text': input('>>> '),
+                        'link': 'next_link'
+                    }
+                }
+            )
+
         return response
 
     def logout(self) -> Response:
@@ -2561,7 +2577,7 @@ class Client:
         return response
 
     def delete_list_banner(self, list_id: str) -> Response:
-        """Deleted list banner.
+        """Deletes list banner.
 
         Parameters
         ----------
