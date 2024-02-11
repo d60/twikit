@@ -183,6 +183,9 @@ class GroupMessage(Message):
         self.group_id = group_id
 
     async def group(self) -> Group:
+        """
+        Gets the group to which the message was sent.
+        """
         return await self._client.get_group(self.group_id)
 
     async def reply(

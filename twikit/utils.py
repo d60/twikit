@@ -118,6 +118,10 @@ class Endpoint:
     DELETE_LIST_BANNER = 'https://twitter.com/i/api/graphql/Y90WuxdWugtMRJhkXTdvzg/DeleteListBanner'
     LIST_REMOVE_MEMBER = 'https://twitter.com/i/api/graphql/cvDFkG5WjcXV0Qw5nfe1qQ/ListRemoveMember'
     LIST_BY_REST_ID = 'https://twitter.com/i/api/graphql/9hbYpeVBMq8-yB8slayGWQ/ListByRestId'
+    BLOCK_USER = 'https://twitter.com/i/api/1.1/blocks/create.json'
+    UNBLOCK_USER = 'https://twitter.com/i/api/1.1/blocks/destroy.json'
+    MUTE_USER = 'https://twitter.com/i/api/1.1/mutes/users/create.json'
+    UNMUTE_USER = 'https://twitter.com/i/api/1.1/mutes/users/destroy.json'
 
 T = TypeVar('T')
 

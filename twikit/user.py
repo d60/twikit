@@ -191,6 +191,86 @@ class User:
         """
         return self._client.unfollow_user(self.id)
 
+    def block(self) -> Response:
+        """
+        Blocks a user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user to block.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        See Also
+        --------
+        .unblock
+        """
+        return self._client.block_user(self.id)
+
+    def unblock(self) -> Response:
+        """
+        Unblocks a user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user to unblock.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        See Also
+        --------
+        .block
+        """
+        return self._client.unblock_user(self.id)
+
+    def mute(self) -> Response:
+        """
+        Mutes a user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user to mute.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        See Also
+        --------
+        .unmute
+        """
+        return self._client.mute_user(self.id)
+
+    def unmute(self) -> Response:
+        """
+        Unmutes a user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user to unmute.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        See Also
+        --------
+        .mute
+        """
+        return self._client.unmute_user(self.id)
+
     def get_followers(self, count: int = 20) -> list[User]:
         """
         Retrieves a list of followers for the user.

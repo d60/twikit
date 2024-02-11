@@ -179,6 +179,9 @@ class GroupMessage(Message):
         self.group_id = group_id
 
     def group(self) -> Group:
+        """
+        Gets the group to which the message was sent.
+        """
         return self._client.get_group(self.group_id)
 
     def reply(self, text: str, media_id: str | None = None) -> GroupMessage:

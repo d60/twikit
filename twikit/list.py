@@ -11,6 +11,39 @@ if TYPE_CHECKING:
 
 
 class List:
+    """
+    Class representing a Twitter List.
+
+    Attributes
+    ----------
+    id : str
+        The unique identifier of the List.
+    created_at : int
+        The timestamp when the List was created.
+    default_banner : dict
+        Information about the default banner of the List.
+    banner : dict
+        Information about the banner of the List. If custom banner is not set,
+        it defaults to the default banner.
+    description : str
+        The description of the List.
+    following : bool
+        Indicates if the authenticated user is following the List.
+    is_member : bool
+        Indicates if the authenticated user is a member of the List.
+    member_count : int
+        The number of members in the List.
+    mode : Literal['Private', 'Public']
+        The mode of the List, either 'Private' or 'Public'.
+    muting : bool
+        Indicates if the authenticated user is muting the List.
+    name : str
+        The name of the List.
+    pinning : bool
+        Indicates if the List is pinned.
+    subscriber_count : int
+        The number of subscribers to the List.
+    """
     def __init__(self, client: Client, data: dict) -> None:
         self._client = client
 
@@ -55,6 +88,9 @@ class List:
         return self._client.edit_list_banner(self.id, media_id)
 
     def delete_banner(self) -> Response:
+        """
+        Deletes the list banner.
+        """
         return self._client.delete_list_banner(self.id)
 
     def edit(
@@ -90,9 +126,15 @@ class List:
         return self._client.edit_list(self.id, name, description, is_private)
 
     def add_member(self, user_id: str) -> Response:
+        """
+        Adds a member to the list.
+        """
         return self._client.add_list_member(self.id, user_id)
 
     def remove_member(self, user_id: str) -> Response:
+        """
+        Removes a member from the list.
+        """
         return self._client.remove_list_member(self.id, user_id)
 
     def get_tweets(

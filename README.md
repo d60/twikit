@@ -64,9 +64,6 @@ client.create_tweet(
 For more examples, see [example.py](https://github.com/d60/twikit/blob/main/example.py).
 See [example_async.py](https://github.com/d60/twikit/blob/main/example_async.py) for examples of Async.
 
-***Also, before you begin, please read the following documents***
-https://github.com/d60/twikit/blob/main/ToProtectYourAccount.md
-
 ## Contributing
 This project is currently in beta, and I would like to hear your thoughts and suggestions.
 If you have any features you'd like to see added or encounter any issues,

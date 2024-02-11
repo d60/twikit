@@ -1671,6 +1671,118 @@ class Client:
         )
         return response
 
+    async def block_user(self, user_id: str) -> Response:
+        """
+        Blocks a user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user to block.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        See Also
+        --------
+        .unblock_user
+        """
+        data = urlencode({'user_id': user_id})
+        headers = self._base_headers
+        headers['content-type'] = 'application/x-www-form-urlencoded'
+        response = await self.http.post(
+            Endpoint.BLOCK_USER,
+            data=data,
+            headers=headers
+        )
+        return response
+
+    async def unblock_user(self, user_id: str) -> Response:
+        """
+        Unblocks a user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user to unblock.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        See Also
+        --------
+        .block_user
+        """
+        data = urlencode({'user_id': user_id})
+        headers = self._base_headers
+        headers['content-type'] = 'application/x-www-form-urlencoded'
+        response = await self.http.post(
+            Endpoint.UNBLOCK_USER,
+            data=data,
+            headers=headers
+        )
+        return response
+
+    async def mute_user(self, user_id: str) -> Response:
+        """
+        Mutes a user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user to mute.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        See Also
+        --------
+        .unmute_user
+        """
+        data = urlencode({'user_id': user_id})
+        headers = self._base_headers
+        headers['content-type'] = 'application/x-www-form-urlencoded'
+        response = await self.http.post(
+            Endpoint.MUTE_USER,
+            data=data,
+            headers=headers
+        )
+        return response
+
+    async def unmute_user(self, user_id: str) -> Response:
+        """
+        Unmutes a user.
+
+        Parameters
+        ----------
+        user_id : str
+            The ID of the user to unmute.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+
+        See Also
+        --------
+        .mute_user
+        """
+        data = urlencode({'user_id': user_id})
+        headers = self._base_headers
+        headers['content-type'] = 'application/x-www-form-urlencoded'
+        response = await self.http.post(
+            Endpoint.UNMUTE_USER,
+            data=data,
+            headers=headers
+        )
+        return response
+
     async def get_trends(
         self,
         category: Literal[
@@ -2393,6 +2505,18 @@ class Client:
         return response
 
     async def delete_list_banner(self, list_id: str) -> Response:
+        """Deleted list banner.
+
+        Parameters
+        ----------
+        list_id : str
+            ID of the list from which the banner is to be removed.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+        """
         data = {
             'variables': {
                 'listId': list_id
