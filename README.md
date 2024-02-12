@@ -1,4 +1,4 @@
-<img src="https://i.imgur.com/iJe6rsZ.png" width="550">
+<img src="https://i.imgur.com/iJe6rsZ.png" width="530">
 
 ![Number of GitHub stars](https://img.shields.io/github/stars/d60/twikit)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/d60/twikit)
