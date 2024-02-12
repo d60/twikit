@@ -61,8 +61,8 @@ client.create_tweet(
 )
 ```
 
-Examples: [example.py](https://github.com/d60/twikit/blob/main/example.py)
-Async Examples: [example_async.py](https://github.com/d60/twikit/blob/main/example_async.py)
+Examples: [example.py](https://github.com/d60/twikit/blob/main/example.py) <br>
+Async Examples: [example_async.py](https://github.com/d60/twikit/blob/main/example_async.py) <br>
 Rate Limits: [ratelimits.md](https://github.com/d60/twikit/blob/main/ratelimits.md)
 
 ## Contributing
