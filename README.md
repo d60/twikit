@@ -3,7 +3,7 @@
 ![Number of GitHub stars](https://img.shields.io/github/stars/d60/twikit)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/d60/twikit)
 
-# Twikit <img height="35" src="https://i.imgur.com/9HSdIl4.png" valign="bottom">
+# Twikit <img height="35" src="https://i.imgur.com/iJe6rsZ.png" valign="bottom">
 A simple API wrapper to interact with twitter's internal API.
 - [Documentation (English)](https://twikit.readthedocs.io/en/latest/twikit.html)
 - [Async Documentation](https://twikit.readthedocs.io/en/latest/twikit.twikit_async.html)
