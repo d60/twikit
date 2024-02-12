@@ -328,7 +328,8 @@ class Client:
         .load_cookies
         .save_cookies
         """
-        self.http.client.cookies.clear()
+        if clear_cookies:
+            self.http.client.cookies.clear()
         self.http.client.cookies.update(cookies)
 
     def load_cookies(self, path: str) -> None:
