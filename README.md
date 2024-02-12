@@ -5,7 +5,6 @@
 
 # Twikit <img height="35" src="https://i.imgur.com/9HSdIl4.png" valign="bottom">
 A simple API wrapper to interact with twitter's internal API.
-Read the documentation for more information.
 - [Documentation (English)](https://twikit.readthedocs.io/en/latest/twikit.html)
 - [Async Documentation](https://twikit.readthedocs.io/en/latest/twikit.twikit_async.html)
 
@@ -69,7 +68,7 @@ Async Examples: [example_async.py](https://github.com/d60/twikit/blob/main/examp
 Rate Limits: [ratelimits.md](https://github.com/d60/twikit/blob/main/ratelimits.md)
 
 ## Contributing
-This project is currently in beta, and I would like to hear your thoughts and suggestions.
+I would like to hear your thoughts and suggestions.
 If you have any features you'd like to see added or encounter any issues,
 please let me know in the [issues](https://github.com/d60/twikit/issues) section.
 
