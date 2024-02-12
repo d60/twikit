@@ -1,6 +1,6 @@
 <img src="https://i.imgur.com/VbAcRG5.jpg" width="500">
 
-[![Number of GitHub stars](https://img.shields.io/github/stars/d60/twikit)]
+![Number of GitHub stars](https://img.shields.io/github/stars/d60/twikit)
 
 # Twikit
 A simple API wrapper to interact with twitter's internal API.
