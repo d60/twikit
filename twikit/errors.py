@@ -6,6 +6,11 @@ class TwitterException(Exception):
     """
     Base class for Twitter API related exceptions.
     """
+    def __init__(self, error: dict = None, **kwargs) -> None:
+        self.error = error or {}
+        self.message = error.get('message', '')
+
+        super().__init__(self.message, **kwargs)
 
 class BadRequest(TwitterException):
     """
@@ -46,10 +51,7 @@ class CouldNotTweet(TwitterException):
     """
     Exception raised when a tweet could not be sent.
     """
-
-    def __init__(self, error: dict) -> None:
-        self.error = error
-        self.message = error['message']
+    pass
 
 class DuplicateTweet(CouldNotTweet):
     """
