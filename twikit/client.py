@@ -26,7 +26,7 @@ from .utils import (
     get_query_id,
     urlencode
 )
-from .errors import raise_exceptions_from_response
+from .errors import raise_exceptions_from_response, CouldNotTweet
 
 
 class Client:
@@ -777,6 +777,7 @@ class Client:
         _result = find_dict(response, 'result')
         if not len(_result):
             raise_exceptions_from_response(response['errors'])
+            raise CouldNotTweet(response['errors'][0] if len(response['errors']) else {})
 
         tweet_info = _result[0]
         user_info = tweet_info['core']['user_results']['result']
