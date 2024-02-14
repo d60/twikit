@@ -26,6 +26,7 @@ from .utils import (
     get_query_id,
     urlencode
 )
+from .errors import raise_exceptions_from_response
 
 
 class Client:
@@ -689,6 +690,10 @@ class Client:
             - 'verified': Limits replies to verified accounts only.
             - 'mentioned': Limits replies to mentioned accounts only.
 
+        Raises
+        ------
+        DuplicateTweet : If the tweet is a duplicate of another tweet.
+
         Returns
         -------
         Tweet
@@ -768,7 +773,12 @@ class Client:
             data=json.dumps(data),
             headers=self._base_headers,
         ).json()
-        tweet_info = find_dict(response, 'result')[0]
+
+        _result = find_dict(response, 'result')
+        if not len(_result):
+            raise_exceptions_from_response(response['errors'])
+
+        tweet_info = _result[0]
         user_info = tweet_info['core']['user_results']['result']
         return Tweet(self, tweet_info, User(self, user_info))
 
