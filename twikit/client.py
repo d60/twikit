@@ -8,12 +8,13 @@ from typing import Literal
 from fake_useragent import UserAgent
 from httpx import Response
 
+from .errors import raise_exceptions_from_response, CouldNotTweet
 from .group import Group, GroupMessage
 from .http import HTTPClient
 from .list import List
 from .message import Message
 from .trend import Trend
-from .tweet import Tweet
+from .tweet import ScheduledTweet, Tweet
 from .user import User
 from .utils import (
     LIST_FEATURES,
@@ -26,7 +27,6 @@ from .utils import (
     get_query_id,
     urlencode
 )
-from .errors import raise_exceptions_from_response, CouldNotTweet
 
 
 class Client:
@@ -217,6 +217,8 @@ class Client:
             },
         )
 
+        if not response['subtasks']:
+            return
         flow_token = response['flow_token']
         task_id = response['subtasks'][0]['subtask_id']
         self._user_id = find_dict(response, 'id_str')[0]
@@ -775,9 +777,13 @@ class Client:
         ).json()
 
         _result = find_dict(response, 'result')
-        if not len(_result):
+        if not _result:
             raise_exceptions_from_response(response['errors'])
-            raise CouldNotTweet(response['errors'][0] if len(response['errors']) else {})
+            raise CouldNotTweet(
+                response['errors'][0]
+                if response['errors']
+                else 'Failed to post a tweet.'
+            )
 
         tweet_info = _result[0]
         user_info = tweet_info['core']['user_results']['result']
@@ -997,6 +1003,53 @@ class Client:
             tweet_info = tweet_info['tweet']
         user_info = tweet_info['core']['user_results']['result']
         return Tweet(self, tweet_info, User(self, user_info))
+
+    def get_scheduled_tweets(self) -> list[ScheduledTweet]:
+        """
+        Retrieves scheduled tweets.
+
+        Returns
+        -------
+        list[ScheduledTweet]
+            List of ScheduledTweet objects representing the scheduled tweets.
+        """
+        params = {
+            'variables': json.dumps({'ascending': True})
+        }
+        response = self.http.get(
+            Endpoint.FETCH_SCHEDULED_TWEETS,
+            params=params,
+            headers=self._base_headers
+        ).json()
+        tweets = find_dict(response, 'scheduled_tweet_list')[0]
+        return [ScheduledTweet(self, tweet) for tweet in tweets]
+
+    def delete_scheduled_tweet(self, tweet_id: str) -> Response:
+        """
+        Delete a scheduled tweet.
+
+        Parameters
+        ----------
+        tweet_id : str
+            The ID of the scheduled tweet to delete.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+        """
+        data = {
+            'variables': {
+                'scheduled_tweet_id': tweet_id
+            },
+            'queryId': get_query_id(Endpoint.DELETE_SCHEDULED_TWEET)
+        }
+        response = self.http.post(
+            Endpoint.DELETE_SCHEDULED_TWEET,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )
+        return response
 
     def _get_tweet_engagements(
         self, tweet_id: str, count: int, cursor: str, endpoint: str,

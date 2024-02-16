@@ -303,3 +303,29 @@ class Tweet:
 
     def __ne__(self, __value: object) -> bool:
         return not self == __value
+
+
+class ScheduledTweet:
+    def __init__(self, client: Client, data: dict) -> None:
+        self._client = client
+
+        self.id = data['rest_id']
+        self.execute_at: int = data['scheduling_info']['execute_at']
+        self.state: str = data['scheduling_info']['state']
+        self.type: str = data['tweet_create_request']['type']
+        self.text: str = data['tweet_create_request']['status']
+        self.media = [i['media_info'] for i in data.get('media_entities', [])]
+
+    async def delete(self) -> Response:
+        """
+        Delete the scheduled tweet.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+        """
+        return await self._client.delete_scheduled_tweet(self.id)
+
+    def __repr__(self) -> str:
+        return f'<ScheduledTweet id="{self.id}">'
