@@ -8,6 +8,8 @@ if TYPE_CHECKING:
     from .client import Client
     from .user import Result, User
 
+from .user import User
+
 
 class Tweet:
     """
@@ -23,8 +25,12 @@ class Tweet:
         The full text of the tweet.
     lang : str
         The language of the tweet.
+    in_reply_to : str
+        The tweet ID this tweet is in reply to, if any
     is_quote_status : bool
         Indicates if the tweet is a quote status.
+    quote : Tweet
+        The Tweet being quoted (if any)
     possibly_sensitive : bool
         Indicates if the tweet content may be sensitive.
     possibly_sensitive_editable : bool
@@ -62,6 +68,7 @@ class Tweet:
     def __init__(self, client: Client, data: dict, user: User = None) -> None:
         self._client = client
         self._data = data
+        print("Attaching user: {}".format(user.name))
         self.user = user
 
         self.replies: Result[Tweet] | None = None
@@ -73,6 +80,13 @@ class Tweet:
         self.created_at: str = legacy['created_at']
         self.text: str = legacy['full_text']
         self.lang: str = legacy['lang']
+        self.in_reply_to = self._data['legacy'].get('in_reply_to_status_id_str')
+        if 'quoted_status_result' in data:
+            quoted_tweet = data['quoted_status_result']['result']
+            quoted_user = User(client, quoted_tweet['core']['user_results']['result'])
+            self.quote = Tweet(client, quoted_tweet, quoted_user)
+        else:
+            self.quote = None
         self.is_quote_status: bool = legacy['is_quote_status']
         self.possibly_sensitive: bool = legacy.get('possibly_sensitive')
         self.possibly_sensitive_editable: bool = legacy.get(
