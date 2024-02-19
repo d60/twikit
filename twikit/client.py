@@ -14,7 +14,7 @@ from .http import HTTPClient
 from .list import List
 from .message import Message
 from .trend import Trend
-from .tweet import Poll, ScheduledTweet, Tweet
+from .tweet import ScheduledTweet, Tweet
 from .user import User
 from .utils import (
     LIST_FEATURES,
