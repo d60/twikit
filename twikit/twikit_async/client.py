@@ -956,7 +956,11 @@ class Client:
             params=params,
             headers=self._base_headers
         )).json()
-        tweet_info = find_dict(response, 'result')[0]
+        entry = next(filter(
+            lambda x:x['entryId'] == f'tweet-{tweet_id}',
+            find_dict(response, 'entries')[0]
+        ))
+        tweet_info = find_dict(entry, 'result')[0]
         if 'tweet' in tweet_info:
             tweet_info = tweet_info['tweet']
         user_info = tweet_info['core']['user_results']['result']
