@@ -14,7 +14,7 @@ from .http import HTTPClient
 from .list import List
 from .message import Message
 from .trend import Trend
-from .tweet import ScheduledTweet, Tweet
+from .tweet import Poll, ScheduledTweet, Tweet
 from .user import User
 from .utils import (
     LIST_FEATURES,
@@ -998,7 +998,11 @@ class Client:
             params=params,
             headers=self._base_headers
         ).json()
-        tweet_info = find_dict(response, 'result')[0]
+        entry = next(filter(
+            lambda x:x['entryId'] == f'tweet-{tweet_id}',
+            find_dict(response, 'entries')[0]
+        ))
+        tweet_info = find_dict(entry, 'result')[0]
         if 'tweet' in tweet_info:
             tweet_info = tweet_info['tweet']
         user_info = tweet_info['core']['user_results']['result']
@@ -1048,6 +1052,49 @@ class Client:
             Endpoint.DELETE_SCHEDULED_TWEET,
             data=json.dumps(data),
             headers=self._base_headers
+        )
+        return response
+
+    def vote(
+        self,
+        selected_choice: str,
+        card_uri: str,
+        tweet_id: str,
+        choice_count: int
+    ) -> Response:
+        """
+        Vote on a poll in a tweet.
+
+        Parameters
+        ----------
+        selected_choice : str
+            The selected choice to vote for.
+        card_uri : str
+            The URI of the poll card.
+        tweet_id : str
+            The ID of the original tweet containing the poll.
+        choice_count : int
+            The number of choices in the poll.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+        """
+        card_name = f'poll{choice_count}choice_text_only'
+        data = urlencode({
+            'twitter:string:card_uri': card_uri,
+            'twitter:long:original_tweet_id': tweet_id,
+            'twitter:string:response_card_name': card_name,
+            'twitter:string:cards_platform': 'Web-12',
+            'twitter:string:selected_choice': selected_choice
+        })
+        headers = self._base_headers
+        headers['content-type'] = 'application/x-www-form-urlencoded'
+        response = self.http.post(
+            Endpoint.VOTE,
+            data=data,
+            headers=headers
         )
         return response
 

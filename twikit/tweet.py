@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -7,6 +8,60 @@ if TYPE_CHECKING:
 
     from .client import Client
     from .user import Result, User
+
+
+class Poll:
+    def __init__(self, client: Client, tweet_id: str, data: dict) -> None:
+        self._client = client
+        self.tweet_id = tweet_id
+
+        self.id: str = data['rest_id']
+        self.name: str = data['legacy']['name']
+
+        values = {
+            i['key']: (
+                i['value'].get('string_value') or
+                i['value'].get('boolean_value')
+            )
+            for i in data["legacy"]["binding_values"]
+        }
+
+        self.choices = []
+        for i in range(1, 5):
+            if f'choice{i}_label' not in values:
+                break
+            self.choices.append({
+                'label': values[f'choice{i}_label'],
+                'count': values[f'choice{i}_count']
+            })
+
+        self.selected_choice: str | None = values.get('selected_choice')
+        self.duration_minutes: str = values['duration_minutes']
+        self.end_datetime: str = values['end_datetime_utc']
+        self.counts_are_final: bool = values['counts_are_final']
+        self.last_updated: str = values['last_updated_datetime_utc']
+
+    def vote(self, selected_choice: str) -> Response:
+        """
+        Vote on the poll.
+
+        Parameters
+        ----------
+        selected_choice : str
+            The selected choice to vote for.
+
+        Returns
+        -------
+        httpx.Response
+            Response returned from twitter api.
+        """
+        choice_count = re.findall(r'[1-4]', self.name)[0]
+        return self._client.vote(
+            selected_choice, self.id, self.tweet_id, choice_count
+        )
+
+    def __repr__(self) -> str:
+        return f'<Poll id="{self.id}">'
 
 
 class Tweet:
@@ -84,6 +139,12 @@ class Tweet:
             'is_edit_eligible')
         self.edits_remaining: int = data['edit_control'].get('edits_remaining')
         self.state: str = data['views']['state']
+
+        if 'card' in data and data['card']['rest_id'].startswith('card'):
+            self.poll = Poll(client, self.id, data['card'])
+        else:
+            self.poll = None
+
 
     def delete(self) -> Response:
         """Deletes the tweet.
