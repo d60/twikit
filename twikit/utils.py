@@ -126,7 +126,6 @@ class Endpoint:
     MESSAGE_REMOVE_REACTION = 'https://twitter.com/i/api/graphql/bV_Nim3RYHsaJwMkTXJ6ew/useDMReactionMutationRemoveMutation'
     FETCH_SCHEDULED_TWEETS = 'https://twitter.com/i/api/graphql/ITtjAzvlZni2wWXwf295Qg/FetchScheduledTweets'
     DELETE_SCHEDULED_TWEET = 'https://twitter.com/i/api/graphql/CTOVqej0JBXAZSwkp1US0g/DeleteScheduledTweet'
-    VOTE = 'https://caps.twitter.com/v2/capi/passthrough/1'
 
 T = TypeVar('T')
 
