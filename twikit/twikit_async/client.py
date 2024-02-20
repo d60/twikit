@@ -1294,9 +1294,6 @@ class Client:
                 items = items[0]['content']['items']
             else:
                 items = instructions[0]['moduleItems']
-        if tweet_type != 'Likes':
-            user_info = find_dict(items[0], 'user_results')[-1]['result']
-            user = User(self, user_info)
 
         results = []
         for item in items:
@@ -1320,9 +1317,17 @@ class Client:
             tweet_info = find_dict(item, 'result')[0]
             if tweet_info['__typename'] == 'TweetWithVisibilityResults':
                 tweet_info = tweet_info['tweet']
-            if tweet_type == 'Likes':
-                user_info = tweet_info['core']['user_results']['result']
-                user = User(self, user_info)
+
+            is_retweet = find_dict(item, "retweeted")[0]
+            # Twitter APIs like treating retweets as transparent copies of the
+            # original tweet
+            if is_retweet:
+                user_info = find_dict(item, "user_results")[1]["result"]
+            else:
+                user_info = find_dict(item, "user_results")[0]["result"]
+
+            user = User(self, user_info)
+
             results.append(Tweet(self, tweet_info, user))
 
         async def _fetch_next_result():
