@@ -1033,9 +1033,6 @@ class Client:
         """
         response = self._get_tweet_detail(tweet_id, cursor)
 
-        # from jlog import log
-        # log(response)
-
         entries = find_dict(response, 'entries')[0]
         reply_to = []
         replies_list = []
