@@ -53,12 +53,24 @@ class Tweet:
         The remaining number of edits allowed for the tweet.
     state : str
         The state of the tweet views.
+    replies: Result[Tweet] | None
+        Replies to the tweet.
+    reply_to: list[Tweet] | None
+        A list of Tweet objects representing the tweets to which to reply.
     """
 
-    def __init__(self, client: Client, data: dict, user: User = None) -> None:
+    def __init__(
+        self,
+        client: Client,
+        data: dict,
+        user: User = None
+    ) -> None:
         self._client = client
         self._data = data
         self.user = user
+
+        self.replies: Result[Tweet] | None = None
+        self.reply_to: list[Tweet] | None = None
 
         self.id: str = data['rest_id']
 
