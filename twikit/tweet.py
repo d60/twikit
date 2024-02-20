@@ -59,12 +59,7 @@ class Tweet:
         A list of Tweet objects representing the tweets to which to reply.
     """
 
-    def __init__(
-        self,
-        client: Client,
-        data: dict,
-        user: User = None
-    ) -> None:
+    def __init__(self, client: Client, data: dict, user: User = None) -> None:
         self._client = client
         self._data = data
         self.user = user

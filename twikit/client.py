@@ -991,13 +991,15 @@ class Client:
             if entry['entryId'].startswith('cursor'):
                 continue
             tweet_info = find_dict(entry, 'result')[0]
+            if tweet_info['__typename'] == 'TweetWithVisibilityResults':
+                tweet_info = tweet_info['tweet']
             user_info = tweet_info['core']['user_results']['result']
             results.append(Tweet(self, tweet_info, User(self, user_info)))
 
         if entries[-1]['entryId'].startswith('cursor'):
             next_cursor = entries[-1]['content']['itemContent']['value']
             def _fetch_next_result():
-                return self.get_tweet_by_id(tweet_id, next_cursor)
+                return self._get_more_replies(tweet_id, next_cursor)
         else:
             next_cursor = None
             _fetch_next_result = None

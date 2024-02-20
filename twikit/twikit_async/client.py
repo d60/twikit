@@ -915,7 +915,64 @@ class Client:
         user_data = response['data']['user']['result']
         return User(self, user_data)
 
-    async def get_tweet_by_id(self, tweet_id: str) -> Tweet:
+    async def _get_tweet_detail(self, tweet_id: str, cursor: str | None):
+        variables = {
+            'focalTweetId': tweet_id,
+            'with_rux_injections': False,
+            'includePromotedContent': True,
+            'withCommunity': True,
+            'withQuickPromoteEligibilityTweetFields': True,
+            'withBirdwatchNotes': True,
+            'withVoice': True,
+            'withV2Timeline': True
+        }
+        if cursor is not None:
+            variables['cursor'] = cursor
+        params = {
+            'variables': json.dumps(variables),
+            'features': json.dumps(FEATURES),
+            'fieldToggles': json.dumps({'withAuxiliaryUserLabels': False})
+        }
+        response = (await self.http.get(
+            Endpoint.TWEET_DETAIL,
+            params=params,
+            headers=self._base_headers
+        )).json()
+        return response
+
+    async def _get_more_replies(
+        self, tweet_id: str, cursor: str
+    ) -> Result[Tweet]:
+        response =await self._get_tweet_detail(tweet_id, cursor)
+        entries = find_dict(response, 'entries')[0]
+
+        results = []
+        for entry in entries:
+            if entry['entryId'].startswith('cursor'):
+                continue
+            tweet_info = find_dict(entry, 'result')[0]
+            if tweet_info['__typename'] == 'TweetWithVisibilityResults':
+                tweet_info = tweet_info['tweet']
+            user_info = tweet_info['core']['user_results']['result']
+            results.append(Tweet(self, tweet_info, User(self, user_info)))
+
+        if entries[-1]['entryId'].startswith('cursor'):
+            next_cursor = entries[-1]['content']['itemContent']['value']
+            async def _fetch_next_result():
+                return await self._get_more_replies(tweet_id, next_cursor)
+        else:
+            next_cursor = None
+            _fetch_next_result = None
+
+        return Result(
+            results,
+            _fetch_next_result,
+            next_cursor
+        )
+
+    async def get_tweet_by_id(
+        self, tweet_id: str, cursor: str | None = None
+    ) -> Tweet:
         """
         Fetches a tweet by tweet ID.
 
@@ -932,39 +989,50 @@ class Client:
         Examples
         --------
         >>> target_tweet_id = '...'
-        >>> tweet = await client.get_tweet_by_id(target_tweet_id)
+        >>> tweet = client.get_tweet_by_id(target_tweet_id)
         >>> print(tweet)
         <Tweet id="...">
         """
-        variables = {
-            'focalTweetId': tweet_id,
-            'with_rux_injections': False,
-            'includePromotedContent': True,
-            'withCommunity': True,
-            'withQuickPromoteEligibilityTweetFields': True,
-            'withBirdwatchNotes': True,
-            'withVoice': True,
-            'withV2Timeline': True
-        }
-        params = {
-            'variables': json.dumps(variables),
-            'features': json.dumps(FEATURES),
-            'fieldToggles': json.dumps({'withAuxiliaryUserLabels': False})
-        }
-        response = (await self.http.get(
-            Endpoint.TWEET_DETAIL,
-            params=params,
-            headers=self._base_headers
-        )).json()
-        entry = next(filter(
-            lambda x:x['entryId'] == f'tweet-{tweet_id}',
-            find_dict(response, 'entries')[0]
-        ))
-        tweet_info = find_dict(entry, 'result')[0]
-        if 'tweet' in tweet_info:
-            tweet_info = tweet_info['tweet']
-        user_info = tweet_info['core']['user_results']['result']
-        return Tweet(self, tweet_info, User(self, user_info))
+        response = await self._get_tweet_detail(tweet_id, cursor)
+
+        entries = find_dict(response, 'entries')[0]
+        reply_to = []
+        replies_list = []
+        tweet = None
+
+        for entry in entries:
+            if entry['entryId'].startswith('cursor'):
+                continue
+            tweet_info = find_dict(entry, 'result')[0]
+            if tweet_info['__typename'] == 'TweetWithVisibilityResults':
+                tweet_info = tweet_info['tweet']
+            user_info = find_dict(tweet_info, 'user_results')[0]['result']
+            tweet_object = Tweet(self, tweet_info, User(self, user_info))
+            if entry['entryId'] == f'tweet-{tweet_id}':
+                tweet = tweet_object
+            else:
+                if tweet is None:
+                    reply_to.append(tweet_object)
+                else:
+                    replies_list.append(tweet_object)
+
+        if entries[-1]['entryId'].startswith('cursor'):
+            # if has more replies
+            reply_next_cursor = entries[-1]['content']['itemContent']['value']
+            async def _fetch_more_replies():
+                return await self._get_more_replies(tweet_id, reply_next_cursor)
+        else:
+            reply_next_cursor = None
+            _fetch_more_replies = None
+
+        tweet.replies = Result(
+            replies_list,
+            _fetch_more_replies,
+            reply_next_cursor
+        )
+        tweet.reply_to = reply_to
+
+        return tweet
 
     async def get_scheduled_tweets(self) -> list[ScheduledTweet]:
         """
