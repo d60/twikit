@@ -17,7 +17,8 @@ from .errors import (
     ServerError,
     TooManyRequests,
     TwitterException,
-    Unauthorized
+    Unauthorized,
+    NotAvailable
 )
 from .message import Message
 from .trend import Trend
