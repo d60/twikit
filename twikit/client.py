@@ -1322,7 +1322,12 @@ class Client:
             headers=self._base_headers
         ).json()
 
-        instructions = find_dict(response, 'instructions')[0]
+        instructions = find_dict(response, 'instructions')
+        # Happens at least for users with protected posts. 
+        if len(instructions) == 0:
+            return Result([])
+
+        instructions = instructions[0]
         items = instructions[-1]['entries']
         if len(items) <= 2:
             return Result([])
