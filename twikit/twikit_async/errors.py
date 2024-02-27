@@ -37,3 +37,8 @@ class ServerError(TwitterException):
     """
     Exception raised for 5xx Server Error responses.
     """
+
+class NotAvailable(TwitterException):
+    """
+    The entity you requested is no longer available on Twitter or has restricted visibility
+    """

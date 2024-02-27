@@ -8,7 +8,7 @@ from typing import Literal
 from fake_useragent import UserAgent
 from httpx import Response
 
-from .errors import raise_exceptions_from_response, CouldNotTweet
+from .errors import raise_exceptions_from_response, CouldNotTweet, NotAvailable
 from .group import Group, GroupMessage
 from .http import HTTPClient
 from .list import List
@@ -1046,8 +1046,12 @@ class Client:
             tweet_info = find_dict(entry, 'result')[0]
             if tweet_info['__typename'] == 'TweetWithVisibilityResults':
                 tweet_info = tweet_info['tweet']
-            user_info = find_dict(tweet_info, 'user_results')[0]['result']
-            tweet_object = Tweet(self, tweet_info, User(self, user_info))
+            
+            if tweet_info.get('__typename') == 'TweetTombstone':
+                raise NotAvailable()
+
+            user = User(self, find_dict(tweet_info, 'user_results')[0]['result'])
+            tweet_object = Tweet(self, tweet_info, user)
             if entry['entryId'] == f'tweet-{tweet_id}':
                 tweet = tweet_object
             else:
@@ -1318,7 +1322,12 @@ class Client:
             headers=self._base_headers
         ).json()
 
-        instructions = find_dict(response, 'instructions')[0]
+        instructions = find_dict(response, 'instructions')
+        # Happens at least for users with protected posts. 
+        if len(instructions) == 0:
+            return Result([])
+
+        instructions = instructions[0]
         items = instructions[-1]['entries']
         if len(items) <= 2:
             return Result([])
@@ -1328,10 +1337,6 @@ class Client:
                 items = items[0]['content']['items']
             else:
                 items = instructions[0]['moduleItems']
-
-        if tweet_type != 'Likes':
-            user_info = find_dict(items[0], 'user_results')[-1]['result']
-            user = User(self, user_info)
 
         results = []
         for item in items:
@@ -1355,9 +1360,16 @@ class Client:
             tweet_info = find_dict(item, 'result')[0]
             if tweet_info['__typename'] == 'TweetWithVisibilityResults':
                 tweet_info = tweet_info['tweet']
-            if tweet_type == 'Likes':
-                user_info = find_dict(tweet_info, 'result')[0]
-                user = User(self, user_info)
+
+            is_retweet = find_dict(item, "retweeted")[0]
+            # Twitter APIs like treating retweets as transparent copies of the
+            # original tweet
+            if is_retweet:
+                user_info = find_dict(item, "user_results")[1]["result"]
+            else:
+                user_info = find_dict(item, "user_results")[0]["result"]
+
+            user = User(self, user_info)
 
             results.append(Tweet(self, tweet_info, user))
 
