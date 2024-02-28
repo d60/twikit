@@ -8,7 +8,8 @@
 
 
 # Twikit <img height="35" src="https://i.imgur.com/9HSdIl4.png" valign="bottom">
-A simple API wrapper to interact with twitter's internal API.
+A simple API wrapper to interact with twitter's unofficial API.
+You can log in to Twitter using your account username, email address and password and use most features on Twitter, such as posting and retrieving tweets, liking and following users.
 - [Documentation (English)](https://twikit.readthedocs.io/en/latest/twikit.html)
 - [Async Documentation](https://twikit.readthedocs.io/en/latest/twikit.twikit_async.html)
 
