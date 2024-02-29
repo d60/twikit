@@ -62,7 +62,6 @@ class Tweet:
     def __init__(self, client: Client, data: dict, user: User = None) -> None:
         self._client = client
         self._data = data
-        print(data)
         self.user = user
 
         self.replies: Result[Tweet] | None = None
