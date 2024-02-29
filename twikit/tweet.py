@@ -87,7 +87,7 @@ class Tweet:
         self.lang: str = legacy['lang']
         self.in_reply_to: str | None = self._data['legacy'].get('in_reply_to_status_id_str')
         self.is_quote_status: bool = legacy['is_quote_status']
-        if 'quoted_status_result' in data:
+        if 'quoted_status_result' in data and len(data['quoted_status_result'].keys()) > 0:
             quoted_tweet = data['quoted_status_result']['result']
             # I guess this happens sometimes? Spotted it when processing replies
             if 'tweet' in quoted_tweet:
