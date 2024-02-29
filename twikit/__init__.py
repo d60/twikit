@@ -17,8 +17,7 @@ from .errors import (
     ServerError,
     TooManyRequests,
     TwitterException,
-    Unauthorized,
-    NotAvailable
+    Unauthorized
 )
 from .message import Message
 from .trend import Trend
@@ -26,4 +25,4 @@ from .tweet import Tweet
 from .user import User
 from .utils import build_query
 
-__version__ = '1.1.30'
+__version__ = '1.1.29'

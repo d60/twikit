@@ -8,9 +8,6 @@ if TYPE_CHECKING:
     from .client import Client
     from .user import Result, User
 
-from .user import User
-from .errors import NotAvailable
-
 
 class Tweet:
     """
@@ -26,14 +23,8 @@ class Tweet:
         The full text of the tweet.
     lang : str
         The language of the tweet.
-    in_reply_to : str
-        The tweet ID this tweet is in reply to, if any
     is_quote_status : bool
         Indicates if the tweet is a quote status.
-    quote : Tweet
-        The Tweet being quoted (if any)
-    retweeted : bool
-        Whether the tweet is a retweet
     possibly_sensitive : bool
         Indicates if the tweet content may be sensitive.
     possibly_sensitive_editable : bool
@@ -76,33 +67,18 @@ class Tweet:
         self.replies: Result[Tweet] | None = None
         self.reply_to: list[Tweet] | None = None
 
-        if data.get('__typename') == 'TweetTombstone':
-            raise NotAvailable()
-
         self.id: str = data['rest_id']
 
         legacy = data['legacy']
         self.created_at: str = legacy['created_at']
         self.text: str = legacy['full_text']
         self.lang: str = legacy['lang']
-        self.in_reply_to: str | None = self._data['legacy'].get('in_reply_to_status_id_str')
         self.is_quote_status: bool = legacy['is_quote_status']
-        if 'quoted_status_result' in data and len(data['quoted_status_result'].keys()) > 0:
-            quoted_tweet = data['quoted_status_result']['result']
-            # I guess this happens sometimes? Spotted it when processing replies
-            if 'tweet' in quoted_tweet:
-                quoted_tweet = quoted_tweet['tweet']
-            quoted_user = User(client, quoted_tweet['core']['user_results']['result'])
-            self.quote = Tweet(client, quoted_tweet, quoted_user)
-        else:
-            self.quote = None
-        self.retweeted = legacy["retweeted"]
         self.possibly_sensitive: bool = legacy.get('possibly_sensitive')
         self.possibly_sensitive_editable: bool = legacy.get(
             'possibly_sensitive_editable')
         self.quote_count: int = legacy['quote_count']
         self.media: list = legacy['entities'].get('media')
-        self.urls: list = legacy['entities'].get('urls')
         self.reply_count: int = legacy['reply_count']
         self.favorite_count: int = legacy['favorite_count']
         self.favorited: bool = legacy['favorited']
