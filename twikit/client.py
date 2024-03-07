@@ -8,7 +8,11 @@ from typing import Literal
 from fake_useragent import UserAgent
 from httpx import Response
 
-from .errors import raise_exceptions_from_response, CouldNotTweet
+from .errors import (
+    raise_exceptions_from_response,
+    CouldNotTweet,
+    TweetNotAvailable
+)
 from .group import Group, GroupMessage
 from .http import HTTPClient
 from .list import List
@@ -255,12 +259,12 @@ class Client:
         if self._user_id is not None:
             return self._user_id
         response = self.http.get(
-            Endpoint.ALL,
+            Endpoint.SETTINGS,
             headers=self._base_headers
         ).json()
-        user_id = find_dict(response, 'id_str')[0]
-        self._user_id = user_id
-        return user_id
+        screen_name = response['screen_name']
+        self._user_id = self.get_user_by_screen_name(screen_name).id
+        return self._user_id
 
     def user(self) -> User:
         """
@@ -527,7 +531,13 @@ class Client:
             next_cursor
         )
 
-    def upload_media(self, source: str | bytes, index: int) -> int:
+    def upload_media(
+        self,
+        source: str | bytes,
+        index: int,
+        media_type: str = None,
+        media_category: str = None
+    ) -> int:
         """
         Uploads media to twitter.
 
@@ -567,6 +577,10 @@ class Client:
             'command': 'INIT',
             'total_bytes': img_size,
         }
+        if media_type is not None:
+            params['media_type'] = media_type
+        if media_category is not None:
+            params['media_category'] = media_category
         response = self.http.post(
             Endpoint.UPLOAD_MEDIA,
             params=params,
@@ -1043,9 +1057,16 @@ class Client:
         for entry in entries:
             if entry['entryId'].startswith('cursor'):
                 continue
-            tweet_info = find_dict(entry, 'result')[0]
+            tweet_info_ = find_dict(entry, 'result')
+            if not tweet_info_:
+                continue
+            tweet_info = tweet_info_[0]
+
             if tweet_info['__typename'] == 'TweetWithVisibilityResults':
                 tweet_info = tweet_info['tweet']
+            if tweet_info.get('__typename') == 'TweetTombstone':
+                raise TweetNotAvailable('This tweet is not available.')
+
             user_info = find_dict(tweet_info, 'user_results')[0]['result']
             tweet_object = Tweet(self, tweet_info, User(self, user_info))
             if entry['entryId'] == f'tweet-{tweet_id}':
@@ -1318,7 +1339,11 @@ class Client:
             headers=self._base_headers
         ).json()
 
-        instructions = find_dict(response, 'instructions')[0]
+        instructions_ = find_dict(response, 'instructions')
+        if not instructions_:
+            return Result([])
+        instructions = instructions_[0]
+
         items = instructions[-1]['entries']
         if len(items) <= 2:
             return Result([])
@@ -2268,6 +2293,7 @@ class Client:
         .upload_media
         .delete_dm
         """
+        print(f'{user_id}-{self.user_id()}')
         response = self._send_dm(
             f'{user_id}-{self.user_id()}', text, media_id, reply_to
         )
@@ -3008,4 +3034,114 @@ class Client:
             results,
             lambda: self.get_list_tweets(list_id, count, next_cursor),
             next_cursor
+        )
+
+    def _get_list_users(
+        self, endpoint: str, list_id: str, count: int, cursor: str
+    ) -> Result[User]:
+        """
+        Base function to retrieve the users associated with a list.
+        """
+        variables = {
+            'listId': list_id,
+            'count': count,
+        }
+        if cursor is not None:
+            variables['cursor'] = cursor
+        params = {
+            'variables': json.dumps(variables),
+            'features': json.dumps(FEATURES)
+        }
+        response = self.http.get(
+            endpoint,
+            params=params,
+            headers=self._base_headers
+        ).json()
+
+        items = find_dict(response, 'entries')[0]
+        results = []
+        for item in items:
+            entry_id = item['entryId']
+            if entry_id.startswith('user'):
+                user_info = find_dict(item, 'result')[0]
+                results.append(User(self, user_info))
+            elif entry_id.startswith('cursor-bottom'):
+                next_cursor = item['content']['value']
+                break
+
+        return Result(
+            results,
+            lambda: self._get_list_users(
+                endpoint, list_id, count, next_cursor),
+            next_cursor
+        )
+
+    def get_list_members(
+        self, list_id: str, count: int = 20, cursor: str | None = None
+    ) -> Result[User]:
+        """Retrieves members of a list.
+
+        Parameters
+        ----------
+        list_id : str
+            List ID.
+        count : int, default=20
+            Number of members to retrieve.
+
+        Returns
+        -------
+        Result[User]
+            Members of a list
+
+        Examples
+        --------
+        >>> members = client.get_list_members(123456789)
+        >>> for member in members:
+        ...     print(member)
+        <User id="...">
+        <User id="...">
+        ...
+        ...
+        >>> more_members = members.next()  # Retrieve more members
+        """
+        return self._get_list_users(
+            Endpoint.LIST_MEMBERS,
+            list_id,
+            count,
+            cursor
+        )
+
+    def get_list_subscribers(
+        self, list_id: str, count: int = 20, cursor: str | None = None
+    ) -> Result[User]:
+        """Retrieves subscribers of a list.
+
+        Parameters
+        ----------
+        list_id : str
+            List ID.
+        count : int, default=20
+            Number of subscribers to retrieve.
+
+        Returns
+        -------
+        Result[User]
+            Subscribers of a list
+
+        Examples
+        --------
+        >>> members = client.get_list_subscribers(123456789)
+        >>> for subscriber in subscribers:
+        ...     print(subscriber)
+        <User id="...">
+        <User id="...">
+        ...
+        ...
+        >>> more_subscribers = members.next()  # Retrieve more subscribers
+        """
+        return self._get_list_users(
+            Endpoint.LIST_SUBSCRIBERS,
+            list_id,
+            count,
+            cursor
         )

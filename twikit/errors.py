@@ -48,6 +48,11 @@ class DuplicateTweet(CouldNotTweet):
     Exception raised when a tweet is a duplicate of another.
     """
 
+class TweetNotAvailable(TwitterException):
+    """
+    Exceptions raised when a tweet is not available.
+    """
+
 ERROR_CODE_TO_EXCEPTION: dict[int, TwitterException] = {
     187: DuplicateTweet,
 }
