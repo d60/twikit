@@ -7,6 +7,7 @@ if TYPE_CHECKING:
 
     from .client import Client
     from .tweet import Tweet
+    from .user import User
     from .utils import Result
 
 
@@ -176,6 +177,62 @@ class List:
         ...
         """
         return await self._client.get_list_tweets(self.id, count, cursor)
+
+    async def get_members(
+        self, count: int = 20, cursor: str | None = None
+    ) -> Result[User]:
+        """Retrieves members of the list.
+
+        Parameters
+        ----------
+        count : int, default=20
+            Number of members to retrieve.
+
+        Returns
+        -------
+        Result[User]
+            Members of the list
+
+        Examples
+        --------
+        >>> members = list_.get_members()
+        >>> for member in members:
+        ...     print(member)
+        <User id="...">
+        <User id="...">
+        ...
+        ...
+        >>> more_members = members.next()  # Retrieve more members
+        """
+        return await self._client.get_list_members(self.id, count, cursor)
+
+    async def get_subscribers(
+        self, count: int = 20, cursor: str | None = None
+    ) -> Result[User]:
+        """Retrieves subscribers of the list.
+
+        Parameters
+        ----------
+        count : int, default=20
+            Number of subscribers to retrieve.
+
+        Returns
+        -------
+        Result[User]
+            Subscribers of the list
+
+        Examples
+        --------
+        >>> subscribers = list_.get_subscribers()
+        >>> for subscriber in subscribers:
+        ...     print(subscriber)
+        <User id="...">
+        <User id="...">
+        ...
+        ...
+        >>> more_subscribers = subscribers.next()  # Retrieve more subscribers
+        """
+        return await self._client.get_list_subscribers(self.id, count, cursor)
 
     def __eq__(self, __value: object) -> bool:
         return isinstance(__value, List) and self.id == __value.id
