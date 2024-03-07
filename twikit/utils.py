@@ -126,6 +126,7 @@ class Endpoint:
     MESSAGE_REMOVE_REACTION = 'https://twitter.com/i/api/graphql/bV_Nim3RYHsaJwMkTXJ6ew/useDMReactionMutationRemoveMutation'
     FETCH_SCHEDULED_TWEETS = 'https://twitter.com/i/api/graphql/ITtjAzvlZni2wWXwf295Qg/FetchScheduledTweets'
     DELETE_SCHEDULED_TWEET = 'https://twitter.com/i/api/graphql/CTOVqej0JBXAZSwkp1US0g/DeleteScheduledTweet'
+    SETTINGS = 'https://api.twitter.com/1.1/account/settings.json'
 
 T = TypeVar('T')
 
