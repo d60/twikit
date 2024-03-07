@@ -2057,17 +2057,21 @@ class Client:
         self,
         user_id: str,
         count: int,
-        endpoint: str
-    ) -> list[User]:
+        endpoint: str,
+        cursor: str | None
+    ) -> Result[User]:
         """
         Base function to get friendship.
         """
+        variables = {
+            'userId': user_id,
+            'count': count,
+            'includePromotedContent': False
+        }
+        if cursor is not None:
+            variables['cursor'] = cursor
         params = {
-            'variables': json.dumps({
-                'userId': user_id,
-                'count': count,
-                'includePromotedContent': False
-            }),
+            'variables': json.dumps(variables),
             'features': json.dumps(FEATURES)
         }
         response = self.http.get(
@@ -2079,13 +2083,23 @@ class Client:
         items = find_dict(response, 'entries')[0]
         results = []
         for item in items:
-            if not item['entryId'].startswith('user-'):
-                continue
-            user_info = find_dict(item, 'result')[0]
-            results.append(User(self, user_info))
-        return results
+            entry_id = item['entryId']
+            if entry_id.startswith('user'):
+                user_info = find_dict(item, 'result')[0]
+                results.append(User(self, user_info))
+            elif entry_id.startswith('cursor-bottom'):
+                next_cursor = item['content']['value']
 
-    def get_user_followers(self, user_id: str, count: int = 20) -> list[User]:
+        return Result(
+            results,
+            lambda: self._get_user_friendship(
+                user_id, count, endpoint, next_cursor),
+            next_cursor
+        )
+
+    def get_user_followers(
+        self, user_id: str, count: int = 20, cursor: str | None = None
+    ) -> Result[User]:
         """
         Retrieves a list of followers for a given user.
 
@@ -2098,18 +2112,19 @@ class Client:
 
         Returns
         -------
-        list[User]
+        Result[User]
             A list of User objects representing the followers.
         """
         return self._get_user_friendship(
             user_id,
             count,
-            Endpoint.FOLLOWERS
+            Endpoint.FOLLOWERS,
+            cursor
         )
 
     def get_user_verified_followers(
-        self, user_id: str, count: int = 20
-    ) -> list[User]:
+        self, user_id: str, count: int = 20, cursor: str | None = None
+    ) -> Result[User]:
         """
         Retrieves a list of verified followers for a given user.
 
@@ -2122,18 +2137,19 @@ class Client:
 
         Returns
         -------
-        list[User]
+        Result[User]
             A list of User objects representing the verified followers.
         """
         return self._get_user_friendship(
             user_id,
             count,
-            Endpoint.BLUE_VERIFIED_FOLLOWERS
+            Endpoint.BLUE_VERIFIED_FOLLOWERS,
+            cursor
         )
 
     def get_user_followers_you_know(
-        self, user_id: str, count: int = 20
-    ) -> list[User]:
+        self, user_id: str, count: int = 20, cursor: str | None = None
+    ) -> Result[User]:
         """
         Retrieves a list of common followers.
 
@@ -2146,16 +2162,19 @@ class Client:
 
         Returns
         -------
-        list[User]
+        Result[User]
             A list of User objects representing the followers you might know.
         """
         return self._get_user_friendship(
             user_id,
             count,
-            Endpoint.FOLLOWERS_YOU_KNOW
+            Endpoint.FOLLOWERS_YOU_KNOW,
+            cursor
         )
 
-    def get_user_following(self, user_id: str, count: int = 20) -> list[User]:
+    def get_user_following(
+        self, user_id: str, count: int = 20, cursor: str | None = None
+    ) -> Result[User]:
         """
         Retrieves a list of users whom the given user is following.
 
@@ -2168,18 +2187,19 @@ class Client:
 
         Returns
         -------
-        list[User]
+        Result[User]
             A list of User objects representing the users being followed.
         """
         return self._get_user_friendship(
             user_id,
             count,
-            Endpoint.FOLLOWING
+            Endpoint.FOLLOWING,
+            cursor
         )
 
     def get_user_subscriptions(
-        self, user_id: str, count: int = 20
-    ) -> list[User]:
+        self, user_id: str, count: int = 20, cursor: str | None = None
+    ) -> Result[User]:
         """
         Retrieves a list of users to which the specified user is subscribed.
 
@@ -2192,13 +2212,14 @@ class Client:
 
         Returns
         -------
-        list[User]
+        Result[User]
             A list of User objects representing the subscribed users.
         """
         return self._get_user_friendship(
             user_id,
             count,
-            Endpoint.SUBSCRIPTIONS
+            Endpoint.SUBSCRIPTIONS,
+            cursor
         )
 
     def _send_dm(
