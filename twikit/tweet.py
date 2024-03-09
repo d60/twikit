@@ -82,22 +82,14 @@ class Tweet:
         self.created_at: str = legacy['created_at']
         self.text: str = legacy['full_text']
 
-        if 'note_tweet' in data:
-            self.full_text: str = find_dict(data, 'text')[0]
-        else:
-            self.full_text = None
-
         self.lang: str = legacy['lang']
         self.is_quote_status: bool = legacy['is_quote_status']
         self.in_reply_to: str | None = self._data['legacy'].get(
             'in_reply_to_status_id_str'
         )
 
-        if (
-            'quoted_status_result' in data and
-            len(data['quoted_status_result'].keys()) > 0
-        ):
-            quoted_tweet = data['quoted_status_result']['result']
+        if data.get('quoted_status_result'):
+            quoted_tweet = data.pop('quoted_status_result')['result']
             if 'tweet' in quoted_tweet:
                 quoted_tweet = quoted_tweet['tweet']
             quoted_user = User(
@@ -106,6 +98,25 @@ class Tweet:
             self.quote: Tweet = Tweet(client, quoted_tweet, quoted_user)
         else:
             self.quote = None
+
+        if legacy.get('retweeted_status_result'):
+            retweeted_tweet = legacy.pop('retweeted_status_result')['result']
+            if 'tweet' in retweeted_tweet:
+                retweeted_tweet = retweeted_tweet['tweet']
+            retweeted_user = User(
+                client, retweeted_tweet['core']['user_results']['result']
+            )
+            self.retweeted_tweet: Tweet = Tweet(
+                client, retweeted_tweet, retweeted_user
+            )
+        else:
+            self.retweeted_tweet = None
+
+        note_tweet_results = find_dict(data, 'note_tweet_results')
+        if note_tweet_results:
+            self.full_text: str = find_dict(note_tweet_results, 'text')[0]
+        else:
+            self.full_text = None
 
         self.is_quote_status: bool = legacy['is_quote_status']
         self.possibly_sensitive: bool = legacy.get('possibly_sensitive')
