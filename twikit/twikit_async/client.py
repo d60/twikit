@@ -1127,7 +1127,10 @@ class Client:
             params=params,
             headers=self._base_headers
         )).json()
-        items = find_dict(response, 'entries')[0]
+        items_ = find_dict(response, 'entries')
+        if not items_:
+            return Result([])
+        items = items_[0]
         next_cursor = items[-1]['content']['value']
 
         results = []
@@ -1255,7 +1258,7 @@ class Client:
         If you only have the screen name, you can get the user id as follows:
 
         >>> screen_name = 'example_user'
-        >>> user = await client.get_user_by_screen_name(screen_name)
+        >>> user = client.get_user_by_screen_name(screen_name)
         >>> user_id = user.id
 
         >>> tweets = await client.get_user_tweets(user_id, 'Tweets', count=20)
@@ -1294,7 +1297,6 @@ class Client:
             'variables': json.dumps(variables),
             'features': json.dumps(FEATURES),
         }
-
         endpoint = {
             'Tweets': Endpoint.USER_TWEETS,
             'Replies': Endpoint.USER_TWEETS_AND_REPLIES,
@@ -1314,44 +1316,48 @@ class Client:
         instructions = instructions_[0]
 
         items = instructions[-1]['entries']
-        if len(items) <= 2:
-            return Result([])
         next_cursor = items[-1]['content']['value']
+
         if tweet_type == 'Media':
             if cursor is None:
                 items = items[0]['content']['items']
             else:
                 items = instructions[0]['moduleItems']
-        if tweet_type != 'Likes':
-            user_info = find_dict(items[0], 'user_results')[-1]['result']
-            user = User(self, user_info)
 
         results = []
         for item in items:
-            if (
-                tweet_type not in {'Media', 'Replies'}
-                and 'itemContent' not in item['content']
+            entry_id = item['entryId']
+
+            if not entry_id.startswith(
+                ('tweet', 'profile-conversation', 'profile-grid')
             ):
                 continue
 
-            if tweet_type == 'Tweets':
-                if not item['entryId'].startswith('tweet'):
-                    continue
+            if entry_id.startswith('profile-conversation'):
+                tweets = item['content']['items']
+                replies = []
 
-            if tweet_type == 'Replies':
-                entry_id = item['entryId']
-                if not entry_id.startswith(('profile-conversation', 'tweet')):
-                    continue
-                if entry_id.startswith('profile-conversation'):
-                    item = find_dict(item, 'items')[0][-1]
+                for reply in tweets[1:]:
+                    tweet_info = find_dict(reply, 'result')[0]
+                    if 'tweet' in tweet_info:
+                        tweet_info = tweet_info['tweet']
+                    user_info = find_dict(tweet_info, 'result')[0]
+                    user = User(self, user_info)
+
+                    replies.append(Tweet(self, tweet_info, user))
+
+                item = tweets[0]
+            else:
+                replies = None
 
             tweet_info = find_dict(item, 'result')[0]
-            if tweet_info['__typename'] == 'TweetWithVisibilityResults':
+            if 'tweet' in tweet_info:
                 tweet_info = tweet_info['tweet']
-            if tweet_type == 'Likes':
-                user_info = tweet_info['core']['user_results']['result']
-                user = User(self, user_info)
-            results.append(Tweet(self, tweet_info, user))
+            user_info = find_dict(tweet_info, 'result')[0]
+            tweet = Tweet(self, tweet_info, User(self, user_info))
+            tweet.replies = replies
+
+            results.append(tweet)
 
         async def _fetch_next_result():
             return await self.get_user_tweets(
@@ -2476,11 +2482,6 @@ class Client:
         response = await self._get_dm_history(
             f'{user_id}-{await self.user_id()}', max_id
         )
-
-        status = response['conversation_timeline']['status']
-        if status == 'AT_END':
-            # If there are no more messages, an empty result list is returned.
-            return Result([])
 
         items = response['conversation_timeline']['entries']
         messages = []
