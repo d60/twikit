@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .user import User
+from ..utils import find_dict
 
 if TYPE_CHECKING:
     from httpx import Response
@@ -80,6 +81,12 @@ class Tweet:
         legacy = data['legacy']
         self.created_at: str = legacy['created_at']
         self.text: str = legacy['full_text']
+
+        if 'note_tweet' in data:
+            self.full_text: str = find_dict(data, 'text')[0]
+        else:
+            self.full_text = None
+
         self.lang: str = legacy['lang']
         self.is_quote_status: bool = legacy['is_quote_status']
         self.in_reply_to: str | None = self._data['legacy'].get(
