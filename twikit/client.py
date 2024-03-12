@@ -53,7 +53,10 @@ class Client:
         self.language = language
         self.http = HTTPClient(**kwargs)
         self._user_id = None
-        self._user_agent = UserAgent().random
+        self._user_agent = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        )
 
     def _get_guest_token(self) -> str:
         headers = self._base_headers
