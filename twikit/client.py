@@ -227,6 +227,21 @@ class Client:
         task_id = response['subtasks'][0]['subtask_id']
         self._user_id = find_dict(response, 'id_str')[0]
 
+        if task_id == 'LoginTwoFactorAuthChallenge':
+            print(find_dict(response, 'secondary_text')[0]['text'])
+            response = _execute_task(
+                flow_token,
+                {
+                    'subtask_id': 'LoginTwoFactorAuthChallenge',
+                    'enter_text': {
+                        'text': input('>>> '),
+                        'link': 'next_link'
+                    }
+                }
+            )
+            task_id = response['subtasks'][0]['subtask_id']
+
+
         if task_id == 'LoginAcid':
             print(find_dict(response, 'secondary_text')[0]['text'])
             response = _execute_task(
