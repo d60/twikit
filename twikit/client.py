@@ -53,7 +53,7 @@ class Client:
         self.language = language
         self.http = HTTPClient(**kwargs)
         self._user_id = None
-        self._user_agent = UserAgent().random
+        self._user_agent = UserAgent().random.strip()
 
     def _get_guest_token(self) -> str:
         headers = self._base_headers
@@ -2955,6 +2955,68 @@ class Client:
             headers=self._base_headers
         )
         return response
+
+    def get_lists(
+        self, count: int = 100, cursor: str = None
+    ) -> Result[List]:
+        """
+        Retrieves a list of user lists.
+
+        Parameters
+        ----------
+        count : int
+            The number of lists to retrieve.
+
+        Returns
+        -------
+        Result[List]
+            Retrieved lists.
+
+        Examples
+        --------
+        >>> lists = client.get_lists()
+        >>> for list_ in lists:
+        ...     print(list_)
+        <List id="...">
+        <List id="...">
+        ...
+        ...
+        >>> more_lists = lists.next()  # Retrieve more lists
+        """
+        variables = {
+            'count': count
+        }
+        if cursor is not None:
+            variables['cursor'] = cursor
+        params = {
+            'variables': json.dumps(variables),
+            'features': json.dumps(FEATURES)
+        }
+        response = self.http.get(
+            Endpoint.LIST_MANAGEMENT,
+            params=params,
+            headers=self._base_headers
+        ).json()
+
+        entries = find_dict(response, 'entries')[0]
+        items = find_dict(entries, 'items')
+
+        if len(items) < 2:
+            return Result([])
+
+        lists = []
+        for list in items[1]:
+            lists.append(
+                List(self, list['item']['itemContent']['list'])
+            )
+
+        next_cursor = entries[-1]['content']['value']
+
+        return Result(
+            lists,
+            lambda: self.get_lists(count, next_cursor),
+            next_cursor
+        )
 
     def get_list(self, list_id: str) -> List:
         """

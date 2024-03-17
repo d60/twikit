@@ -127,6 +127,7 @@ class Endpoint:
     FETCH_SCHEDULED_TWEETS = 'https://twitter.com/i/api/graphql/ITtjAzvlZni2wWXwf295Qg/FetchScheduledTweets'
     DELETE_SCHEDULED_TWEET = 'https://twitter.com/i/api/graphql/CTOVqej0JBXAZSwkp1US0g/DeleteScheduledTweet'
     SETTINGS = 'https://api.twitter.com/1.1/account/settings.json'
+    LIST_MANAGEMENT = 'https://twitter.com/i/api/graphql/47170qwZCt5aFo9cBwFoNA/ListsManagementPageTimeline'
 
 T = TypeVar('T')
 
