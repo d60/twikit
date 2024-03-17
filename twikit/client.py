@@ -241,7 +241,6 @@ class Client:
             )
             task_id = response['subtasks'][0]['subtask_id']
 
-
         if task_id == 'LoginAcid':
             print(find_dict(response, 'secondary_text')[0]['text'])
             response = _execute_task(
