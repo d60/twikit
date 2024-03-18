@@ -832,8 +832,8 @@ class Client:
 
         >>> tweet_text = 'Example text'
         >>> media_ids = [
-        ...     await client.upload_media('image1.png', 0),
-        ...     await client.upload_media('image1.png', 1)
+        ...     await client.upload_media('image1.png'),
+        ...     await client.upload_media('image2.png')
         ... ]
         >>> await client.create_tweet(
         ...     tweet_text,
@@ -944,8 +944,8 @@ class Client:
         >>> scheduled_time = int(time.time()) + 3600  # One hour from now
         >>> tweet_text = 'Example text'
         >>> media_ids = [
-        ...     await client.upload_media('image1.png', 0),
-        ...     await client.upload_media('image1.png', 1)
+        ...     await client.upload_media('image1.png'),
+        ...     await client.upload_media('image2.png')
         ... ]
         >>> await client.create_scheduled_tweet(
         ...     scheduled_time
@@ -2445,7 +2445,7 @@ class Client:
         --------
         >>> # send DM with media
         >>> user_id = '000000000'
-        >>> media_id = await client.upload_media('image.png', 0)
+        >>> media_id = await client.upload_media('image.png')
         >>> message = await client.send_dm(user_id, 'text', media_id)
         >>> print(message)
         <Message id='...'>
@@ -2688,7 +2688,7 @@ class Client:
         --------
         >>> # send DM with media
         >>> group_id = '000000000'
-        >>> media_id = await client.upload_media('image.png', 0)
+        >>> media_id = await client.upload_media('image.png')
         >>> message = await client.send_dm_to_group(group_id, 'text', media_id)
         >>> print(message)
         <GroupMessage id='...'>
@@ -2930,7 +2930,7 @@ class Client:
         Examples
         --------
         >>> list_id = '...'
-        >>> media_id = await client.upload_media('image.png', 0)
+        >>> media_id = await client.upload_media('image.png')
         >>> await client.edit_list_banner(list_id, media_id)
         """
         variables = {
