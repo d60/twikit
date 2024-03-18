@@ -11,7 +11,6 @@ from httpx import Response
 
 from .errors import (
     CouldNotTweet,
-    NotFound,
     TweetNotAvailable,
     TwitterException,
     raise_exceptions_from_response
@@ -661,7 +660,7 @@ class Client:
                     'application/octet-stream',
                 )
             }
-            response = self.http.post(
+            self.http.post(
                 Endpoint.UPLOAD_MEDIA,
                 params=params,
                 headers=headers,
@@ -677,11 +676,11 @@ class Client:
             'command': 'FINALIZE',
             'media_id': media_id,
         }
-        response = self.http.post(
+        self.http.post(
             Endpoint.UPLOAD_MEDIA,
             params=params,
             headers=self._base_headers,
-        ).json()
+        )
 
         if wait_for_completion:
             while True:
