@@ -607,6 +607,9 @@ class Client:
         ...     media_category='tweet_gif'  # media_category must be specified
         ... )
         """
+        if not isinstance(wait_for_completion, bool):
+            raise ValueError
+
         if isinstance(source, str):
             # If the source is a path
             with open(source, 'rb') as file:
@@ -619,12 +622,11 @@ class Client:
             # Guess mimetype if not specified
             media_type = filetype.guess(binary).mime
 
-
         if wait_for_completion:
             if media_type == 'image/gif':
                 if media_category is None:
                     raise TwitterException(
-                        "`media_category` must be specified to check the"
+                        "`media_category` must be specified to check the "
                         "upload status of gif images ('dm_gif' or 'tweet_gif')"
                     )
             elif media_type.startswith('image'):
