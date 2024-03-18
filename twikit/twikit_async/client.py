@@ -289,6 +289,24 @@ class Client:
         """
         return await self.get_user_by_id(await self.user_id())
 
+    def get_cookies(self) -> dict:
+        """
+        Get the cookies.
+        You can skip the login procedure by loading the saved cookies
+        using the :func:`set_cookies` method.
+
+        Examples
+        --------
+        >>> client.get_cookies()
+
+        See Also
+        --------
+        .set_cookies
+        .load_cookies
+        .save_cookies
+        """
+        return dict(self.http.client.cookies)
+
     def save_cookies(self, path: str) -> None:
         """
         Save cookies to file in json format.
@@ -307,9 +325,36 @@ class Client:
         See Also
         --------
         .load_cookies
+        .get_cookies
+        .set_cookies
         """
         with open(path, 'w', encoding='utf-8') as f:
-            json.dump(dict(self.http.client.cookies), f)
+            json.dump(self.get_cookies(), f)
+
+    def set_cookies(self, cookies: dict, clear_cookies: bool = False) -> None:
+        """
+        Sets cookies.
+        You can skip the login procedure by loading a saved cookies.
+
+        Parameters
+        ----------
+        cookies : dict
+            The cookies to be set as key value pair.
+
+        Examples
+        --------
+        >>> with open('cookies.json', 'r', encoding='utf-8') as f:
+        ...     client.set_cookies(json.load(f))
+
+        See Also
+        --------
+        .get_cookies
+        .load_cookies
+        .save_cookies
+        """
+        if clear_cookies:
+            self.http.client.cookies.clear()
+        self.http.client.cookies.update(cookies)
 
     def load_cookies(self, path: str) -> None:
         """
@@ -327,10 +372,12 @@ class Client:
 
         See Also
         --------
+        .get_cookies
         .save_cookies
+        .set_cookies
         """
         with open(path, 'r', encoding='utf-8') as f:
-            self.http.client.cookies = json.load(f)
+            self.set_cookies(json.load(f))
 
     async def _search(
         self,

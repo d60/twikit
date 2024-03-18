@@ -2,16 +2,19 @@ from __future__ import annotations
 
 import io
 import json
-import os
+import time
 from typing import Literal
 
+import filetype
 from fake_useragent import UserAgent
 from httpx import Response
 
 from .errors import (
-    raise_exceptions_from_response,
     CouldNotTweet,
-    TweetNotAvailable
+    NotFound,
+    TweetNotAvailable,
+    TwitterException,
+    raise_exceptions_from_response
 )
 from .group import Group, GroupMessage
 from .http import HTTPClient
@@ -548,51 +551,86 @@ class Client:
     def upload_media(
         self,
         source: str | bytes,
-        index: int,
-        media_type: str = None,
-        media_category: str = None
-    ) -> int:
+        wait_for_completion: bool = False,
+        status_check_interval: float = 1.0,
+        media_type: str | None = None,
+        media_category: str | None = None
+    ) -> str:
         """
         Uploads media to twitter.
 
         Parameters
         ----------
-        media_path : str | bytes
-            The file path or binary data of the media to be uploaded.
-        index : int
-            The index of the media segment being uploaded.
-            Should start from 0 and increment by 1 for
-            each subsequent upload.
+        source : str | bytes
+            The source of the media to be uploaded.
+            It can be either a file path or bytes of the media content.
+        wait_for_completion : bool, default=False
+            Whether to wait for the completion of the media upload process.
+        status_check_interval : float, default=1.0
+            The interval (in seconds) to check the status of the
+            media upload process.
+        media_type : str, default=None
+            The MIME type of the media.
+            If not specified, it will be guessed from the source.
+        media_category : str, default=None
+            The media category.
 
         Returns
         -------
-        int
+        str
             The media ID of the uploaded media.
 
         Examples
         --------
-        Upload media files in sequence, starting from index 0.
+        Videos, images and gifs can be uploaded.
 
-        >>> media_id_1 = client.upload_media('media1.jpg', index=0)
-        >>> media_id_2 = client.upload_media('media2.jpg', index=1)
-        >>> media_id_3 = client.upload_media('media3.jpg', index=2)
+        >>> media_id_1 = client.upload_media(
+        ...     'media1.jpg',
+        ... )
+
+        >>> media_id_2 = client.upload_media(
+        ...     'media2.mp4',
+        ...     wait_for_completion=True
+        ... )
+
+        >>> media_id_3 = client.upload_media(
+        ...     'media3.gif',
+        ...     wait_for_completion=True,
+        ...     media_category='tweet_gif'  # media_category must be specified
+        ... )
         """
         if isinstance(source, str):
             # If the source is a path
-            img_size = os.path.getsize(source)
-            binary_stream = open(source, 'rb')
+            with open(source, 'rb') as file:
+                binary = file.read()
         elif isinstance(source, bytes):
             # If the source is bytes
-            img_size = len(source)
-            binary_stream = io.BytesIO(source)
+            binary = source
+
+        if media_type is None:
+            # Guess mimetype if not specified
+            media_type = filetype.guess(binary).mime
+
+
+        if wait_for_completion:
+            if media_type == 'image/gif':
+                if media_category is None:
+                    raise TwitterException(
+                        "`media_category` must be specified to check the"
+                        "upload status of gif images ('dm_gif' or 'tweet_gif')"
+                    )
+            elif media_type.startswith('image'):
+                # Checking the upload status of an image is impossible.
+                wait_for_completion = False
+
+        total_bytes = len(binary)
 
         # ============ INIT =============
         params = {
             'command': 'INIT',
-            'total_bytes': img_size,
+            'total_bytes': total_bytes,
+            'media_type': media_type
         }
-        if media_type is not None:
-            params['media_type'] = media_type
         if media_category is not None:
             params['media_category'] = media_category
         response = self.http.post(
@@ -602,27 +640,38 @@ class Client:
         ).json()
         media_id = response['media_id']
         # =========== APPEND ============
-        params = {
-            'command': 'APPEND',
-            'media_id': media_id,
-            'segment_index': index,
-        }
-        headers = self._base_headers
-        headers.pop('content-type')
-        files = {
-            'media': (
-                'blob',
-                binary_stream,
-                'application/octet-stream',
+        segment_index = 0
+        bytes_sent = 0
+        MAX_SEGMENT_SIZE = 8 * 1024 * 1024  # The maximum segment size is 8 MB
+
+        while bytes_sent < total_bytes:
+            chunk = binary[bytes_sent:bytes_sent + MAX_SEGMENT_SIZE]
+            chunk_stream = io.BytesIO(chunk)
+            params = {
+                'command': 'APPEND',
+                'media_id': media_id,
+                'segment_index': segment_index,
+            }
+            headers = self._base_headers
+            headers.pop('content-type')
+            files = {
+                'media': (
+                    'blob',
+                    chunk_stream,
+                    'application/octet-stream',
+                )
+            }
+            response = self.http.post(
+                Endpoint.UPLOAD_MEDIA,
+                params=params,
+                headers=headers,
+                files=files
             )
-        }
-        response = self.http.post(
-            Endpoint.UPLOAD_MEDIA,
-            params=params,
-            headers=headers,
-            files=files
-        )
-        binary_stream.close()
+
+            chunk_stream.close()
+            segment_index += 1
+            bytes_sent += len(chunk)
+
         # ========== FINALIZE ===========
         params = {
             'command': 'FINALIZE',
@@ -634,7 +683,40 @@ class Client:
             headers=self._base_headers,
         ).json()
 
-        return response['media_id_string']
+        if wait_for_completion:
+            while True:
+                state = self.check_media_status(media_id)
+                if state['processing_info']['state'] == 'succeeded':
+                    break
+                time.sleep(status_check_interval)
+
+        return media_id
+
+    def check_media_status(self, media_id: str) -> dict:
+        """
+        Check the status of uploaded media.
+
+        Parameters
+        ----------
+        media_id : str
+            The media ID of the uploaded media.
+
+        Returns
+        -------
+        dict
+            A dictionary containing information about the status of
+            the uploaded media.
+        """
+        params = {
+            'command': 'STATUS',
+            'media_id': media_id
+        }
+        response = self.http.get(
+            Endpoint.UPLOAD_MEDIA,
+            params=params,
+            headers=self._base_headers
+        ).json()
+        return response
 
     def create_poll(
         self,
