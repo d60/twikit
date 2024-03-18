@@ -1,3 +1,4 @@
 sphinx_rtd_theme
 httpx
 fake_useragent
+filetype
