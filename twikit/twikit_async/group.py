@@ -142,7 +142,7 @@ class Group:
         --------
         >>> # send DM with media
         >>> group_id = '000000000'
-        >>> media_id = await client.upload_media('image.png', 0)
+        >>> media_id = await client.upload_media('image.png')
         >>> message = await group.send_message('text', media_id)
         >>> print(message)
         <GroupMessage id='...'>

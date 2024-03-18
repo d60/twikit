@@ -267,8 +267,8 @@ class Tweet:
         --------
         >>> tweet_text = 'Example text'
         >>> media_ids = [
-        ...     client.upload_media('image1.png', 0),
-        ...     client.upload_media('image1.png', 1)
+        ...     client.upload_media('image1.png'),
+        ...     client.upload_media('image2.png')
         ... ]
         >>> tweet.reply(
         ...     tweet_text,

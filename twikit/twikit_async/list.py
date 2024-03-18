@@ -83,7 +83,7 @@ class List:
 
         Examples
         --------
-        >>> media_id = await client.upload_media('image.png', 0)
+        >>> media_id = await client.upload_media('image.png')
         >>> await media.edit_banner(media_id)
         """
         return await self._client.edit_list_banner(self.id, media_id)

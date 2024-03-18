@@ -396,7 +396,7 @@ class User:
         Examples
         --------
         >>> # send DM with media
-        >>> media_id = client.upload_media('image.png', 0)
+        >>> media_id = client.upload_media('image.png')
         >>> message = user.send_dm('text', media_id)
         >>> print(message)
         <Message id='...'>
