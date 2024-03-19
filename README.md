@@ -58,8 +58,8 @@ client.login(
 ```python
 # Upload media files and obtain media_ids
 media_ids = [
-    client.upload_media('media1.jpg', index=0),
-    client.upload_media('media2.jpg', index=1)
+    client.upload_media('media1.jpg'),
+    client.upload_media('media2.jpg')
 ]
 # Create a tweet with the provided text and attached media
 client.create_tweet(
