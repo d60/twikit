@@ -599,7 +599,10 @@ class Client:
         ... )
         """
         if not isinstance(wait_for_completion, bool):
-            raise ValueError
+            raise TypeError(
+                'wait_for_completion must be bool,'
+                f' not {wait_for_completion.__class__.__name__}'
+            )
 
         if isinstance(source, str):
             # If the source is a path

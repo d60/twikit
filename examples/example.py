@@ -62,7 +62,7 @@ more_user_tweets = user_tweets.next()
 ###########################################
 
 # Send dm to a user
-media_id = client.upload_media('./image.png', 0)
+media_id = client.upload_media('./image.png')
 user.send_dm('dm text', media_id)
 
 # Get dm history
@@ -104,9 +104,9 @@ tweet.reply('tweet content')
 # Create tweet with media
 TWEET_TEXT = 'tweet text'
 MEDIA_IDS = [
-    client.upload_media('./media1.png', 0),
-    client.upload_media('./media2.png', 1),
-    client.upload_media('./media3.png', 2)
+    client.upload_media('./media1.png'),
+    client.upload_media('./media2.png'),
+    client.upload_media('./media3.png')
 ]
 
 client.create_tweet(TWEET_TEXT, MEDIA_IDS)

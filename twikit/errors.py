@@ -53,8 +53,15 @@ class TweetNotAvailable(TwitterException):
     Exceptions raised when a tweet is not available.
     """
 
+class InvalidMedia(TwitterException):
+    """
+    Exception raised when there is a problem with the media ID
+    sent with the tweet.
+    """
+
 ERROR_CODE_TO_EXCEPTION: dict[int, TwitterException] = {
     187: DuplicateTweet,
+    324: InvalidMedia
 }
 
 
