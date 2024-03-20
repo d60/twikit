@@ -1614,6 +1614,90 @@ class Client:
             next_cursor
         )
 
+    async def get_latest_timeline(
+        self,
+        count: int = 20,
+        seen_tweet_ids: list[str] | None = None,
+        cursor: str | None = None
+    ) -> Result[Tweet]:
+        """
+        Retrieves the timeline.
+
+        Parameters
+        ----------
+        count : int, default=None
+            The number of tweets to retrieve.
+        seen_tweet_ids : list[str], default=None
+            A list of tweet IDs that have been seen.
+        cursor : str, default=None
+            A cursor for pagination.
+
+        Returns
+        -------
+        Result[Tweet]
+            A Result object containing a list of Tweet objects.
+
+        Example
+        -------
+        >>> tweets = await client.get_latest_timeline()
+        >>> for tweet in tweets:
+        ...     print(tweet)
+        <Tweet id="...">
+        <Tweet id="...">
+        ...
+        ...
+        >>> more_tweets = await tweets.next() # Retrieve more tweets
+        >>> for tweet in more_tweets:
+        ...     print(tweet)
+        <Tweet id="...">
+        <Tweet id="...">
+        ...
+        ...
+        """
+        variables = {
+            "count": count,
+            "includePromotedContent": True,
+            "latestControlAvailable": True,
+            "requestContext": "launch",
+            "withCommunity": True,
+            "seenTweetIds": seen_tweet_ids or []
+        }
+        if cursor is not None:
+            variables['cursor'] = cursor
+
+        data = {
+            'variables': variables,
+            'queryId': get_query_id(Endpoint.HOME_LATEST_TIMELINE),
+            'features': FEATURES,
+        }
+        response = (await self.http.post(
+            Endpoint.HOME_LATEST_TIMELINE,
+            data=json.dumps(data),
+            headers=self._base_headers
+        )).json()
+
+        items = find_dict(response, 'entries')[0]
+        next_cursor = items[-1]['content']['value']
+        results = []
+
+        for item in items:
+            if 'itemContent' not in item['content']:
+                continue
+            tweet_info = find_dict(item, 'result')[0]
+            if tweet_info['__typename'] == 'TweetWithVisibilityResults':
+                tweet_info = tweet_info['tweet']
+            user_info = tweet_info['core']['user_results']['result']
+            results.append(Tweet(self, tweet_info, user_info))
+
+        async def _fetch_next_result():
+            return await self.get_timeline(count, seen_tweet_ids, next_cursor)
+
+        return Result(
+            results,
+            _fetch_next_result,
+            next_cursor
+        )
+
     async def favorite_tweet(self, tweet_id: str) -> Response:
         """
         Favorites a tweet.
