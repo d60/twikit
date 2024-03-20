@@ -52,7 +52,7 @@ class Client:
     ... )
     """
 
-    def __init__(self, language: str, **kwargs) -> None:
+    def __init__(self, language: str | None = None, **kwargs) -> None:
         self._token = TOKEN
         self.language = language
         self.http = HTTPClient(**kwargs)
@@ -79,13 +79,15 @@ class Client:
         headers = {
             'authorization': f'Bearer {self._token}',
             'content-type': 'application/json',
-            'Accept-Language': self.language,
             'X-Twitter-Auth-Type': 'OAuth2Session',
             'X-Twitter-Active-User': 'yes',
-            'X-Twitter-Client-Language': self.language,
             'Referer': 'https://twitter.com/',
             'User-Agent': self._user_agent,
         }
+
+        if self.language is not None:
+            headers['Accept-Language'] = self.language
+            headers['X-Twitter-Client-Language'] = self.language
 
         csrf_token = self._get_csrf_token()
         if csrf_token is not None:
@@ -592,16 +594,16 @@ class Client:
         --------
         Videos, images and gifs can be uploaded.
 
-        >>> media_id_1 = client.upload_media(
+        >>> media_id_1 = await client.upload_media(
         ...     'media1.jpg',
         ... )
 
-        >>> media_id_2 = client.upload_media(
+        >>> media_id_2 = await client.upload_media(
         ...     'media2.mp4',
         ...     wait_for_completion=True
         ... )
 
-        >>> media_id_3 = client.upload_media(
+        >>> media_id_3 = await client.upload_media(
         ...     'media3.gif',
         ...     wait_for_completion=True,
         ...     media_category='tweet_gif'  # media_category must be specified
@@ -657,7 +659,7 @@ class Client:
         bytes_sent = 0
         MAX_SEGMENT_SIZE = 8 * 1024 * 1024  # The maximum segment size is 8 MB
         tasks = []
-        chunk_streams = []
+        chunk_streams: list[io.BytesIO] = []
 
         while bytes_sent < total_bytes:
             chunk = binary[bytes_sent:bytes_sent + MAX_SEGMENT_SIZE]
@@ -678,11 +680,11 @@ class Client:
             }
 
             coro = self.http.post(
-                    Endpoint.UPLOAD_MEDIA,
-                    params=params,
-                    headers=headers,
-                    files=files
-                )
+                Endpoint.UPLOAD_MEDIA,
+                params=params,
+                headers=headers,
+                files=files
+            )
             tasks.append(asyncio.create_task(coro))
             chunk_streams.append(chunk_stream)
 

@@ -50,7 +50,7 @@ class Client:
     ... )
     """
 
-    def __init__(self, language: str, **kwargs) -> None:
+    def __init__(self, language: str | None = None, **kwargs) -> None:
         self._token = TOKEN
         self.language = language
         self.http = HTTPClient(**kwargs)
@@ -77,13 +77,15 @@ class Client:
         headers = {
             'authorization': f'Bearer {self._token}',
             'content-type': 'application/json',
-            'Accept-Language': self.language,
             'X-Twitter-Auth-Type': 'OAuth2Session',
             'X-Twitter-Active-User': 'yes',
-            'X-Twitter-Client-Language': self.language,
             'Referer': 'https://twitter.com/',
             'User-Agent': self._user_agent,
         }
+
+        if self.language is not None:
+            headers['Accept-Language'] = self.language
+            headers['X-Twitter-Client-Language'] = self.language
 
         csrf_token = self._get_csrf_token()
         if csrf_token is not None:

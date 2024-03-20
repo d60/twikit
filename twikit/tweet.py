@@ -66,6 +66,8 @@ class Tweet:
         Replies to the tweet.
     reply_to: list[Tweet] | None
         A list of Tweet objects representing the tweets to which to reply.
+    hashtags: list[str]
+        Hashtags included in the tweet text.
     """
 
     def __init__(self, client: Client, data: dict, user: User = None) -> None:
@@ -137,6 +139,9 @@ class Tweet:
             'is_edit_eligible')
         self.edits_remaining: int = data['edit_control'].get('edits_remaining')
         self.state: str = data['views']['state']
+        self.hashtags: list[str] = [
+            i['text'] for i in legacy['entities'].get('hashtags', [])
+        ]
 
     def delete(self) -> Response:
         """Deletes the tweet.
