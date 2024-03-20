@@ -1659,7 +1659,8 @@ class Client:
 
         return Result(
             results,
-            lambda: self.get_latest_timeline(count, seen_tweet_ids, next_cursor),
+            lambda: self.get_latest_timeline(
+                count, seen_tweet_ids, next_cursor),
             next_cursor
         )
 
