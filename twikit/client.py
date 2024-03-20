@@ -1511,7 +1511,7 @@ class Client:
 
         Parameters
         ----------
-        count : int, default=None
+        count : int, default=20
             The number of tweets to retrieve.
         seen_tweet_ids : list[str], default=None
             A list of tweet IDs that have been seen.
@@ -1593,7 +1593,7 @@ class Client:
 
         Parameters
         ----------
-        count : int, default=None
+        count : int, default=20
             The number of tweets to retrieve.
         seen_tweet_ids : list[str], default=None
             A list of tweet IDs that have been seen.
@@ -1659,7 +1659,7 @@ class Client:
 
         return Result(
             results,
-            lambda:self.get_timeline(count, seen_tweet_ids, next_cursor),
+            lambda: self.get_latest_timeline(count, seen_tweet_ids, next_cursor),
             next_cursor
         )
 
