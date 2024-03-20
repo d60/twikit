@@ -481,6 +481,8 @@ class Client:
         for item in items:
             if product != 'Media' and 'itemContent' not in item['content']:
                 continue
+            if item['entryId'].startswith('spelling'):
+                continue
             tweet_info = find_dict(item, 'result')[0]
             if 'tweet' in tweet_info:
                 tweet_info = tweet_info['tweet']
