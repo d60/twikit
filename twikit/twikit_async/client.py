@@ -1538,6 +1538,7 @@ class Client:
     ) -> Result[Tweet]:
         """
         Retrieves the timeline.
+        Retrieves tweets from Home -> For You.
 
         Parameters
         ----------
@@ -1622,6 +1623,7 @@ class Client:
     ) -> Result[Tweet]:
         """
         Retrieves the timeline.
+        Retrieves tweets from Home -> Following.
 
         Parameters
         ----------
