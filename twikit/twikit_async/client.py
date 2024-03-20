@@ -1692,7 +1692,9 @@ class Client:
             results.append(Tweet(self, tweet_info, user_info))
 
         async def _fetch_next_result():
-            return await self.get_latest_timeline(count, seen_tweet_ids, next_cursor)
+            return await self.get_latest_timeline(
+                count, seen_tweet_ids, next_cursor
+            )
 
         return Result(
             results,
