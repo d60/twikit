@@ -83,7 +83,8 @@ class Tweet:
         self.id: str = data['rest_id']
 
         legacy = data['legacy']
-        self.created_at: datetime = datetime.strptime(legacy['created_at'], '%a %b %d %H:%M:%S %z %Y')
+        self.created_at: str = legacy['created_at']
+        self.created_at_datetime: datetime = datetime.strptime(legacy['created_at'], '%a %b %d %H:%M:%S %z %Y')
         self.text: str = legacy['full_text']
 
         self.lang: str = legacy['lang']
