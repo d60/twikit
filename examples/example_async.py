@@ -60,7 +60,7 @@ async def main():
 
     # Get user tweets
     user_tweets = await user.get_tweets('Tweets')
-    for tweet in tweets:
+    for tweet in user_tweets:
         print(tweet)
     # Get more tweets
     more_user_tweets = await user_tweets.next()

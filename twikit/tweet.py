@@ -86,7 +86,7 @@ class Tweet:
 
         legacy = data['legacy']
         self.created_at: str = legacy['created_at']
-        self.created_at_datetime: datetime = datetime.strptime(legacy['created_at'], '%a %b %d %H:%M:%S %z %Y')
+        
         self.text: str = legacy['full_text']
 
         self.lang: str = legacy['lang']
@@ -156,6 +156,10 @@ class Tweet:
         self.hashtags: list[str] = [
             i['text'] for i in hashtags
         ]
+
+    @property
+    def created_at_datetime(self) -> datetime:
+        return datetime.strptime(self.created_at, '%a %b %d %H:%M:%S %z %Y')
 
     def delete(self) -> Response:
         """Deletes the tweet.
