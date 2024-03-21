@@ -464,23 +464,19 @@ class Client:
         response = await self._search(query, product, count, cursor)
         instructions = find_dict(response, 'instructions')[0]
 
-        if cursor is None and product == 'Media':
-            items = instructions[-1]['entries'][0]['content']['items']
-            next_cursor = instructions[-1]['entries'][-1]['content']['value']
-        elif cursor is None:
-            items = instructions[-1]['entries']
-            next_cursor = items[-1]['content']['value']
-        elif product == 'Media':
-            items = instructions[0]['moduleItems']
-            next_cursor = instructions[1]['entries'][1]['content']['value']
+        if product == 'Media' and cursor is not None:
+            items = find_dict(instructions, 'moduleItems')[0]
         else:
-            items = instructions[0]['entries']
-            next_cursor = instructions[-1]['entry']['content']['value']
+            items = find_dict(instructions, 'entries')[0]
+            if product == 'Media':
+                items = items[0]['content']['items']
+
+        next_cursor = None
 
         results = []
         for item in items:
-            if product != 'Media' and 'itemContent' not in item['content']:
-                continue
+            if item['entryId'].startswith('cursor-bottom'):
+                next_cursor = item['content']['value']
             if not item['entryId'].startswith(('tweet', 'search-grid')):
                 continue
             tweet_info = find_dict(item, 'result')[0]
@@ -488,6 +484,14 @@ class Client:
                 tweet_info = tweet_info['tweet']
             user_info = tweet_info['core']['user_results']['result']
             results.append(Tweet(self, tweet_info, User(self, user_info)))
+
+        if next_cursor is None:
+            if product == 'Media':
+                next_cursor = find_dict(
+                    instructions, 'entries'
+                )[0][-1]['content']['value']
+            else:
+                next_cursor = instructions[-1]['entry']['content']['value']
 
         async def _fetch_next_result():
             return await self.search_tweet(query, product, count, next_cursor)

@@ -20,5 +20,5 @@ from .group import Group, GroupMessage
 from .list import List
 from .message import Message
 from .trend import Trend
-from .tweet import Tweet
+from .tweet import ScheduledTweet, Tweet
 from .user import User
