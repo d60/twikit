@@ -139,8 +139,17 @@ class Tweet:
             'is_edit_eligible')
         self.edits_remaining: int = data['edit_control'].get('edits_remaining')
         self.state: str = data['views']['state']
+
+        if note_tweet_results:
+            hashtags_ = find_dict(note_tweet_results, 'hashtags')
+            if hashtags_:
+                hashtags = hashtags_[0]
+            else:
+                hashtags = []
+        else:
+            hashtags = legacy['entities'].get('hashtags', [])
         self.hashtags: list[str] = [
-            i['text'] for i in legacy['entities'].get('hashtags', [])
+            i['text'] for i in hashtags
         ]
 
     async def delete(self) -> Response:

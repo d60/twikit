@@ -144,6 +144,8 @@ class Result(Generic[T]):
     ----------
     token : str
         Token used to obtain the next result.
+    cursor : str
+        Alias of `token`.
     """
 
     def __init__(
@@ -163,6 +165,12 @@ class Result(Generic[T]):
         if self.__fetch_next_result is None:
             return Result([])
         return self.__fetch_next_result()
+
+    @property
+    def cursor(self) -> str:
+        """Alias of `token`
+        """
+        return self.token
 
     def __iter__(self) -> Iterator[T]:
         yield from self.__results
