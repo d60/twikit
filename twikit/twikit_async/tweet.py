@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from ..utils import find_dict
@@ -20,6 +21,8 @@ class Tweet:
         The unique identifier of the tweet.
     created_at : str
         The date and time when the tweet was created.
+    created_at_datetime : datetime
+        The created_at converted to datetime.
     user: User
         Author of the tweet.
     text : str
@@ -151,6 +154,10 @@ class Tweet:
         self.hashtags: list[str] = [
             i['text'] for i in hashtags
         ]
+
+    @property
+    def created_at_datetime(self) -> datetime:
+        return datetime.strptime(self.created_at, '%a %b %d %H:%M:%S %z %Y')
 
     async def delete(self) -> Response:
         """Deletes the tweet.
