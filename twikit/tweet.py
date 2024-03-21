@@ -20,8 +20,12 @@ class Tweet:
     ----------
     id : str
         The unique identifier of the tweet.
-    created_at : datetime
+    created_at : str
         The date and time when the tweet was created.
+    created_at_datetime : datetime
+        the created_at converted to datetime.
+    created_at_dt : datetime
+        Alias of created_at.
     user: User
         Author of the tweet.
     text : str
