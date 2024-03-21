@@ -14,9 +14,9 @@ setup(
     install_requires=[
         'httpx',
         'fake_useragent',
-        'filetype',
-        'python_version >= "3.11"'
+        'filetype'
     ],
+    python_requires='3.11',
     description='Twitter API wrapper for python with **no API key required**.',
     long_description=long_description,
     long_description_content_type='text/markdown',
