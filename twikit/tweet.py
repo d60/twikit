@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 from .user import User
 from .utils import find_dict
 
+from datetime import datetime
+
 if TYPE_CHECKING:
     from httpx import Response
 
@@ -18,7 +20,7 @@ class Tweet:
     ----------
     id : str
         The unique identifier of the tweet.
-    created_at : str
+    created_at : datetime
         The date and time when the tweet was created.
     user: User
         Author of the tweet.
@@ -81,7 +83,7 @@ class Tweet:
         self.id: str = data['rest_id']
 
         legacy = data['legacy']
-        self.created_at: str = legacy['created_at']
+        self.created_at: datetime = datetime.strptime(legacy['created_at'], '%a %b %d %H:%M:%S %z %Y')
         self.text: str = legacy['full_text']
 
         self.lang: str = legacy['lang']

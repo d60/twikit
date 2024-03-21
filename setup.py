@@ -11,7 +11,12 @@ with open('./twikit/__init__.py') as f:
 setup(
     name='twikit',
     version=version,
-    install_requires=['httpx', 'fake_useragent', 'filetype'],
+    install_requires=[
+        'httpx',
+        'fake_useragent',
+        'filetype',
+        'python_version >= "3.11"'
+    ],
     description='Twitter API wrapper for python with **no API key required**.',
     long_description=long_description,
     long_description_content_type='text/markdown',
