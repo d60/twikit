@@ -1456,9 +1456,6 @@ class Client:
             headers=self._base_headers
         ).json()
 
-        from jlog import log
-        log(response)
-
         instructions_ = find_dict(response, 'instructions')
         if not instructions_:
             return Result([])
