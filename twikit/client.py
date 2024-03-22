@@ -464,8 +464,15 @@ class Client:
         if product == 'Media' and cursor is not None:
             items = find_dict(instructions, 'moduleItems')[0]
         else:
-            items = find_dict(instructions, 'entries')[0]
+            items_ = find_dict(instructions, 'entries')
+            if not items_:
+                # Returns an empty list because there are no more results.
+                return Result([])
+            items = items_[0]
             if product == 'Media':
+                if 'items' not in items[0]['content']:
+                    # Returns an empty list because there are no more results.
+                    return Result([])
                 items = items[0]['content']['items']
 
         next_cursor = None
@@ -1448,6 +1455,9 @@ class Client:
             params=params,
             headers=self._base_headers
         ).json()
+
+        from jlog import log
+        log(response)
 
         instructions_ = find_dict(response, 'instructions')
         if not instructions_:
