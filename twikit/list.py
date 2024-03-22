@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Literal
+
+from .utils import timestamp_to_datetime
 
 if TYPE_CHECKING:
     from httpx import Response
@@ -66,6 +69,10 @@ class List:
         self.name: str = data['name']
         self.pinning: bool = data['pinning']
         self.subscriber_count: int = data['subscriber_count']
+
+    @property
+    def created_at_datetime(self) -> datetime:
+        return timestamp_to_datetime(self.created_at)
 
     def edit_banner(self, media_id: str) -> Response:
         """

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from ..utils import find_dict
+from ..utils import find_dict, timestamp_to_datetime
 from .user import User
 
 if TYPE_CHECKING:
@@ -142,7 +142,7 @@ class Tweet:
         self.is_edit_eligible: bool = data['edit_control'].get(
             'is_edit_eligible')
         self.edits_remaining: int = data['edit_control'].get('edits_remaining')
-        self.state: str = data['views']['state']
+        self.state: str = data['views'].get('state')
 
         if note_tweet_results:
             hashtags_ = find_dict(note_tweet_results, 'hashtags')
@@ -158,7 +158,7 @@ class Tweet:
 
     @property
     def created_at_datetime(self) -> datetime:
-        return datetime.strptime(self.created_at, '%a %b %d %H:%M:%S %z %Y')
+        return timestamp_to_datetime(self.created_at)
 
     async def delete(self) -> Response:
         """Deletes the tweet.

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Literal
+
+from .utils import timestamp_to_datetime
 
 if TYPE_CHECKING:
     from httpx import Response
@@ -119,6 +122,10 @@ class User:
         self.is_translator: bool = legacy['is_translator']
         self.translator_type: str = legacy['translator_type']
         self.withheld_in_countries: list[str] = legacy['withheld_in_countries']
+
+    @property
+    def created_at_datetime(self) -> datetime:
+        return timestamp_to_datetime(self.created_at)
 
     def get_tweets(
         self,

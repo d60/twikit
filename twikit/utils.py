@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import (
     Any,
     Callable,
@@ -218,6 +219,76 @@ def urlencode(data: dict[str, Any]) -> str:
     data_encoded = parse.urlencode(data)
     # replace single quote to double quote.
     return data_encoded.replace('%27', '%22')
+
+
+def timestamp_to_datetime(timestamp: str) -> datetime:
+    return datetime.strptime(timestamp, '%a %b %d %H:%M:%S %z %Y')
+
+
+def build_tweet_data(raw_data: dict) -> dict:
+    return {
+        **raw_data,
+        'rest_id': raw_data['id'],
+        'is_translatable': None,
+        'views': {},
+        'edit_control': {},
+        'legacy': {
+            'created_at': raw_data.get('created_at'),
+            'full_text': raw_data.get('full_text'),
+            'lang': raw_data.get('lang'),
+            'is_quote_status': raw_data.get('is_quote_status'),
+            'in_reply_to_status_id_str': raw_data.get('in_reply_to_status_id_str'),
+            'retweeted_status_result': raw_data.get('retweeted_status_result'),
+            'is_quote_status': raw_data.get('is_quote_status'),
+            'possibly_sensitive': raw_data.get('possibly_sensitive'),
+            'possibly_sensitive_editable': raw_data.get('possibly_sensitive_editable'),
+            'quote_count': raw_data.get('quote_count'),
+            'entities': raw_data.get('entities'),
+            'reply_count': raw_data.get('reply_count'),
+            'favorite_count': raw_data.get('favorite_count'),
+            'favorited': raw_data.get('favorited'),
+            'retweet_count': raw_data.get('retweet_count')
+        }
+    }
+
+
+def build_user_data(raw_data: dict) -> dict:
+    return {
+        **raw_data,
+        'rest_id': raw_data['id'],
+        'is_blue_verified': raw_data.get('ext_is_blue_verified'),
+        'legacy': {
+            'created_at': raw_data.get('created_at'),
+            'name': raw_data.get('name'),
+            'screen_name': raw_data.get('screen_name'),
+            'profile_image_url_https': raw_data.get('profile_image_url_https'),
+            'location': raw_data.get('location'),
+            'description': raw_data.get('description'),
+            'entities': raw_data.get('entities'),
+            'pinned_tweet_ids_str': raw_data.get('pinned_tweet_ids_str'),
+            'verified': raw_data.get('verified'),
+            'possibly_sensitive': raw_data.get('possibly_sensitive'),
+            'can_dm': raw_data.get('can_dm'),
+            'can_media_tag': raw_data.get('can_media_tag'),
+            'want_retweets': raw_data.get('want_retweets'),
+            'default_profile': raw_data.get('default_profile'),
+            'default_profile_image': raw_data.get('default_profile_image'),
+            'has_custom_timelines': raw_data.get('has_custom_timelines'),
+            'followers_count': raw_data.get('followers_count'),
+            'fast_followers_count': raw_data.get('fast_followers_count'),
+            'normal_followers_count': raw_data.get('normal_followers_count'),
+            'friends_count': raw_data.get('friends_count'),
+            'favourites_count': raw_data.get('favourites_count'),
+            'listed_count': raw_data.get('listed_count'),
+            'media_count': raw_data.get('media_count'),
+            'statuses_count': raw_data.get('statuses_count'),
+            'is_translator': raw_data.get('is_translator'),
+            'translator_type': raw_data.get('translator_type'),
+            'withheld_in_countries': raw_data.get('withheld_in_countries'),
+            'url': raw_data.get('url'),
+            'profile_banner_url': raw_data.get('profile_banner_url')
+        }
+    }
 
 
 FILTERS = Literal[
