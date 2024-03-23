@@ -21,6 +21,8 @@ from ..utils import (
     TOKEN,
     USER_FEATURES,
     Endpoint,
+    build_tweet_data,
+    build_user_data,
     find_dict,
     get_query_id,
     urlencode
@@ -29,6 +31,7 @@ from .group import Group, GroupMessage
 from .http import HTTPClient
 from .list import List
 from .message import Message
+from .notification import Notification
 from .trend import Trend
 from .tweet import ScheduledTweet, Tweet
 from .user import User
@@ -3490,4 +3493,114 @@ class Client:
             list_id,
             count,
             cursor
+        )
+
+    async def get_notifications(
+        self,
+        type: Literal['All', 'Verified', 'Mentions'],
+        count: int = 40,
+        cursor: str | None = None
+    ) -> Result[Notification]:
+        """
+        Retrieve notifications based on the provided type.
+
+        Parameters
+        ----------
+        type : {'All', 'Verified', 'Mentions'}
+            Type of notifications to retrieve.
+
+            All: All notifications
+            Verified: Notifications relating to authenticated users
+            Mentions: Notifications with mentions
+        count : int, default=40
+            Number of notifications to retrieve.
+
+        Returns
+        -------
+        Result[Notification]
+            List of retrieved notifications.
+
+        Examples
+        --------
+        >>> notifications = await client.get_notifications('All')
+        >>> for notification in notifications:
+        ...     print(notification)
+        <Notification id="...">
+        <Notification id="...">
+        ...
+        ...
+
+        >>> # Retrieve more notifications
+        >>> more_notifications = await notifications.next()
+        """
+        type = type.capitalize()
+
+        endpoint = {
+            'All': Endpoint.NOTIFICATIONS_ALL,
+            'Verified': Endpoint.NOTIFICATIONS_VERIFIED,
+            'Mentions': Endpoint.NOTIFICATIONS_MENTIONES
+        }[type]
+
+        params = {
+            'count': count
+        }
+        if cursor is not None:
+            params['cursor'] = cursor
+
+        response = (await self.http.get(
+            endpoint,
+            params=params,
+            headers=self._base_headers
+        )).json()
+
+        global_objects = response['globalObjects']
+        users = {
+            id: User(self, build_user_data(data))
+            for id, data in global_objects.get('users', {}).items()
+        }
+        tweets = {}
+
+        for id, tweet_data in global_objects.get('tweets', {}).items():
+            user_id = tweet_data['user_id_str']
+            user = users[user_id]
+            tweet = Tweet(self, build_tweet_data(tweet_data), user)
+            tweets[id] = tweet
+
+        notifications = []
+
+        for notification in global_objects.get('notifications', {}).values():
+            user_actions = notification['template']['aggregateUserActionsV1']
+            target_objects = user_actions['targetObjects']
+            if target_objects and 'tweet' in target_objects[0]:
+                tweet_id = target_objects[0]['tweet']['id']
+                tweet = tweets[tweet_id]
+            else:
+                tweet = None
+
+            from_users  = user_actions['fromUsers']
+            if from_users and 'user' in from_users[0]:
+                user_id = from_users[0]['user']['id']
+                user = users[user_id]
+            else:
+                user = None
+
+            notifications.append(Notification(self, notification, tweet, user))
+
+        entries = find_dict(response, 'entries')[0]
+        cursor_bottom_entry = [
+            i for i in entries
+            if i['entryId'].startswith('cursor-bottom')
+        ]
+        if cursor_bottom_entry:
+            next_cursor = find_dict(cursor_bottom_entry[0], 'value')[0]
+        else:
+            next_cursor = None
+
+        async def _fetch_next_result():
+            return await self.get_notifications(type, count, next_cursor)
+
+        return Result(
+            notifications,
+            _fetch_next_result,
+            next_cursor
         )

@@ -65,7 +65,6 @@ class Endpoint:
     """
     A class containing Twitter API endpoints.
     """
-    ALL = 'https://twitter.com/i/api/2/notifications/all.json'
     TASK = 'https://api.twitter.com/1.1/onboarding/task.json'
     LOGOUT = 'https://api.twitter.com/1.1/account/logout.json'
     CREATE_TWEET = 'https://twitter.com/i/api/graphql/SiM_cAu83R0wnrpmKQQSEw/CreateTweet'
@@ -130,6 +129,9 @@ class Endpoint:
     DELETE_SCHEDULED_TWEET = 'https://twitter.com/i/api/graphql/CTOVqej0JBXAZSwkp1US0g/DeleteScheduledTweet'
     SETTINGS = 'https://api.twitter.com/1.1/account/settings.json'
     LIST_MANAGEMENT = 'https://twitter.com/i/api/graphql/47170qwZCt5aFo9cBwFoNA/ListsManagementPageTimeline'
+    NOTIFICATIONS_ALL = 'https://twitter.com/i/api/2/notifications/all.json'
+    NOTIFICATIONS_VERIFIED = 'https://twitter.com/i/api/2/notifications/verified.json'
+    NOTIFICATIONS_MENTIONES = 'https://twitter.com/i/api/2/notifications/mentions.json'
 
 T = TypeVar('T')
 
