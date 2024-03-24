@@ -132,6 +132,7 @@ class Endpoint:
     NOTIFICATIONS_ALL = 'https://twitter.com/i/api/2/notifications/all.json'
     NOTIFICATIONS_VERIFIED = 'https://twitter.com/i/api/2/notifications/verified.json'
     NOTIFICATIONS_MENTIONES = 'https://twitter.com/i/api/2/notifications/mentions.json'
+    VOTE = 'https://caps.twitter.com/v2/capi/passthrough/1'
 
 T = TypeVar('T')
 

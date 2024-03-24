@@ -69,6 +69,8 @@ class Tweet:
         Replies to the tweet.
     reply_to: list[Tweet] | None
         A list of Tweet objects representing the tweets to which to reply.
+    related_tweets : list[Tweet] | None
+        Related tweets.
     hashtags: list[str]
         Hashtags included in the tweet text.
     """
@@ -80,6 +82,7 @@ class Tweet:
 
         self.replies: Result[Tweet] | None = None
         self.reply_to: list[Tweet] | None = None
+        self.related_tweets: list[Tweet] | None = None
 
         self.id: str = data['rest_id']
 
