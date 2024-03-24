@@ -97,7 +97,7 @@ class Tweet:
             quoted_tweet = data.pop('quoted_status_result')['result']
             if 'tweet' in quoted_tweet:
                 quoted_tweet = quoted_tweet['tweet']
-            if quoted_tweet['__typename'] != 'TweetTombstone':
+            if quoted_tweet.get('__typename') != 'TweetTombstone':
                 quoted_user = User(
                     client, quoted_tweet['core']['user_results']['result']
                 )
