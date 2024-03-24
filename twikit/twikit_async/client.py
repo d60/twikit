@@ -1102,6 +1102,8 @@ class Client:
             params=params,
             headers=self._base_headers
         )).json()
+        if 'result' not in response['data']['user']:
+            raise TwitterException(f'Invalid user id: {user_id}')
         user_data = response['data']['user']['result']
         return User(self, user_data)
 
@@ -1200,12 +1202,13 @@ class Client:
 
             if tweet_info['__typename'] == 'TweetWithVisibilityResults':
                 tweet_info = tweet_info['tweet']
-            if tweet_info.get('__typename') == 'TweetTombstone':
-                raise TweetNotAvailable('This tweet is not available.')
 
             user_info = find_dict(tweet_info, 'user_results')[0]['result']
             tweet_object = Tweet(self, tweet_info, User(self, user_info))
             if entry['entryId'] == f'tweet-{tweet_id}':
+                if tweet_info.get('__typename') == 'TweetTombstone':
+                    raise TweetNotAvailable('This tweet is not available.')
+
                 tweet = tweet_object
             else:
                 if tweet is None:

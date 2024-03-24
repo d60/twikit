@@ -70,6 +70,6 @@ def raise_exceptions_from_response(errors: list[dict]):
         code = error.get('code')
         if code not in ERROR_CODE_TO_EXCEPTION:
             code = error.get('extensions', {}).get('code')
-        exception = ERROR_CODE_TO_EXCEPTION[code]
+        exception = ERROR_CODE_TO_EXCEPTION.get(code)
         if exception is not None:
             raise exception(error['message'])
