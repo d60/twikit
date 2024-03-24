@@ -844,8 +844,6 @@ class Client:
             'twitter:string:cards_platform': 'Web-12',
             'twitter:string:selected_choice': selected_choice
         })
-        print(card_uri, tweet_id, card_name, selected_choice)
-
         headers = self._base_headers | {
             'content-type': 'application/x-www-form-urlencoded'
         }
