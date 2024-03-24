@@ -33,7 +33,7 @@ from .list import List
 from .message import Message
 from .notification import Notification
 from .trend import Trend
-from .tweet import ScheduledTweet, Tweet
+from .tweet import Poll, ScheduledTweet, Tweet
 from .user import User
 from .utils import Result
 
@@ -812,6 +812,54 @@ class Client:
         )).json()
 
         return response['card_uri']
+
+    async def vote(
+        self,
+        selected_choice: str,
+        card_uri: str,
+        tweet_id: str,
+        card_name: str
+    ) -> Poll:
+        """
+        Vote on a poll with the selected choice.
+        Parameters
+        ----------
+        selected_choice : str
+            The label of the selected choice for the vote.
+        card_uri : str
+            The URI of the poll card.
+        tweet_id : str
+            The ID of the original tweet containing the poll.
+        card_name : str
+            The name of the poll card.
+        Returns
+        -------
+        Poll
+            The Poll object representing the updated poll after voting.
+        """
+        data = urlencode({
+            'twitter:string:card_uri': card_uri,
+            'twitter:long:original_tweet_id': tweet_id,
+            'twitter:string:response_card_name': card_name,
+            'twitter:string:cards_platform': 'Web-12',
+            'twitter:string:selected_choice': selected_choice
+        })
+        print(card_uri, tweet_id, card_name, selected_choice)
+
+        headers = self._base_headers | {
+            'content-type': 'application/x-www-form-urlencoded'
+        }
+        response = (await self.http.post(
+            Endpoint.VOTE,
+            data=data,
+            headers=headers
+        )).json()
+
+        card_data = {
+            'rest_id': response['card']['url'],
+            'legacy': response['card']
+        }
+        return Poll(self, card_data, None)
 
     async def create_tweet(
         self,

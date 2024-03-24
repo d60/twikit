@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -159,9 +160,21 @@ class Tweet:
             i['text'] for i in hashtags
         ]
 
+        if (
+            'card' in data and
+            data['card']['legacy']['name'].startswith('poll')
+        ):
+            self._poll_data = data['card']
+        else:
+            self._poll_data = None
+
     @property
     def created_at_datetime(self) -> datetime:
         return timestamp_to_datetime(self.created_at)
+
+    @property
+    def poll(self) -> Poll:
+        return self._poll_data and Poll(self._client, self._poll_data, self)
 
     async def delete(self) -> Response:
         """Deletes the tweet.
@@ -406,3 +419,107 @@ class ScheduledTweet:
 
     def __repr__(self) -> str:
         return f'<ScheduledTweet id="{self.id}">'
+
+
+class Poll:
+    """Represents a poll associated with a tweet.
+    Attributes
+    ----------
+    tweet : Tweet
+        The tweet associated with the poll.
+    id : str
+        The unique identifier of the poll.
+    name : str
+        The name of the poll.
+    choices : list of dict
+        A list containing dictionaries representing poll choices.
+        Each dictionary contains 'label' and 'count' keys
+        for choice label and count.
+    duration_minutes : int
+        The duration of the poll in minutes.
+    end_datetime_utc : str
+        The end date and time of the poll in UTC format.
+    last_updated_datetime_utc : str
+        The last updated date and time of the poll in UTC format.
+    selected_choice : str | None
+        Number of the selected choice.
+    """
+
+    def __init__(
+        self, client: Client, data: dict, tweet: Tweet | None = None
+    ) -> None:
+        self._client = client
+        self.tweet = tweet
+
+        legacy = data['legacy']
+        binding_values = legacy['binding_values']
+
+        if isinstance(legacy['binding_values'], list):
+            binding_values = {
+                i.get('key'): i.get('value')
+                for i in legacy['binding_values']
+            }
+
+        self.id: str = data['rest_id']
+        self.name: str = legacy['name']
+
+        choices_number = int(re.findall(
+            r'poll(\d)choice_text_only', self.name
+        )[0])
+        choices = []
+
+        for i in range(1, choices_number + 1):
+            choice_label = binding_values[f'choice{i}_label']
+            choice_count = binding_values[f'choice{i}_count']
+            choices.append({
+                'number': str(i),
+                'label': choice_label['string_value'],
+                'count': choice_count.get('string_value', '0')
+            })
+
+        self.choices = choices
+
+        duration_minutes = binding_values['duration_minutes']['string_value']
+        self.duration_minutes = int(duration_minutes)
+
+        end = binding_values['end_datetime_utc']['string_value']
+        updated = binding_values['last_updated_datetime_utc']['string_value']
+        self.end_datetime_utc: str = end
+        self.last_updated_datetime_utc: str = updated
+
+        counts_are_final = binding_values['counts_are_final']['boolean_value']
+        self.counts_are_final: bool = counts_are_final
+
+        if 'selected_choice' in binding_values:
+            selected_choice = binding_values['selected_choice']['string_value']
+            self.selected_choice: str = selected_choice
+        else:
+            self.selected_choice = None
+
+    async def vote(self, selected_choice: str) -> Poll:
+        """
+        Vote on the poll with the specified selected choice.
+        Parameters
+        ----------
+        selected_choice : str
+            The label of the selected choice for the vote.
+        Returns
+        -------
+        Poll
+            The Poll object representing the updated poll after voting.
+        """
+        return await self._client.vote(
+            selected_choice,
+            self.id,
+            self.tweet.id,
+            self.name
+        )
+
+    def __repr__(self) -> str:
+        return f'<Poll id="{self.id}">'
+
+    def __eq__(self, __value: object) -> bool:
+        return isinstance(__value, Poll) and self.id == __value.id
+
+    def __ne__(self, __value: object) -> bool:
+        return not self == __value

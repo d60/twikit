@@ -74,6 +74,8 @@ class Tweet:
         Related tweets.
     hashtags: list[str]
         Hashtags included in the tweet text.
+    poll : Poll
+        Poll attached to the tweet.
     """
 
     def __init__(self, client: Client, data: dict, user: User = None) -> None:
