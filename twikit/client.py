@@ -112,7 +112,7 @@ class Client:
         *,
         auth_info_1: str,
         auth_info_2: str | None = None,
-        password: str,
+        password: str
     ) -> dict:
         """
         Logs into the account using the specified login information.
@@ -1500,7 +1500,7 @@ class Client:
             'includePromotedContent': True,
             'withQuickPromoteEligibilityTweetFields': True,
             'withVoice': True,
-            'withV2Timeline': True
+            'withV2Timeline': True,
         }
         if cursor is not None:
             variables['cursor'] = cursor
