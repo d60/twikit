@@ -872,6 +872,8 @@ class Client:
             - 'followers': Limits replies to followers only.
             - 'verified': Limits replies to verified accounts only.
             - 'mentioned': Limits replies to mentioned accounts only.
+        attachment_url : str
+            URL of the tweet to be quoted.
 
         Raises
         ------
