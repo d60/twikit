@@ -7,9 +7,9 @@ Rate Limits
 <table>
     <thead>
         <tr>
-            <th>Functions</th>
-            <th>Limit</th>
             <th>Endpoint</th>
+            <th>Limit</th>
+            <th>Functions</th>
         </tr>
     </thead>
     <tbody>

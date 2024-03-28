@@ -144,7 +144,7 @@ class Tweet:
         self.retweet_count: int = legacy['retweet_count']
         self.editable_until_msecs: int = data['edit_control'].get(
             'editable_until_msecs')
-        self.is_translatable: bool = data['is_translatable']
+        self.is_translatable: bool = data.get('is_translatable')
         self.is_edit_eligible: bool = data['edit_control'].get(
             'is_edit_eligible')
         self.edits_remaining: int = data['edit_control'].get('edits_remaining')
@@ -285,7 +285,8 @@ class Tweet:
     def reply(
         self,
         text: str = '',
-        media_ids: list[str] | None = None
+        media_ids: list[str] | None = None,
+        **kwargs
     ) -> Tweet:
         """
         Replies to the tweet.
@@ -319,7 +320,9 @@ class Tweet:
         --------
         `Client.upload_media`
         """
-        return self._client.create_tweet(text, media_ids, reply_to=self.id)
+        return self._client.create_tweet(
+            text, media_ids, reply_to=self.id, **kwargs
+        )
 
     def get_retweeters(
         self, count: str = 40, cursor: str | None = None

@@ -142,7 +142,7 @@ class Tweet:
         self.retweet_count: int = legacy['retweet_count']
         self.editable_until_msecs: int = data['edit_control'].get(
             'editable_until_msecs')
-        self.is_translatable: bool = data['is_translatable']
+        self.is_translatable: bool = data.get('is_translatable')
         self.is_edit_eligible: bool = data['edit_control'].get(
             'is_edit_eligible')
         self.edits_remaining: int = data['edit_control'].get('edits_remaining')

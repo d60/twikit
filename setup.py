@@ -16,7 +16,7 @@ setup(
         'fake_useragent',
         'filetype'
     ],
-    python_requires='>=3.9',
+    python_requires='>=3.8',
     description='Twitter API wrapper for python with **no API key required**.',
     long_description=long_description,
     long_description_content_type='text/markdown',
