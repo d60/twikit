@@ -1500,7 +1500,7 @@ class Client:
             'includePromotedContent': True,
             'withQuickPromoteEligibilityTweetFields': True,
             'withVoice': True,
-            'withV2Timeline': True,
+            'withV2Timeline': True
         }
         if cursor is not None:
             variables['cursor'] = cursor
