@@ -283,7 +283,8 @@ class Tweet:
     async def reply(
         self,
         text: str = '',
-        media_ids: list[str] | None = None
+        media_ids: list[str] | None = None,
+        **kwargs
     ) -> Tweet:
         """
         Replies to the tweet.
@@ -318,7 +319,7 @@ class Tweet:
         `Client.upload_media`
         """
         return await self._client.create_tweet(
-            text, media_ids, reply_to=self.id
+            text, media_ids, reply_to=self.id, **kwargs
         )
 
     async def get_retweeters(
