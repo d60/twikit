@@ -59,6 +59,16 @@ class InvalidMedia(TwitterException):
     sent with the tweet.
     """
 
+class UserNotFound(TwitterException):
+    """
+    Exception raised when a user does not exsit.
+    """
+
+class UserUnavailable(TwitterException):
+    """
+    Exception raised when a user is unavailable.
+    """
+
 ERROR_CODE_TO_EXCEPTION: dict[int, TwitterException] = {
     187: DuplicateTweet,
     324: InvalidMedia

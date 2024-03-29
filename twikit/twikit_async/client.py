@@ -13,6 +13,8 @@ from ..errors import (
     CouldNotTweet,
     TweetNotAvailable,
     TwitterException,
+    UserNotFound,
+    UserUnavailable,
     raise_exceptions_from_response
 )
 from ..utils import (
@@ -1116,7 +1118,13 @@ class Client:
             params=params,
             headers=self._base_headers
         )).json()
+
+        if 'user' not in response['data']:
+            raise UserNotFound('The user does not exist.')
         user_data = response['data']['user']['result']
+        if user_data.get('__typename') == 'UserUnavailable':
+            raise UserUnavailable(user_data.get('message'))
+
         return User(self, user_data)
 
     async def get_user_by_id(self, user_id: str) -> User:
@@ -1252,6 +1260,9 @@ class Client:
             if not tweet_info_:
                 continue
             tweet_info = tweet_info_[0]
+
+            if tweet_info.get('__typename') == 'TweetTombstone':
+                continue
 
             if tweet_info['__typename'] == 'TweetWithVisibilityResults':
                 tweet_info = tweet_info['tweet']
