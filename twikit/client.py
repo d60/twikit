@@ -461,7 +461,7 @@ class Client:
         ...
         ...
 
-        >>> latest_tweets = tweets.next()  # Retrieve latest tweets
+        >>> previous_tweets = tweets.previous()  # Retrieve previous tweets
         """
         product = product.capitalize()
 
@@ -1517,6 +1517,8 @@ class Client:
         <Tweet id="...">
         ...
         ...
+
+        >>> previous_tweets = tweets.previous()  # Retrieve previous tweets
 
         See Also
         --------

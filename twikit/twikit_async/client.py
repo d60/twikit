@@ -464,7 +464,8 @@ class Client:
         ...
         ...
 
-        >>> latest_tweets = await tweets.next()  # Retrieve latest tweets
+        >>> # Retrieve previous tweets
+        >>> previous_tweets = await tweets.previous()
         """
         product = product.capitalize()
 
@@ -1551,6 +1552,9 @@ class Client:
         <Tweet id="...">
         ...
         ...
+
+        >>> # Retrieve previous tweets
+        >>> previous_tweets = await tweets.previous()
 
         See Also
         --------
