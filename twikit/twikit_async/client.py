@@ -475,15 +475,15 @@ class Client:
             items = find_dict(instructions, 'moduleItems')[0]
         else:
             items_ = find_dict(instructions, 'entries')
-            if not items_:
-                # Returns an empty list because there are no more results.
-                return Result([])
-            items = items_[0]
+            if items_:
+                items = items_[0]
+            else:
+                items = []
             if product == 'Media':
-                if 'items' not in items[0]['content']:
-                    # Returns an empty list because there are no more results.
-                    return Result([])
-                items = items[0]['content']['items']
+                if 'items' in items[0]['content']:
+                    items = items[0]['content']['items']
+                else:
+                    items = []
 
         next_cursor = None
         previous_cursor = None
