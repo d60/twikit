@@ -460,6 +460,8 @@ class Client:
         <Tweet id="...">
         ...
         ...
+
+        >>> latest_tweets = tweets.next()  # Retrieve latest tweets
         """
         product = product.capitalize()
 
@@ -481,11 +483,14 @@ class Client:
                 items = items[0]['content']['items']
 
         next_cursor = None
+        previous_cursor = None
 
         results = []
         for item in items:
             if item['entryId'].startswith('cursor-bottom'):
                 next_cursor = item['content']['value']
+            if item['entryId'].startswith('cursor-top'):
+                previous_cursor = item['content']['value']
             if not item['entryId'].startswith(('tweet', 'search-grid')):
                 continue
             tweet_info = find_dict(item, 'result')[0]
@@ -496,16 +501,21 @@ class Client:
 
         if next_cursor is None:
             if product == 'Media':
-                next_cursor = find_dict(
+                entries = find_dict(
                     instructions, 'entries'
-                )[0][-1]['content']['value']
+                )[0]
+                next_cursor = entries[-1]['content']['value']
+                previous_cursor = entries[-2]['content']['value']
             else:
                 next_cursor = instructions[-1]['entry']['content']['value']
+                previous_cursor = instructions[-2]['entry']['content']['value']
 
         return Result(
             results,
             lambda:self.search_tweet(query, product, count, next_cursor),
-            next_cursor
+            next_cursor,
+            lambda:self.search_tweet(query, product, count, previous_cursor),
+            previous_cursor
         )
 
     def search_user(
@@ -1362,19 +1372,26 @@ class Client:
             return Result([])
         items = items_[0]
         next_cursor = items[-1]['content']['value']
+        previous_cursor = items[-2]['content']['value']
 
         results = []
         for item in items:
             if not item['entryId'].startswith('user'):
                 continue
-            user_info = find_dict(item, 'result')[0]
+            user_info_ = find_dict(item, 'result')
+            if not user_info_:
+                continue
+            user_info = user_info_[0]
             results.append(User(self, user_info))
 
         return Result(
             results,
             lambda:self._get_tweet_engagements(
                 tweet_id, count, next_cursor, endpoint),
-            next_cursor
+            next_cursor,
+            lambda:self._get_tweet_engagements(
+                tweet_id, count, previous_cursor, endpoint),
+            previous_cursor
         )
 
     def get_retweeters(
@@ -1541,6 +1558,7 @@ class Client:
 
         items = instructions[-1]['entries']
         next_cursor = items[-1]['content']['value']
+        previous_cursor = items[-2]['content']['value']
 
         if tweet_type == 'Media':
             if cursor is None:
@@ -1587,7 +1605,10 @@ class Client:
             results,
             lambda:self.get_user_tweets(
                 user_id, tweet_type, count, next_cursor),
-            next_cursor
+            next_cursor,
+            lambda:self.get_user_tweets(
+                user_id, tweet_type, count, previous_cursor),
+            previous_cursor
         )
 
     def get_timeline(
@@ -2017,6 +2038,7 @@ class Client:
             return Result([])
         items = items_[0]
         next_cursor = items[-1]['content']['value']
+        previous_cursor = items[-2]['content']['value']
 
         results = []
         for item in items:
@@ -2029,7 +2051,9 @@ class Client:
         return Result(
             results,
             lambda:self.get_bookmarks(count, next_cursor),
-            next_cursor
+            next_cursor,
+            lambda:self.get_bookmarks(count, previous_cursor),
+            previous_cursor
         )
 
     def delete_all_bookmarks(self) -> Response:
@@ -2786,7 +2810,8 @@ class Client:
             ))
         return Result(
             messages,
-            lambda:self.get_dm_history(user_id, messages[-1].id)
+            lambda:self.get_dm_history(user_id, messages[-1].id),
+            messages[-1].id
         )
 
     def send_dm_to_group(
@@ -2901,7 +2926,8 @@ class Client:
             ))
         return Result(
             messages,
-            lambda:self.get_group_dm_history(group_id, messages[-1].id)
+            lambda:self.get_group_dm_history(group_id, messages[-1].id),
+            messages[-1].id
         )
 
     def get_group(self, group_id: str) -> Group:

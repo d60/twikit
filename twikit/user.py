@@ -278,7 +278,7 @@ class User:
         """
         return self._client.unmute_user(self.id)
 
-    def get_followers(self, count: int = 20) -> list[User]:
+    def get_followers(self, count: int = 20) -> Result[User]:
         """
         Retrieves a list of followers for the user.
 
@@ -289,7 +289,7 @@ class User:
 
         Returns
         -------
-        list[User]
+        Result[User]
             A list of User objects representing the followers.
 
         See Also
@@ -298,7 +298,7 @@ class User:
         """
         return self._client.get_user_followers(self.id, count)
 
-    def get_verified_followers(self, count: int = 20) -> list[User]:
+    def get_verified_followers(self, count: int = 20) -> Result[User]:
         """
         Retrieves a list of verified followers for the user.
 
@@ -309,7 +309,7 @@ class User:
 
         Returns
         -------
-        list[User]
+        Result[User]
             A list of User objects representing the verified followers.
 
         See Also
@@ -318,7 +318,7 @@ class User:
         """
         return self._client.get_user_verified_followers(self.id, count)
 
-    def get_followers_you_know(self, count: int = 20) -> list[User]:
+    def get_followers_you_know(self, count: int = 20) -> Result[User]:
         """
         Retrieves a list of followers whom the user might know.
 
@@ -329,7 +329,7 @@ class User:
 
         Returns
         -------
-        list[User]
+        Result[User]
             A list of User objects representing the followers you might know.
 
         See Also
@@ -338,7 +338,7 @@ class User:
         """
         return self._client.get_user_followers_you_know(self.id, count)
 
-    def get_following(self, count: int = 20) -> list[User]:
+    def get_following(self, count: int = 20) -> Result[User]:
         """
         Retrieves a list of users whom the user is following.
 
@@ -349,7 +349,7 @@ class User:
 
         Returns
         -------
-        list[User]
+        Result[User]
             A list of User objects representing the users being followed.
 
         See Also
@@ -358,7 +358,7 @@ class User:
         """
         return self._client.get_user_following(self.id, count)
 
-    def get_subscriptions(self, count: int = 20) -> list[User]:
+    def get_subscriptions(self, count: int = 20) -> Result[User]:
         """
         Retrieves a list of users whom the user is subscribed to.
 
@@ -369,7 +369,7 @@ class User:
 
         Returns
         -------
-        list[User]
+        Result[User]
             A list of User objects representing the subscribed users.
 
         See Also
