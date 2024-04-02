@@ -147,6 +147,10 @@ class Group:
         """
         return self._client.send_dm_to_group(self.id, text, media_id, reply_to)
 
+    def update(self) -> None:
+        new = self._client.get_group(self.id)
+        self.__dict__.update(new.__dict__)
+
     def __repr__(self) -> str:
         return f'<Group id="{self.id}">'
 

@@ -241,6 +241,10 @@ class List:
         """
         return await self._client.get_list_subscribers(self.id, count, cursor)
 
+    async def update(self) -> None:
+        new = await self._client.get_list(self.id)
+        self.__dict__.update(new.__dict__)
+
     def __eq__(self, __value: object) -> bool:
         return isinstance(__value, List) and self.id == __value.id
 

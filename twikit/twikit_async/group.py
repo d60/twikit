@@ -151,6 +151,10 @@ class Group:
             self.id, text, media_id, reply_to
         )
 
+    async def update(self) -> None:
+        new = await self._client.get_group(self.id)
+        self.__dict__.update(new.__dict__)
+
     def __repr__(self) -> str:
         return f'<Group id="{self.id}">'
 

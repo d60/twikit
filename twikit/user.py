@@ -450,6 +450,10 @@ class User:
         """
         return self._client.get_dm_history(self.id, max_id)
 
+    def update(self) -> None:
+        new = self._client.get_user_by_id(self.id)
+        self.__dict__.update(new.__dict__)
+
     def __repr__(self) -> str:
         return f'<User id="{self.id}">'
 

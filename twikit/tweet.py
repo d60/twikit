@@ -388,6 +388,10 @@ class Tweet:
         """
         return self._client.get_favoriters(self.id, count, cursor)
 
+    def update(self) -> None:
+        new = self._client.get_tweet_by_id(self.id)
+        self.__dict__.update(new.__dict__)
+
     def __repr__(self) -> str:
         return f'<Tweet id="{self.id}">'
 
