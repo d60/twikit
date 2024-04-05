@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from typing import Awaitable, Generic, Iterator, TypeVar
+import json
+from typing import TYPE_CHECKING, Awaitable, Generic, Iterator, TypeVar
+
+if TYPE_CHECKING:
+    from .client import Client
 
 T = TypeVar('T')
 
@@ -77,3 +81,39 @@ class Result(Generic[T]):
 
     def __repr__(self) -> str:
         return self.__results.__repr__()
+
+
+class Flow:
+    def __init__(self, client: Client, endpoint: str, headers: dict) -> None:
+        self._client = client
+        self.endpoint = endpoint
+        self.headers = headers
+        self.response = None
+
+    async def execute_task(self, *subtask_inputs, **kwargs) -> None:
+        data = {}
+
+        if self.token is not None:
+            data['flow_token'] = self.token
+        if subtask_inputs is not None:
+            data['subtask_inputs'] = list(subtask_inputs)
+
+        response = (await self._client.http.post(
+            self.endpoint,
+            data=json.dumps(data),
+            headers=self.headers,
+            **kwargs
+        )).json()
+        self.response = response
+
+    @property
+    def token(self) -> str | None:
+        if self.response is None:
+            return None
+        return self.response.get('flow_token')
+
+    @property
+    def task_id(self) -> str | None:
+        if self.response is None:
+            return None
+        return self.response['subtasks'][0]['subtask_id']

@@ -26,4 +26,3 @@ from .user import User
 from .utils import build_query
 
 __version__ = '1.4.2'
-

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
+from enum import Enum
 from typing import (
     Any,
+    TYPE_CHECKING,
     Callable,
     Generic,
     Iterator,
@@ -11,6 +14,9 @@ from typing import (
     TypeVar
 )
 from urllib import parse
+
+if TYPE_CHECKING:
+    from .client import Client
 
 # This token is common to all accounts and does not need to be changed.
 TOKEN = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'
@@ -65,7 +71,7 @@ class Endpoint:
     """
     A class containing Twitter API endpoints.
     """
-    TASK = 'https://api.twitter.com/1.1/onboarding/task.json'
+    LOGIN_FLOW = 'https://api.twitter.com/1.1/onboarding/task.json'
     LOGOUT = 'https://api.twitter.com/1.1/account/logout.json'
     CREATE_TWEET = 'https://twitter.com/i/api/graphql/SiM_cAu83R0wnrpmKQQSEw/CreateTweet'
     DELETE_TWEET = 'https://twitter.com/i/api/graphql/VaenaVgh5q5ih7kvyVjgtg/DeleteTweet'
@@ -133,6 +139,7 @@ class Endpoint:
     NOTIFICATIONS_VERIFIED = 'https://twitter.com/i/api/2/notifications/verified.json'
     NOTIFICATIONS_MENTIONES = 'https://twitter.com/i/api/2/notifications/mentions.json'
     VOTE = 'https://caps.twitter.com/v2/capi/passthrough/1'
+    REPORT_FLOW = 'https://twitter.com/i/api/1.1/report/flow.json'
 
 T = TypeVar('T')
 
@@ -209,6 +216,42 @@ class Result(Generic[T]):
 
     def __repr__(self) -> str:
         return self.__results.__repr__()
+
+
+class Flow:
+    def __init__(self, client: Client, endpoint: str, headers: dict) -> None:
+        self._client = client
+        self.endpoint = endpoint
+        self.headers = headers
+        self.response = None
+
+    def execute_task(self, *subtask_inputs, **kwargs) -> None:
+        data = {}
+
+        if self.token is not None:
+            data['flow_token'] = self.token
+        if subtask_inputs is not None:
+            data['subtask_inputs'] = list(subtask_inputs)
+
+        response = self._client.http.post(
+            self.endpoint,
+            data=json.dumps(data),
+            headers=self.headers,
+            **kwargs
+        ).json()
+        self.response = response
+
+    @property
+    def token(self) -> str | None:
+        if self.response is None:
+            return None
+        return self.response.get('flow_token')
+
+    @property
+    def task_id(self) -> str | None:
+        if self.response is None:
+            return None
+        return self.response['subtasks'][0]['subtask_id']
 
 
 def find_dict(obj: list | dict, key: str | int) -> list[Any]:

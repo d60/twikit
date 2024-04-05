@@ -37,7 +37,7 @@ from .notification import Notification
 from .trend import Trend
 from .tweet import Poll, ScheduledTweet, Tweet
 from .user import User
-from .utils import Result
+from .utils import Flow, Result
 
 
 class Client:
@@ -63,6 +63,7 @@ class Client:
         self.http = HTTPClient(**kwargs)
         self._user_id = None
         self._user_agent = UserAgent().random.strip()
+        self._act_as = None
 
     async def _get_guest_token(self) -> str:
         headers = self._base_headers
@@ -97,6 +98,8 @@ class Client:
         csrf_token = self._get_csrf_token()
         if csrf_token is not None:
             headers['X-Csrf-Token'] = csrf_token
+        if self._act_as is not None:
+            headers['X-Act-As-User-Id'] = self._act_as
         return headers
 
     def _get_csrf_token(self) -> str:
@@ -153,120 +156,77 @@ class Client:
         headers.pop('X-Twitter-Active-User')
         headers.pop('X-Twitter-Auth-Type')
 
-        async def _execute_task(
-            flow_token: str | None = None,
-            subtask_input: dict | None = None,
-            flow_name: str | None = None
-        ) -> dict:
-            url = Endpoint.TASK
-            if flow_name is not None:
-                url += f'?flow_name={flow_name}'
+        flow = Flow(self, Endpoint.LOGIN_FLOW, headers)
 
-            data = {}
-            if flow_token is not None:
-                data['flow_token'] = flow_token
-            if subtask_input is not None:
-                data['subtask_inputs'] = [subtask_input]
-
-            response = (await self.http.post(
-                url, data=json.dumps(data), headers=headers
-            )).json()
-            return response
-
-        flow_token = (await _execute_task(flow_name='login'))['flow_token']
-        flow_token = (await _execute_task(flow_token))['flow_token']
-        response = await _execute_task(
-            flow_token,
-            {
-                'subtask_id': 'LoginEnterUserIdentifierSSO',
-                'settings_list': {
-                    'setting_responses': [
-                        {
-                            'key': 'user_identifier',
-                            'response_data': {
-                                'text_data': {'result': auth_info_1}
-                            }
+        await flow.execute_task(params={'flow_name': 'login'})
+        await flow.execute_task()
+        await flow.execute_task({
+            'subtask_id': 'LoginEnterUserIdentifierSSO',
+            'settings_list': {
+                'setting_responses': [
+                    {
+                        'key': 'user_identifier',
+                        'response_data': {
+                            'text_data': {'result': auth_info_1}
                         }
-                    ],
-                    'link': 'next_link'
-                }
-            }
-        )
-
-        flow_token = response['flow_token']
-        task_id = response['subtasks'][0]['subtask_id']
-
-        if task_id == 'LoginEnterAlternateIdentifierSubtask':
-            response = await _execute_task(
-                flow_token,
-                {
-                    'subtask_id': 'LoginEnterAlternateIdentifierSubtask',
-                    'enter_text': {
-                        'text': auth_info_2,
-                        'link': 'next_link'
                     }
-                }
-            )
-            flow_token = response['flow_token']
+                ],
+                'link': 'next_link'
+            }
+        })
 
-        response = await _execute_task(
-            flow_token,
-            {
-                'subtask_id': 'LoginEnterPassword',
-                'enter_password': {
-                    'password': password,
+        if flow.task_id == 'LoginEnterAlternateIdentifierSubtask':
+            await flow.execute_task({
+                'subtask_id': 'LoginEnterAlternateIdentifierSubtask',
+                'enter_text': {
+                    'text': auth_info_2,
                     'link': 'next_link'
                 }
+            })
+
+        await flow.execute_task({
+            'subtask_id': 'LoginEnterPassword',
+            'enter_password': {
+                'password': password,
+                'link': 'next_link'
             }
-        )
+        })
 
-        flow_token = response['flow_token']
+        await flow.execute_task({
+            'subtask_id': 'AccountDuplicationCheck',
+            'check_logged_in_account': {
+                'link': 'AccountDuplicationCheck_false'
+            }
+        })
 
-        response = await _execute_task(
-            flow_token,
-            {
-                'subtask_id': 'AccountDuplicationCheck',
-                'check_logged_in_account': {
-                    'link': 'AccountDuplicationCheck_false'
-                }
-            },
-        )
-
-        if not response['subtasks']:
+        if not flow.response['subtasks']:
             return
 
-        flow_token = response['flow_token']
-        task_id = response['subtasks'][0]['subtask_id']
-        self._user_id = find_dict(response, 'id_str')[0]
+        self._user_id = find_dict(flow.response, 'id_str')[0]
 
-        if task_id == 'LoginTwoFactorAuthChallenge':
-            print(find_dict(response, 'secondary_text')[0]['text'])
-            response = await _execute_task(
-                flow_token,
-                {
-                    'subtask_id': 'LoginTwoFactorAuthChallenge',
-                    'enter_text': {
-                        'text': input('>>> '),
-                        'link': 'next_link'
-                    }
+        if flow.task_id == 'LoginTwoFactorAuthChallenge':
+            print(find_dict(flow.response, 'secondary_text')[0]['text'])
+
+            await flow.execute_task({
+                'subtask_id': 'LoginTwoFactorAuthChallenge',
+                'enter_text': {
+                    'text': input('>>> '),
+                    'link': 'next_link'
                 }
-            )
-            task_id = response['subtasks'][0]['subtask_id']
+            })
 
-        if task_id == 'LoginAcid':
-            print(find_dict(response, 'secondary_text')[0]['text'])
-            response = await _execute_task(
-                flow_token,
-                {
-                    'subtask_id': 'LoginAcid',
-                    'enter_text': {
-                        'text': input('>>> '),
-                        'link': 'next_link'
-                    }
+        if flow.task_id == 'LoginAcid':
+            print(find_dict(flow.response, 'secondary_text')[0]['text'])
+
+            await flow.execute_task({
+                'subtask_id': 'LoginAcid',
+                'enter_text': {
+                    'text': input('>>> '),
+                    'link': 'next_link'
                 }
-            )
+            })
 
-        return response
+        return flow.response
 
     async def logout(self) -> Response:
         """
@@ -387,6 +347,18 @@ class Client:
         """
         with open(path, 'r', encoding='utf-8') as f:
             self.set_cookies(json.load(f))
+
+    def set_delegate_account(self, user_id: str | None) -> None:
+        """
+        Sets the account to act as.
+
+        Parameters
+        ----------
+        user_id : str | None
+            The user ID of the account to act as.
+            Set to None to clear the delegated account.
+        """
+        self._act_as = user_id
 
     async def _search(
         self,
