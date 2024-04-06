@@ -131,7 +131,7 @@ class Client:
 
         Parameters
         ----------
-        auth_info_1 : str
+        auth_info_1 : :class:`str`
             The first piece of authentication information,
             which can be a username, email address, or phone number.
         auth_info_2 : str, default=None
