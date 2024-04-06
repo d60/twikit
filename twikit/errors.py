@@ -32,6 +32,12 @@ class TooManyRequests(TwitterException):
     """
     Exception raised for 429 Too Many Requests errors.
     """
+    def __init__(self, *args, headers: dict | None = None) -> None:
+        super().__init__(*args)
+        if headers is not None and 'x-rate-limit-reset' in headers:
+            self.rate_limit_reset = int(headers.get('x-rate-limit-reset'))
+        else:
+            self.rate_limit_reset = None
 
 class ServerError(TwitterException):
     """

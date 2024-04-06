@@ -39,7 +39,7 @@ class HTTPClient:
             elif status_code == 408:
                 raise RequestTimeout(message)
             elif status_code == 429:
-                raise TooManyRequests(message)
+                raise TooManyRequests(message, headers=response.headers)
             elif 500 <= status_code < 600:
                 raise ServerError(message)
             else:
