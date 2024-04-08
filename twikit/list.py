@@ -160,7 +160,7 @@ class List:
 
         Returns
         -------
-        :class:`Result`[:class:`Tweet`]
+        Result[:class:`Tweet`]
             A Result object containing the retrieved tweets.
 
         Examples
@@ -195,7 +195,7 @@ class List:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             Members of the list
 
         Examples
@@ -223,7 +223,7 @@ class List:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             Subscribers of the list
 
         Examples

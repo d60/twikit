@@ -82,7 +82,7 @@ class User:
         The type of translator.
     profile_interstitial_type : :class:`str`
         The type of profile interstitial.
-    withheld_in_countries : :class:`list`[:class:`str`]
+    withheld_in_countries : list[:class:`str`]
         Countries where the user's content is withheld.
     """
 
@@ -144,7 +144,7 @@ class User:
 
         Returns
         -------
-        :class:`Result`[:class:`Tweet`]
+        Result[:class:`Tweet`]
             A Result object containing a list of `Tweet` objects.
 
         Examples
@@ -289,7 +289,7 @@ class User:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             A list of User objects representing the followers.
 
         See Also
@@ -309,7 +309,7 @@ class User:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             A list of User objects representing the verified followers.
 
         See Also
@@ -329,7 +329,7 @@ class User:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             A list of User objects representing the followers you might know.
 
         See Also
@@ -349,7 +349,7 @@ class User:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             A list of User objects representing the users being followed.
 
         See Also
@@ -369,7 +369,7 @@ class User:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             A list of User objects representing the subscribed users.
 
         See Also
@@ -426,7 +426,7 @@ class User:
 
         Returns
         -------
-        :class:`Result`[:class:`Message`]
+        Result[:class:`Message`]
             A Result object containing a list of Message objects representing
             the DM conversation history.
 

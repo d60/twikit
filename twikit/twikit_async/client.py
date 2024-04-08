@@ -416,7 +416,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`Tweet`]
+        Result[:class:`Tweet`]
             An instance of the `Result` class containing the
             search results.
 
@@ -516,7 +516,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             An instance of the `Result` class containing the
             search results.
 
@@ -752,7 +752,7 @@ class Client:
 
         Parameters
         ----------
-        choices : :class:`list`[:class:`str`]
+        choices : list[:class:`str`]
             A list of choices for the poll. Maximum of 4 choices.
         duration_minutes : :class:`int`
             The duration of the poll in minutes.
@@ -859,7 +859,7 @@ class Client:
         ----------
         text : :class:`str`, default=''
             The text content of the tweet.
-        media_ids : :class:`list`[:class:`str`], default=None
+        media_ids : list[:class:`str`], default=None
             A list of media IDs or URIs to attach to the tweet.
             media IDs can be obtained by using the `upload_media` method.
         poll_uri : :class:`str`, default=None
@@ -990,7 +990,7 @@ class Client:
             The timestamp when the tweet should be scheduled for posting.
         text : :class:`str`, default=''
             The text content of the tweet, by default an empty string.
-        media_ids : :class:`list`[:class:`str`], default=None
+        media_ids : list[:class:`str`], default=None
             A list of media IDs to be attached to the tweet, by default None.
 
         Returns
@@ -1296,7 +1296,7 @@ class Client:
 
         Returns
         -------
-        :class:`list`[:class:`ScheduledTweet`]
+        list[:class:`ScheduledTweet`]
             List of ScheduledTweet objects representing the scheduled tweets.
         """
 
@@ -1404,7 +1404,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             A list of users who retweeted the tweet.
 
         Examples
@@ -1440,7 +1440,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             A list of users who favorited the tweet.
 
         Examples
@@ -1484,7 +1484,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`Tweet`]
+        Result[:class:`Tweet`]
             A Result object containing a list of `Tweet` objects.
 
         Examples
@@ -1623,14 +1623,14 @@ class Client:
         ----------
         count : :class:`int`, default=20
             The number of tweets to retrieve.
-        seen_tweet_ids : :class:`list`[:class:`str`], default=None
+        seen_tweet_ids : list[:class:`str`], default=None
             A list of tweet IDs that have been seen.
         cursor : :class:`str`, default=None
             A cursor for pagination.
 
         Returns
         -------
-        :class:`Result`[:class:`Tweet`]
+        Result[:class:`Tweet`]
             A Result object containing a list of Tweet objects.
 
         Example
@@ -1705,14 +1705,14 @@ class Client:
         ----------
         count : :class:`int`, default=20
             The number of tweets to retrieve.
-        seen_tweet_ids : :class:`list`[:class:`str`], default=None
+        seen_tweet_ids : list[:class:`str`], default=None
             A list of tweet IDs that have been seen.
         cursor : :class:`str`, default=None
             A cursor for pagination.
 
         Returns
         -------
-        :class:`Result`[:class:`Tweet`]
+        Result[:class:`Tweet`]
             A Result object containing a list of Tweet objects.
 
         Example
@@ -1994,7 +1994,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`Tweet`]
+        Result[:class:`Tweet`]
             A Result object containing a list of Tweet objects
             representing bookmarks.
 
@@ -2311,7 +2311,7 @@ class Client:
 
         Returns
         -------
-        :class:`list`[:class:`Trend`]
+        list[:class:`Trend`]
             A list of Trend objects representing the retrieved trends.
 
         Examples
@@ -2416,7 +2416,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             A list of User objects representing the followers.
         """
         return self._get_user_friendship(
@@ -2441,7 +2441,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             A list of User objects representing the verified followers.
         """
         return self._get_user_friendship(
@@ -2466,7 +2466,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             A list of User objects representing the followers you might know.
         """
         return self._get_user_friendship(
@@ -2491,7 +2491,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             A list of User objects representing the users being followed.
         """
         return self._get_user_friendship(
@@ -2516,7 +2516,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             A list of User objects representing the subscribed users.
         """
         return self._get_user_friendship(
@@ -2773,7 +2773,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`Message`]
+        Result[:class:`Message`]
             A Result object containing a list of Message objects representing
             the DM conversation history.
 
@@ -2890,7 +2890,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`GroupMessage`]
+        Result[:class:`GroupMessage`]
             A Result object containing a list of GroupMessage objects
             representing the DM conversation history.
 
@@ -2967,7 +2967,7 @@ class Client:
         ----------
         group_id : :class:`str`
             ID of the group to which the member is to be added.
-        user_ids : :class:`list`[:class:`str`]
+        user_ids : list[:class:`str`]
             List of IDs of users to be added.
 
         Returns
@@ -3275,7 +3275,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`List`]
+        Result[:class:`List`]
             Retrieved lists.
 
         Examples
@@ -3367,7 +3367,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`Tweet`]
+        Result[:class:`Tweet`]
             A Result object containing the retrieved tweets.
 
         Examples
@@ -3481,7 +3481,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             Members of a list
 
         Examples
@@ -3516,7 +3516,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             Subscribers of a list
 
         Examples
@@ -3558,7 +3558,7 @@ class Client:
 
         Returns
         -------
-        :class:`Result`[:class:`Notification`]
+        Result[:class:`Notification`]
             List of retrieved notifications.
 
         Examples

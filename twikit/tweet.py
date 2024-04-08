@@ -66,13 +66,13 @@ class Tweet:
         The remaining number of edits allowed for the tweet.
     state : :class:`str`
         The state of the tweet views.
-    replies: :class:`Result`[:class:`Tweet`] | None
+    replies: Result[:class:`Tweet`] | None
         Replies to the tweet.
-    reply_to: :class:`list`[:class:`Tweet`] | None
+    reply_to: list[:class:`Tweet`] | None
         A list of Tweet objects representing the tweets to which to reply.
-    related_tweets : :class:`list`[:class:`Tweet`] | None
+    related_tweets : list[:class:`Tweet`] | None
         Related tweets.
-    hashtags: :class:`list`[:class:`str`]
+    hashtags: list[:class:`str`]
         Hashtags included in the tweet text.
     poll : :class:`Poll`
         Poll attached to the tweet.
@@ -295,7 +295,7 @@ class Tweet:
         ----------
         text : :class:`str`, default=''
             The text content of the reply.
-        media_ids : :class:`list`[:class:`str`], default=None
+        media_ids : list[:class:`str`], default=None
             A list of media IDs or URIs to attach to the reply.
             Media IDs can be obtained by using the `upload_media` method.
 
@@ -339,7 +339,7 @@ class Tweet:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             A list of users who retweeted the tweet.
 
         Examples
@@ -372,7 +372,7 @@ class Tweet:
 
         Returns
         -------
-        :class:`Result`[:class:`User`]
+        Result[:class:`User`]
             A list of users who favorited the tweet.
 
         Examples
@@ -439,7 +439,7 @@ class Poll:
         The unique identifier of the poll.
     name : :class:`str`
         The name of the poll.
-    choices : :class:`list`[:class:`dict`]
+    choices : list[:class:`dict`]
         A list containing dictionaries representing poll choices.
         Each dictionary contains 'label' and 'count' keys
         for choice label and count.

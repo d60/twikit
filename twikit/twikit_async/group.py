@@ -21,7 +21,7 @@ class Group:
         The ID of the group.
     name : :class:`str` | None
         The name of the group.
-    members : :class:`list`[:class:`str`]
+    members : list[:class:`str`]
         Member IDs
     """
     def __init__(self, client: Client, group_id: str, data: dict) -> None:
@@ -54,7 +54,7 @@ class Group:
 
         Returns
         -------
-        :class:`Result`[:class:`GroupMessage`]
+        Result[:class:`GroupMessage`]
             A Result object containing a list of GroupMessage objects
             representing the DM conversation history.
 
@@ -83,7 +83,7 @@ class Group:
 
         Parameters
         ----------
-        user_ids : :class:`list`[:class:`str`]
+        user_ids : list[:class:`str`]
             List of IDs of users to be added.
 
         Returns

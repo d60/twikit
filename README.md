@@ -111,7 +111,7 @@ client.create_tweet(
 
 ```
 
-** Search the latest tweets based on a keywords**
+**Search the latest tweets based on a keywords**
 ```python
 tweets = client.search_tweet('python', 'Latest')
 

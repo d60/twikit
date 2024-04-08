@@ -16,7 +16,7 @@ class Trend:
         The count of tweets associated with the trend.
     domain_context : :class:`str`
         The context or domain associated with the trend.
-    grouped_trends : :class:`list`[:class:`str`]
+    grouped_trends : list[:class:`str`]
         A list of trend names grouped under the main trend.
     """
 
