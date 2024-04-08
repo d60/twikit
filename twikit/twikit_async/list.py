@@ -20,32 +20,32 @@ class List:
 
     Attributes
     ----------
-    id : str
+    id : :class:`str`
         The unique identifier of the List.
-    created_at : int
+    created_at : :class:`int`
         The timestamp when the List was created.
-    default_banner : dict
+    default_banner : :class:`dict`
         Information about the default banner of the List.
-    banner : dict
+    banner : :class:`dict`
         Information about the banner of the List. If custom banner is not set,
         it defaults to the default banner.
-    description : str
+    description : :class:`str`
         The description of the List.
-    following : bool
+    following : :class:`bool`
         Indicates if the authenticated user is following the List.
-    is_member : bool
+    is_member : :class:`bool`
         Indicates if the authenticated user is a member of the List.
-    member_count : int
+    member_count : :class:`int`
         The number of members in the List.
-    mode : Literal['Private', 'Public']
+    mode : {'Private', 'Public'}
         The mode of the List, either 'Private' or 'Public'.
-    muting : bool
+    muting : :class:`bool`
         Indicates if the authenticated user is muting the List.
-    name : str
+    name : :class:`str`
         The name of the List.
-    pinning : bool
+    pinning : :class:`bool`
         Indicates if the List is pinned.
-    subscriber_count : int
+    subscriber_count : :class:`int`
         The number of subscribers to the List.
     """
     def __init__(self, client: Client, data: dict) -> None:
@@ -80,12 +80,12 @@ class List:
 
         Parameters
         ----------
-        media_id : str
+        media_id : :class:`str`
             The ID of the media to use as the new banner image.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -112,17 +112,17 @@ class List:
 
         Parameters
         ----------
-        name : str, default=None
+        name : :class:`str`, default=None
             The new name for the list.
-        description : str, default=None
+        description : :class:`str`, default=None
             The new description for the list.
-        is_private : bool, default=None
+        is_private : :class:`bool`, default=None
             Indicates whether the list should be private
             (True) or public (False).
 
         Returns
         -------
-        List
+        :class:`List`
             The updated Twitter list.
 
         Examples
@@ -155,14 +155,14 @@ class List:
 
         Parameters
         ----------
-        count : int, default=20
+        count : :class:`int`, default=20
             The number of tweets to retrieve.
-        cursor : str, default=None
+        cursor : :class:`str`, default=None
             The cursor for pagination.
 
         Returns
         -------
-        Result[Tweet]
+        :class:`Result`[:class:`Tweet`]
             A Result object containing the retrieved tweets.
 
         Examples
@@ -192,12 +192,12 @@ class List:
 
         Parameters
         ----------
-        count : int, default=20
+        count : :class:`int`, default=20
             Number of members to retrieve.
 
         Returns
         -------
-        Result[User]
+        :class:`Result`[:class:`User`]
             Members of the list
 
         Examples
@@ -220,12 +220,12 @@ class List:
 
         Parameters
         ----------
-        count : int, default=20
+        count : :class:`int`, default=20
             Number of subscribers to retrieve.
 
         Returns
         -------
-        Result[User]
+        :class:`Result`[:class:`User`]
             Subscribers of the list
 
         Examples

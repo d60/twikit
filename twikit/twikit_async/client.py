@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import io
 import json
+from functools import partial
 from typing import Literal
 
 import filetype
@@ -26,6 +27,7 @@ from ..utils import (
     build_tweet_data,
     build_user_data,
     find_dict,
+    flatten_params,
     get_query_id,
     urlencode
 )
@@ -109,7 +111,7 @@ class Client:
 
         Returns
         -------
-        str
+        :class:`str`
             The CSRF token as a string.
         """
         return self.http.client.cookies.get('ct0')
@@ -131,14 +133,14 @@ class Client:
 
         Parameters
         ----------
-        auth_info_1 : str
+        auth_info_1 : :class:`str`
             The first piece of authentication information,
             which can be a username, email address, or phone number.
-        auth_info_2 : str, default=None
+        auth_info_2 : :class:`str`, default=None
             The second piece of authentication information,
             which is optional but recommended to provide.
             It can be a username, email address, or phone number.
-        password : str
+        password : :class:`str`
             The password associated with the account.
 
         Examples
@@ -284,7 +286,7 @@ class Client:
 
         Parameters
         ----------
-        path : str
+        path : :class:`str`
             The path to the file where the cookie will be stored.
 
         Examples
@@ -307,7 +309,7 @@ class Client:
 
         Parameters
         ----------
-        cookies : dict
+        cookies : :class:`dict`
             The cookies to be set as key value pair.
 
         Examples
@@ -332,7 +334,7 @@ class Client:
 
         Parameters
         ----------
-        path : str
+        path : :class:`str`
             Path to the file where the cookie is stored.
 
         Examples
@@ -354,7 +356,7 @@ class Client:
 
         Parameters
         ----------
-        user_id : str | None
+        user_id : :class:`str` | None
             The user ID of the account to act as.
             Set to None to clear the delegated account.
         """
@@ -378,10 +380,10 @@ class Client:
         }
         if cursor is not None:
             variables['cursor'] = cursor
-        params = {
-            'variables': json.dumps(variables),
-            'features': json.dumps(FEATURES)
-        }
+        params = flatten_params({
+            'variables': variables,
+            'features': FEATURES
+        })
         response = (await self.http.get(
             Endpoint.SEARCH_TIMELINE,
             params=params,
@@ -403,18 +405,18 @@ class Client:
 
         Parameters
         ----------
-        query : str
+        query : :class:`str`
             The search query.
         product : {'Top', 'Latest', 'Media'}
             The type of tweets to retrieve.
-        count : int, default=20
+        count : :class:`int`, default=20
             The number of tweets to retrieve, between 1 and 20.
-        cursor : str, default=20
+        cursor : :class:`str`, default=20
             Token to retrieve more tweets.
 
         Returns
         -------
-        Result[Tweet]
+        :class:`Result`[:class:`Tweet`]
             An instance of the `Result` class containing the
             search results.
 
@@ -486,19 +488,11 @@ class Client:
                 next_cursor = instructions[-1]['entry']['content']['value']
                 previous_cursor = instructions[-2]['entry']['content']['value']
 
-        async def _fetch_next_result():
-            return await self.search_tweet(query, product, count, next_cursor)
-
-        async def _fetch_previous_result():
-            return await self.search_tweet(
-                query, product, count, previous_cursor
-            )
-
         return Result(
             results,
-            _fetch_next_result,
+            partial(self.search_tweet, query, product, count, next_cursor),
             next_cursor,
-            _fetch_previous_result,
+            partial(self.search_tweet, query, product, count, previous_cursor),
             previous_cursor
         )
 
@@ -513,16 +507,16 @@ class Client:
 
         Parameters
         ----------
-        query : str
+        query : :class:`str`
             The search query for finding users.
-        count : int, default=20
+        count : :class:`int`, default=20
             The number of users to retrieve in each request.
-        cursor : str, default=None
+        cursor : :class:`str`, default=None
             Token to retrieve more users.
 
         Returns
         -------
-        Result[User]
+        :class:`Result`[:class:`User`]
             An instance of the `Result` class containing the
             search results.
 
@@ -555,12 +549,10 @@ class Client:
             user_info = find_dict(item, 'result')[0]
             results.append(User(self, user_info))
 
-        async def _fetch_next_result():
-            return await self.search_user(query, count, next_cursor)
-
         return Result(
             results,
-            _fetch_next_result,
+            partial(self.search_user,
+                    query, count, next_cursor),
             next_cursor
         )
 
@@ -577,23 +569,23 @@ class Client:
 
         Parameters
         ----------
-        source : str | bytes
+        source : :class:`str` | :class:`bytes`
             The source of the media to be uploaded.
             It can be either a file path or bytes of the media content.
-        wait_for_completion : bool, default=False
+        wait_for_completion : :class:`bool`, default=False
             Whether to wait for the completion of the media upload process.
-        status_check_interval : float, default=1.0
+        status_check_interval : :class:`float`, default=1.0
             The interval (in seconds) to check the status of the
             media upload process.
-        media_type : str, default=None
+        media_type : :class:`str`, default=None
             The MIME type of the media.
             If not specified, it will be guessed from the source.
-        media_category : str, default=None
+        media_category : :class:`str`, default=None
             The media category.
 
         Returns
         -------
-        str
+        :class:`str`
             The media ID of the uploaded media.
 
         Examples
@@ -730,7 +722,7 @@ class Client:
 
         Parameters
         ----------
-        media_id : str
+        media_id : :class:`str`
             The media ID of the uploaded media.
 
         Returns
@@ -760,14 +752,14 @@ class Client:
 
         Parameters
         ----------
-        choices : list[str]
+        choices : :class:`list`[:class:`str`]
             A list of choices for the poll. Maximum of 4 choices.
-        duration_minutes : int
+        duration_minutes : :class:`int`
             The duration of the poll in minutes.
 
         Returns
         -------
-        str
+        :class:`str`
             The URI of the created poll card.
 
         Examples
@@ -814,17 +806,17 @@ class Client:
         Vote on a poll with the selected choice.
         Parameters
         ----------
-        selected_choice : str
+        selected_choice : :class:`str`
             The label of the selected choice for the vote.
-        card_uri : str
+        card_uri : :class:`str`
             The URI of the poll card.
-        tweet_id : str
+        tweet_id : :class:`str`
             The ID of the original tweet containing the poll.
-        card_name : str
+        card_name : :class:`str`
             The name of the poll card.
         Returns
         -------
-        Poll
+        :class:`Poll`
             The Poll object representing the updated poll after voting.
         """
         data = urlencode({
@@ -865,27 +857,31 @@ class Client:
 
         Parameters
         ----------
-        text : str, default=''
+        text : :class:`str`, default=''
             The text content of the tweet.
-        media_ids : list[str], default=None
+        media_ids : :class:`list`[:class:`str`], default=None
             A list of media IDs or URIs to attach to the tweet.
             media IDs can be obtained by using the `upload_media` method.
-        poll_uri : str, default=None
+        poll_uri : :class:`str`, default=None
             The URI of a Twitter poll card to attach to the tweet.
             Poll URIs can be obtained by using the `create_poll` method.
-        reply_to : str, default=None
+        reply_to : :class:`str`, default=None
             The ID of the tweet to which this tweet is a reply.
         conversation_control : {'followers', 'verified', 'mentioned'}
             The type of conversation control for the tweet:
             - 'followers': Limits replies to followers only.
             - 'verified': Limits replies to verified accounts only.
             - 'mentioned': Limits replies to mentioned accounts only.
-        attachment_url : str
+        attachment_url : :class:`str`
             URL of the tweet to be quoted.
+
+        Raises
+        ------
+        :exc:`DuplicateTweet` : If the tweet is a duplicate of another tweet.
 
         Returns
         -------
-        Tweet
+        :class:`Tweet`
             The Created Tweet.
 
         Examples
@@ -962,7 +958,7 @@ class Client:
         }
         response = (await self.http.post(
             Endpoint.CREATE_TWEET,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers,
         )).json()
 
@@ -990,16 +986,16 @@ class Client:
 
         Parameters
         ----------
-        scheduled_at : int
+        scheduled_at : :class:`int`
             The timestamp when the tweet should be scheduled for posting.
-        text : str, default=''
+        text : :class:`str`, default=''
             The text content of the tweet, by default an empty string.
-        media_ids : list[str], default=None
+        media_ids : :class:`list`[:class:`str`], default=None
             A list of media IDs to be attached to the tweet, by default None.
 
         Returns
         -------
-        str
+        :class:`str`
             The ID of the scheduled tweet.
 
         Examples
@@ -1033,7 +1029,7 @@ class Client:
         }
         response = (await self.http.post(
             Endpoint.CREATE_SCHEDULED_TWEET,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers,
         )).json()
         return response['data']['tweet']['rest_id']
@@ -1043,12 +1039,12 @@ class Client:
 
         Parameters
         ----------
-        tweet_id : str
+        tweet_id : :class:`str`
             ID of the tweet to be deleted.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -1065,7 +1061,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.DELETE_TWEET,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -1076,12 +1072,12 @@ class Client:
 
         Parameter
         ---------
-        screen_name : str
+        screen_name : :class:`str`
             The screen name of the Twitter user.
 
         Returns
         -------
-        User
+        :class:`User`
             An instance of the User class representing the
             Twitter user.
 
@@ -1096,11 +1092,11 @@ class Client:
             'screen_name': screen_name,
             'withSafetyModeUserFields': False
         }
-        params = {
-            'variables': json.dumps(variables),
-            'features': json.dumps(USER_FEATURES),
-            'fieldToggles': json.dumps({'withAuxiliaryUserLabels': False})
-        }
+        params = flatten_params({
+            'variables': variables,
+            'features': USER_FEATURES,
+            'fieldToggles': {'withAuxiliaryUserLabels': False}
+        })
         response = (await self.http.get(
             Endpoint.USER_BY_SCREEN_NAME,
             params=params,
@@ -1121,12 +1117,12 @@ class Client:
 
         Parameter
         ---------
-        user_id : str
+        user_id : :class:`str`
             The ID of the Twitter user.
 
         Returns
         -------
-        User
+        :class:`User`
             An instance of the User class representing the
             Twitter user.
 
@@ -1141,10 +1137,10 @@ class Client:
             'userId': user_id,
             'withSafetyModeUserFields': True
         }
-        params = {
-            'variables': json.dumps(variables),
-            'features': json.dumps(USER_FEATURES),
-        }
+        params = flatten_params({
+            'variables': variables,
+            'features': USER_FEATURES
+        })
         response = (await self.http.get(
             Endpoint.USER_BY_REST_ID,
             params=params,
@@ -1168,11 +1164,11 @@ class Client:
         }
         if cursor is not None:
             variables['cursor'] = cursor
-        params = {
-            'variables': json.dumps(variables),
-            'features': json.dumps(FEATURES),
-            'fieldToggles': json.dumps({'withAuxiliaryUserLabels': False})
-        }
+        params = flatten_params({
+            'variables': variables,
+            'features': FEATURES,
+            'fieldToggles': {'withAuxiliaryUserLabels': False}
+        })
         response = (await self.http.get(
             Endpoint.TWEET_DETAIL,
             params=params,
@@ -1183,7 +1179,7 @@ class Client:
     async def _get_more_replies(
         self, tweet_id: str, cursor: str
     ) -> Result[Tweet]:
-        response =await self._get_tweet_detail(tweet_id, cursor)
+        response = await self._get_tweet_detail(tweet_id, cursor)
         entries = find_dict(response, 'entries')[0]
 
         results = []
@@ -1191,6 +1187,8 @@ class Client:
             if entry['entryId'].startswith('cursor'):
                 continue
             tweet_info = find_dict(entry, 'result')[0]
+            if tweet_info['__typename'] == 'TweetTombstone':
+                continue
             if tweet_info['__typename'] == 'TweetWithVisibilityResults':
                 tweet_info = tweet_info['tweet']
             user_info = tweet_info['core']['user_results']['result']
@@ -1198,8 +1196,8 @@ class Client:
 
         if entries[-1]['entryId'].startswith('cursor'):
             next_cursor = entries[-1]['content']['itemContent']['value']
-            async def _fetch_next_result():
-                return await self._get_more_replies(tweet_id, next_cursor)
+            _fetch_next_result = partial(self._get_more_replies,
+                                         tweet_id, next_cursor)
         else:
             next_cursor = None
             _fetch_next_result = None
@@ -1218,12 +1216,12 @@ class Client:
 
         Parameters
         ----------
-        tweet_id : str
+        tweet_id : :class:`str`
             The ID of the tweet.
 
         Returns
         -------
-        Tweet
+        :class:`Tweet`
             A Tweet object representing the fetched tweet.
 
         Examples
@@ -1276,10 +1274,8 @@ class Client:
         if entries[-1]['entryId'].startswith('cursor'):
             # if has more replies
             reply_next_cursor = entries[-1]['content']['itemContent']['value']
-            async def _fetch_more_replies():
-                return await self._get_more_replies(
-                    tweet_id, reply_next_cursor
-                )
+            _fetch_more_replies = partial(self._get_more_replies,
+                                          tweet_id, reply_next_cursor)
         else:
             reply_next_cursor = None
             _fetch_more_replies = None
@@ -1300,13 +1296,13 @@ class Client:
 
         Returns
         -------
-        list[ScheduledTweet]
+        :class:`list`[:class:`ScheduledTweet`]
             List of ScheduledTweet objects representing the scheduled tweets.
         """
 
-        params = {
-            'variables': json.dumps({'ascending': True})
-        }
+        params = flatten_params({
+            'variables': {'ascending': True}
+        })
         response = (await self.http.get(
             Endpoint.FETCH_SCHEDULED_TWEETS,
             params=params,
@@ -1321,12 +1317,12 @@ class Client:
 
         Parameters
         ----------
-        tweet_id : str
+        tweet_id : :class:`str`
             The ID of the scheduled tweet to delete.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
         """
         data = {
@@ -1337,7 +1333,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.DELETE_SCHEDULED_TWEET,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -1355,10 +1351,10 @@ class Client:
         }
         if cursor is not None:
             variables['cursor'] = cursor
-        params = {
-            'variables': json.dumps(variables),
-            'features': json.dumps(FEATURES)
-        }
+        params = flatten_params({
+            'variables': variables,
+            'features': FEATURES
+        })
         response = (await self.http.get(
             endpoint,
             params=params,
@@ -1381,21 +1377,13 @@ class Client:
             user_info = user_info_[0]
             results.append(User(self, user_info))
 
-        async def _fetch_next_result():
-            return await self._get_tweet_engagements(
-                tweet_id, count, next_cursor, endpoint
-            )
-
-        async def _fetch_previous_result():
-            return await self._get_tweet_engagements(
-                tweet_id, count, previous_cursor, endpoint
-            )
-
         return Result(
             results,
-            _fetch_next_result,
+            partial(self._get_tweet_engagements,
+                    tweet_id, count, next_cursor, endpoint),
             next_cursor,
-            _fetch_previous_result,
+            partial(self._get_tweet_engagements,
+                    tweet_id, count, previous_cursor, endpoint),
             previous_cursor
         )
 
@@ -1407,16 +1395,16 @@ class Client:
 
         Parameters
         ----------
-        tweet_id : str
+        tweet_id : :class:`str`
             The ID of the tweet.
         count : int, default=40
             The maximum number of users to retrieve.
-        cursor : str, default=None
+        cursor : :class:`str`, default=None
             A string indicating the position of the cursor for pagination.
 
         Returns
         -------
-        Result[User]
+        :class:`Result`[:class:`User`]
             A list of users who retweeted the tweet.
 
         Examples
@@ -1443,16 +1431,16 @@ class Client:
 
         Parameters
         ----------
-        tweet_id : str
+        tweet_id : :class:`str`
             The ID of the tweet.
         count : int, default=40
             The maximum number of users to retrieve.
-        cursor : str, default=None
+        cursor : :class:`str`, default=None
             A string indicating the position of the cursor for pagination.
 
         Returns
         -------
-        Result[User]
+        :class:`Result`[:class:`User`]
             A list of users who favorited the tweet.
 
         Examples
@@ -1483,20 +1471,20 @@ class Client:
 
         Parameters
         ----------
-        user_id : str
+        user_id : :class:`str`
             The ID of the Twitter user whose tweets to retrieve.
             To get the user id from the screen name, you can use
             `get_user_by_screen_name` method.
         tweet_type : {'Tweets', 'Replies', 'Media', 'Likes'}
             The type of tweets to retrieve.
-        count : int, default=40
+        count : :class:`int`, default=40
             The number of tweets to retrieve.
-        cursor : str, default=None
+        cursor : :class:`str`, default=None
             The cursor for fetching the next set of results.
 
         Returns
         -------
-        Result[Tweet]
+        :class:`Result`[:class:`Tweet`]
             A Result object containing a list of `Tweet` objects.
 
         Examples
@@ -1544,10 +1532,10 @@ class Client:
         }
         if cursor is not None:
             variables['cursor'] = cursor
-        params = {
-            'variables': json.dumps(variables),
-            'features': json.dumps(FEATURES),
-        }
+        params = flatten_params({
+            'variables': variables,
+            'features': FEATURES
+        })
         endpoint = {
             'Tweets': Endpoint.USER_TWEETS,
             'Replies': Endpoint.USER_TWEETS_AND_REPLIES,
@@ -1611,21 +1599,13 @@ class Client:
 
             results.append(tweet)
 
-        async def _fetch_next_result():
-            return await self.get_user_tweets(
-                user_id, tweet_type, count, next_cursor
-            )
-
-        async def _fetch_previous_result():
-            return await self.get_user_tweets(
-                user_id, tweet_type, count, previous_cursor
-            )
-
         return Result(
             results,
-            _fetch_next_result,
+            partial(self.get_user_tweets,
+                    user_id, tweet_type, count, next_cursor),
             next_cursor,
-            _fetch_previous_result,
+            partial(self.get_user_tweets,
+                    user_id, tweet_type, count, previous_cursor),
             previous_cursor
         )
 
@@ -1641,16 +1621,16 @@ class Client:
 
         Parameters
         ----------
-        count : int, default=20
+        count : :class:`int`, default=20
             The number of tweets to retrieve.
-        seen_tweet_ids : list[str], default=None
+        seen_tweet_ids : :class:`list`[:class:`str`], default=None
             A list of tweet IDs that have been seen.
-        cursor : str, default=None
+        cursor : :class:`str`, default=None
             A cursor for pagination.
 
         Returns
         -------
-        Result[Tweet]
+        :class:`Result`[:class:`Tweet`]
             A Result object containing a list of Tweet objects.
 
         Example
@@ -1688,7 +1668,7 @@ class Client:
         }
         response = (await self.http.post(
             Endpoint.HOME_TIMELINE,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )).json()
 
@@ -1705,12 +1685,9 @@ class Client:
             user_info = tweet_info['core']['user_results']['result']
             results.append(Tweet(self, tweet_info, user_info))
 
-        async def _fetch_next_result():
-            return await self.get_timeline(count, seen_tweet_ids, next_cursor)
-
         return Result(
             results,
-            _fetch_next_result,
+            partial(self.get_timeline, count, seen_tweet_ids, next_cursor),
             next_cursor
         )
 
@@ -1726,16 +1703,16 @@ class Client:
 
         Parameters
         ----------
-        count : int, default=20
+        count : :class:`int`, default=20
             The number of tweets to retrieve.
-        seen_tweet_ids : list[str], default=None
+        seen_tweet_ids : :class:`list`[:class:`str`], default=None
             A list of tweet IDs that have been seen.
-        cursor : str, default=None
+        cursor : :class:`str`, default=None
             A cursor for pagination.
 
         Returns
         -------
-        Result[Tweet]
+        :class:`Result`[:class:`Tweet`]
             A Result object containing a list of Tweet objects.
 
         Example
@@ -1773,7 +1750,7 @@ class Client:
         }
         response = (await self.http.post(
             Endpoint.HOME_LATEST_TIMELINE,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )).json()
 
@@ -1790,14 +1767,10 @@ class Client:
             user_info = tweet_info['core']['user_results']['result']
             results.append(Tweet(self, tweet_info, user_info))
 
-        async def _fetch_next_result():
-            return await self.get_latest_timeline(
-                count, seen_tweet_ids, next_cursor
-            )
-
         return Result(
             results,
-            _fetch_next_result,
+            partial(self.get_latest_timeline,
+                    count, seen_tweet_ids, next_cursor),
             next_cursor
         )
 
@@ -1807,12 +1780,12 @@ class Client:
 
         Parameters
         ----------
-        tweet_id : str
+        tweet_id : :class:`str`
             The ID of the tweet to be liked.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -1830,7 +1803,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.FAVORITE_TWEET,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -1841,12 +1814,12 @@ class Client:
 
         Parameters
         ----------
-        tweet_id : str
+        tweet_id : :class:`str`
             The ID of the tweet to be unliked.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -1864,7 +1837,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.UNFAVORITE_TWEET,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -1875,12 +1848,12 @@ class Client:
 
         Parameters
         ----------
-        tweet_id : str
+        tweet_id : :class:`str`
             The ID of the tweet to be retweeted.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -1898,7 +1871,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.CREATE_RETWEET,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -1909,12 +1882,12 @@ class Client:
 
         Parameters
         ----------
-        tweet_id : str
+        tweet_id : :class:`str`
             The ID of the retweeted tweet to be unretweeted.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -1932,7 +1905,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.DELETE_RETWEET,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -1943,12 +1916,12 @@ class Client:
 
         Parameters
         ----------
-        tweet_id : str
+        tweet_id : :class:`str`
             The ID of the tweet to be bookmarked.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -1967,7 +1940,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.CREATE_BOOKMARK,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -1978,12 +1951,12 @@ class Client:
 
         Parameters
         ----------
-        tweet_id : str
+        tweet_id : :class:`str`
             The ID of the tweet to be removed from bookmarks.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -2001,7 +1974,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.DELETE_BOOKMARK,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -2014,14 +1987,14 @@ class Client:
 
         Parameters
         ----------
-        count : int, default=20
+        count : :class:`int`, default=20
             The number of bookmarks to retrieve (default is 20).
-        cursor : str, default=None
+        cursor : :class:`str`, default=None
             A cursor to paginate through the bookmarks (default is None).
 
         Returns
         -------
-        Result[Tweet]
+        :class:`Result`[:class:`Tweet`]
             A Result object containing a list of Tweet objects
             representing bookmarks.
 
@@ -2049,10 +2022,10 @@ class Client:
         features = FEATURES | {
             'graphql_timeline_v2_bookmark_timeline': True
         }
-        params = {
-            'variables': json.dumps(variables),
-            'features': json.dumps(features)
-        }
+        params = flatten_params({
+            'variables': variables,
+            'features': features
+        })
         response = (await self.http.get(
             Endpoint.BOOKMARKS,
             params=params,
@@ -2074,17 +2047,11 @@ class Client:
             user_info = tweet_info['core']['user_results']['result']
             results.append(Tweet(self, tweet_info, User(self, user_info)))
 
-        async def _fetch_next_result():
-            return await self.get_bookmarks(count, next_cursor)
-
-        async def _fetch_previous_result():
-            return await self.get_bookmarks(count, previous_cursor)
-
         return Result(
             results,
-            _fetch_next_result,
+            partial(self.get_bookmarks, count, next_cursor),
             next_cursor,
-            _fetch_previous_result,
+            partial(self.get_bookmarks, count, previous_cursor),
             previous_cursor
         )
 
@@ -2094,7 +2061,7 @@ class Client:
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -2107,7 +2074,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.BOOKMARKS_ALL_DELETE,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -2118,12 +2085,12 @@ class Client:
 
         Parameters
         ----------
-        user_id : str
+        user_id : :class:`str`
             The ID of the user to follow.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -2166,12 +2133,12 @@ class Client:
 
         Parameters
         ----------
-        user_id : str
+        user_id : :class:`str`
             The ID of the user to unfollow.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -2214,12 +2181,12 @@ class Client:
 
         Parameters
         ----------
-        user_id : str
+        user_id : :class:`str`
             The ID of the user to block.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         See Also
@@ -2242,12 +2209,12 @@ class Client:
 
         Parameters
         ----------
-        user_id : str
+        user_id : :class:`str`
             The ID of the user to unblock.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         See Also
@@ -2270,12 +2237,12 @@ class Client:
 
         Parameters
         ----------
-        user_id : str
+        user_id : :class:`str`
             The ID of the user to mute.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         See Also
@@ -2298,12 +2265,12 @@ class Client:
 
         Parameters
         ----------
-        user_id : str
+        user_id : :class:`str`
             The ID of the user to unmute.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         See Also
@@ -2339,12 +2306,12 @@ class Client:
             - 'news': News-related trends.
             - 'sports': Sports-related trends.
             - 'entertainment': Entertainment-related trends.
-        count : int, default=20
+        count : :class:`int`, default=20
             The number of trends to retrieve.
 
         Returns
         -------
-        list[Trend]
+        :class:`list`[:class:`Trend`]
             A list of Trend objects representing the retrieved trends.
 
         Examples
@@ -2407,10 +2374,10 @@ class Client:
         }
         if cursor is not None:
             variables['cursor'] = cursor
-        params = {
-            'variables': json.dumps(variables),
-            'features': json.dumps(FEATURES)
-        }
+        params = flatten_params({
+            'variables': variables,
+            'features': FEATURES
+        })
         response = (await self.http.get(
             endpoint,
             params=params,
@@ -2427,14 +2394,10 @@ class Client:
             elif entry_id.startswith('cursor-bottom'):
                 next_cursor = item['content']['value']
 
-        async def _fetch_next_result():
-            return self._get_user_friendship(
-                user_id, count, endpoint, next_cursor
-            )
-
         return Result(
             results,
-            _fetch_next_result,
+            partial(self._get_user_friendship,
+                    user_id, count, endpoint, next_cursor),
             next_cursor
         )
 
@@ -2446,14 +2409,14 @@ class Client:
 
         Parameters
         ----------
-        user_id : str
+        user_id : :class:`str`
             The ID of the user for whom to retrieve followers.
         count : int, default=20
             The number of followers to retrieve.
 
         Returns
         -------
-        Result[User]
+        :class:`Result`[:class:`User`]
             A list of User objects representing the followers.
         """
         return self._get_user_friendship(
@@ -2471,14 +2434,14 @@ class Client:
 
         Parameters
         ----------
-        user_id : str
+        user_id : :class:`str`
             The ID of the user for whom to retrieve verified followers.
-        count : int, default=20
+        count : :class:`int`, default=20
             The number of verified followers to retrieve.
 
         Returns
         -------
-        Result[User]
+        :class:`Result`[:class:`User`]
             A list of User objects representing the verified followers.
         """
         return self._get_user_friendship(
@@ -2496,14 +2459,14 @@ class Client:
 
         Parameters
         ----------
-        user_id : str
+        user_id : :class:`str`
             The ID of the user for whom to retrieve followers you might know.
-        count : int, default=20
+        count : :class:`int`, default=20
             The number of followers you might know to retrieve.
 
         Returns
         -------
-        Result[User]
+        :class:`Result`[:class:`User`]
             A list of User objects representing the followers you might know.
         """
         return self._get_user_friendship(
@@ -2521,14 +2484,14 @@ class Client:
 
         Parameters
         ----------
-        user_id : str
+        user_id : :class:`str`
             The ID of the user for whom to retrieve the following users.
-        count : int, default=20
+        count : :class:`int`, default=20
             The number of following users to retrieve.
 
         Returns
         -------
-        Result[User]
+        :class:`Result`[:class:`User`]
             A list of User objects representing the users being followed.
         """
         return self._get_user_friendship(
@@ -2546,14 +2509,14 @@ class Client:
 
         Parameters
         ----------
-        user_id : str
+        user_id : :class:`str`
             The ID of the user for whom to retrieve subscriptions.
-        count : int, default=20
+        count : :class:`int`, default=20
             The number of subscriptions to retrieve.
 
         Returns
         -------
-        Result[User]
+        :class:`Result`[:class:`User`]
             A list of User objects representing the subscribed users.
         """
         return self._get_user_friendship(
@@ -2589,7 +2552,7 @@ class Client:
 
         return (await self.http.post(
             Endpoint.SEND_DM,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )).json()
 
@@ -2625,20 +2588,20 @@ class Client:
 
         Parameters
         ----------
-        user_id : str
+        user_id : :class:`str`
             The ID of the user to whom the direct message will be sent.
-        text : str
+        text : :class:`str`
             The text content of the direct message.
-        media_id : str, default=None
+        media_id : :class:`str`, default=None
             The media ID associated with any media content
             to be included in the message.
             Media ID can be received by using the :func:`.upload_media` method.
-        reply_to : str, default=None
+        reply_to : :class:`str`, default=None
             Message ID to reply to.
 
         Returns
         -------
-        Message
+        :class:`Message`
             `Message` object containing information about the message sent.
 
         Examples
@@ -2665,7 +2628,7 @@ class Client:
             self,
             message_data,
             users[0]['id_str'],
-            users[1]['id_str']
+            users[1]['id_str'] if len(users) == 2 else users[0]['id_str']
         )
 
     async def add_reaction_to_message(
@@ -2676,17 +2639,17 @@ class Client:
 
         Parameters
         ----------
-        message_id : str
+        message_id : :class:`str`
             The ID of the message to which the reaction emoji will be added.
             Group ID ('00000000') or partner_ID-your_ID ('00000000-00000001')
-        conversation_id : str
+        conversation_id : :class:`str`
             The ID of the conversation containing the message.
-        emoji : str
+        emoji : :class:`str`
             The emoji to be added as a reaction.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -2709,7 +2672,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.MESSAGE_ADD_REACTION,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -2722,17 +2685,17 @@ class Client:
 
         Parameters
         ----------
-        message_id : str
+        message_id : :class:`str`
             The ID of the message from which to remove the reaction.
-        conversation_id : str
+        conversation_id : :class:`str`
             The ID of the conversation where the message is located.
             Group ID ('00000000') or partner_ID-your_ID ('00000000-00000001')
-        emoji : str
+        emoji : :class:`str`
             The emoji to remove as a reaction.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -2755,7 +2718,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.MESSAGE_REMOVE_REACTION,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -2766,12 +2729,12 @@ class Client:
 
         Parameters
         ----------
-        message_id : str
+        message_id : :class:`str`
             The ID of the direct message to be deleted.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -2787,7 +2750,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.DELETE_DM,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -2802,15 +2765,15 @@ class Client:
 
         Parameters
         ----------
-        user_id : str
+        user_id : :class:`str`
             The ID of the user with whom the DM conversation
             history will be retrieved.
-        max_id : str, default=None
+        max_id : :class:`str`, default=None
             If specified, retrieves messages older than the specified max_id.
 
         Returns
         -------
-        Result[Message]
+        :class:`Result`[:class:`Message`]
             A Result object containing a list of Message objects representing
             the DM conversation history.
 
@@ -2847,12 +2810,9 @@ class Client:
                 message_info['recipient_id']
             ))
 
-        async def _fetch_next_result():
-            return await self.get_dm_history(user_id, messages[-1].id)
-
         return Result(
             messages,
-            _fetch_next_result,
+            partial(self.get_dm_history, user_id, messages[-1].id),
             messages[-1].id
         )
 
@@ -2868,20 +2828,20 @@ class Client:
 
         Parameters
         ----------
-        group_id : str
+        group_id : :class:`str`
             The ID of the group in which the direct message will be sent.
-        text : str
+        text : :class:`str`
             The text content of the direct message.
-        media_id : str, default=None
+        media_id : :class:`str`, default=None
             The media ID associated with any media content
             to be included in the message.
             Media ID can be received by using the :func:`.upload_media` method.
-        reply_to : str, default=None
+        reply_to : :class:`str`, default=None
             Message ID to reply to.
 
         Returns
         -------
-        GroupMessage
+        :class:`GroupMessage`
             `GroupMessage` object containing information about
             the message sent.
 
@@ -2922,15 +2882,15 @@ class Client:
 
         Parameters
         ----------
-        group_id : str
+        group_id : :class:`str`
             The ID of the group in which the DM conversation
             history will be retrieved.
-        max_id : str, default=None
+        max_id : :class:`str`, default=None
             If specified, retrieves messages older than the specified max_id.
 
         Returns
         -------
-        Result[GroupMessage]
+        :class:`Result`[:class:`GroupMessage`]
             A Result object containing a list of GroupMessage objects
             representing the DM conversation history.
 
@@ -2967,12 +2927,9 @@ class Client:
                 group_id
             ))
 
-        async def _fetch_next_result():
-            return await self.get_group_dm_history(group_id, messages[-1].id)
-
         return Result(
             messages,
-            _fetch_next_result,
+            partial(self.get_group_dm_history, group_id, messages[-1].id),
             messages[-1].id
         )
 
@@ -2982,12 +2939,12 @@ class Client:
 
         Parameters
         ----------
-        group_id : str
+        group_id : :class:`str`
             The ID of the group to retrieve information for.
 
         Returns
         -------
-        Group
+        :class:`Group`
             An object representing the retrieved group.
         """
         params = {
@@ -3008,14 +2965,14 @@ class Client:
 
         Parameters
         ----------
-        group_id : str
+        group_id : :class:`str`
             ID of the group to which the member is to be added.
-        user_ids : list[str]
+        user_ids : :class:`list`[:class:`str`]
             List of IDs of users to be added.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -3033,7 +2990,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.ADD_MEMBER_TO_GROUP,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -3043,14 +3000,14 @@ class Client:
 
         Parameters
         ----------
-        group_id : str
+        group_id : :class:`str`
             ID of the group to be renamed.
-        name : str
+        name : :class:`str`
             New name.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
         """
         data = urlencode({
@@ -3073,16 +3030,16 @@ class Client:
 
         Parameters
         ----------
-        name : str
+        name : :class:`str`
             The name of the list.
-        description : str, default=''
+        description : :class:`str`, default=''
             The description of the list.
-        is_private : bool, default=False
+        is_private : :class:`bool`, default=False
             Indicates whether the list is private (True) or public (False).
 
         Returns
         -------
-        List
+        :class:`List`
             The created list.
 
         Examples
@@ -3107,7 +3064,7 @@ class Client:
         }
         response = (await self.http.post(
             Endpoint.CREATE_LIST,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )).json()
         list_info = find_dict(response, 'list')[0]
@@ -3119,14 +3076,14 @@ class Client:
 
         Parameters
         ----------
-        list_id : str
+        list_id : :class:`str`
             The ID of the list.
-        media_id : str
+        media_id : :class:`str`
             The ID of the media to use as the new banner image.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -3146,7 +3103,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.EDIT_LIST_BANNER,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -3156,12 +3113,12 @@ class Client:
 
         Parameters
         ----------
-        list_id : str
+        list_id : :class:`str`
             ID of the list from which the banner is to be removed.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
         """
         data = {
@@ -3173,7 +3130,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.DELETE_LIST_BANNER,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -3190,19 +3147,19 @@ class Client:
 
         Parameters
         ----------
-        list_id : str
+        list_id : :class:`str`
             The ID of the list to edit.
-        name : str, default=None
+        name : :class:`str`, default=None
             The new name for the list.
-        description : str, default=None
+        description : :class:`str`, default=None
             The new description for the list.
-        is_private : bool, default=None
+        is_private : :class:`bool`, default=None
             Indicates whether the list should be private
             (True) or public (False).
 
         Returns
         -------
-        List
+        :class:`List`
             The updated Twitter list.
 
         Examples
@@ -3227,7 +3184,7 @@ class Client:
         }
         response = (await self.http.post(
             Endpoint.UPDATE_LIST,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )).json()
         list_info = find_dict(response, 'list')[0]
@@ -3239,14 +3196,14 @@ class Client:
 
         Parameters
         ----------
-        list_id : str
+        list_id : :class:`str`
             The ID of the list.
-        user_id : str
+        user_id : :class:`str`
             The ID of the user to add to the list.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -3264,7 +3221,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.LIST_ADD_MEMBER,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -3275,14 +3232,14 @@ class Client:
 
         Parameters
         ----------
-        list_id : str
+        list_id : :class:`str`
             The ID of the list.
-        user_id : str
+        user_id : :class:`str`
             The ID of the user to remove from the list.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -3300,7 +3257,7 @@ class Client:
         }
         response = await self.http.post(
             Endpoint.LIST_REMOVE_MEMBER,
-            data=json.dumps(data),
+            json=data,
             headers=self._base_headers
         )
         return response
@@ -3313,12 +3270,12 @@ class Client:
 
         Parameters
         ----------
-        count : int
+        count : :class:`int`
             The number of lists to retrieve.
 
         Returns
         -------
-        Result[List]
+        :class:`Result`[:class:`List`]
             Retrieved lists.
 
         Examples
@@ -3337,10 +3294,10 @@ class Client:
         }
         if cursor is not None:
             variables['cursor'] = cursor
-        params = {
-            'variables': json.dumps(variables),
-            'features': json.dumps(FEATURES)
-        }
+        params = flatten_params({
+            'variables': variables,
+            'features': FEATURES
+        })
         response = (await self.http.get(
             Endpoint.LIST_MANAGEMENT,
             params=params,
@@ -3361,12 +3318,9 @@ class Client:
 
         next_cursor = entries[-1]['content']['value']
 
-        async def _fetch_next_result():
-            return await self.get_lists(count, next_cursor)
-
         return Result(
             lists,
-            _fetch_next_result,
+            partial(self.get_lists, count, next_cursor),
             next_cursor
         )
 
@@ -3376,18 +3330,18 @@ class Client:
 
         Parameters
         ----------
-        list_id : str
+        list_id : :class:`str`
             The ID of the list to retrieve.
 
         Returns
         -------
-        List
+        :class:`List`
             List object.
         """
-        params = {
-            'variables': json.dumps({'listId': list_id}),
-            'features': json.dumps(LIST_FEATURES)
-        }
+        params = flatten_params({
+            'variables': {'listId': list_id},
+            'features': LIST_FEATURES
+        })
         response = (await self.http.get(
             Endpoint.LIST_BY_REST_ID,
             params=params,
@@ -3404,16 +3358,16 @@ class Client:
 
         Parameters
         ----------
-        list_id : str
+        list_id : :class:`str`
             The ID of the list to retrieve tweets from.
-        count : int, default=20
+        count : :class:`int`, default=20
             The number of tweets to retrieve.
-        cursor : str, default=None
+        cursor : :class:`str`, default=None
             The cursor for pagination.
 
         Returns
         -------
-        Result[Tweet]
+        :class:`Result`[:class:`Tweet`]
             A Result object containing the retrieved tweets.
 
         Examples
@@ -3440,10 +3394,10 @@ class Client:
         }
         if cursor is not None:
             variables['cursor'] = cursor
-        params = {
-            'variables': json.dumps(variables),
-            'features': json.dumps(FEATURES)
-        }
+        params = flatten_params({
+            'variables': variables,
+            'features': FEATURES
+        })
         response = (await self.http.get(
             Endpoint.LIST_LATEST_TWEETS,
             params=params,
@@ -3463,12 +3417,9 @@ class Client:
             user_info = find_dict(tweet_info, 'result')[0]
             results.append(Tweet(self, tweet_info, User(self, user_info)))
 
-        async def _fetch_next_result():
-            return await self.get_list_tweets(list_id, count, next_cursor)
-
         return Result(
             results,
-            _fetch_next_result,
+            partial(self.get_list_tweets, list_id, count, next_cursor),
             next_cursor
         )
 
@@ -3484,10 +3435,10 @@ class Client:
         }
         if cursor is not None:
             variables['cursor'] = cursor
-        params = {
-            'variables': json.dumps(variables),
-            'features': json.dumps(FEATURES)
-        }
+        params = flatten_params({
+            'variables': variables,
+            'features': FEATURES
+        })
         response = (await self.http.get(
             endpoint,
             params=params,
@@ -3523,14 +3474,14 @@ class Client:
 
         Parameters
         ----------
-        list_id : str
+        list_id : :class:`str`
             List ID.
         count : int, default=20
             Number of members to retrieve.
 
         Returns
         -------
-        Result[User]
+        :class:`Result`[:class:`User`]
             Members of a list
 
         Examples
@@ -3558,14 +3509,14 @@ class Client:
 
         Parameters
         ----------
-        list_id : str
+        list_id : :class:`str`
             List ID.
-        count : int, default=20
+        count : :class:`int`, default=20
             Number of subscribers to retrieve.
 
         Returns
         -------
-        Result[User]
+        :class:`Result`[:class:`User`]
             Subscribers of a list
 
         Examples
@@ -3599,16 +3550,15 @@ class Client:
         ----------
         type : {'All', 'Verified', 'Mentions'}
             Type of notifications to retrieve.
-
             All: All notifications
             Verified: Notifications relating to authenticated users
             Mentions: Notifications with mentions
-        count : int, default=40
+        count : :class:`int`, default=40
             Number of notifications to retrieve.
 
         Returns
         -------
-        Result[Notification]
+        :class:`Result`[:class:`Notification`]
             List of retrieved notifications.
 
         Examples
@@ -3687,11 +3637,8 @@ class Client:
         else:
             next_cursor = None
 
-        async def _fetch_next_result():
-            return await self.get_notifications(type, count, next_cursor)
-
         return Result(
             notifications,
-            _fetch_next_result,
+            partial(self.get_notifications, type, count, next_cursor),
             next_cursor
         )

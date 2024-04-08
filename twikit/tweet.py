@@ -18,63 +18,63 @@ class Tweet:
     """
     Attributes
     ----------
-    id : str
+    id : :class:`str`
         The unique identifier of the tweet.
-    created_at : str
+    created_at : :class:`str`
         The date and time when the tweet was created.
-    created_at_datetime : datetime
+    created_at_datetime : :class:`datetime`
         The created_at converted to datetime.
-    user: User
+    user: :class:`User`
         Author of the tweet.
-    text : str
+    text : :class:`str`
         The full text of the tweet.
-    lang : str
+    lang : :class:`str`
         The language of the tweet.
-    in_reply_to : str
+    in_reply_to : :class:`str`
         The tweet ID this tweet is in reply to, if any
-    is_quote_status : bool
+    is_quote_status : :class:`bool`
         Indicates if the tweet is a quote status.
-    quote : Tweet
+    quote : :class:`Tweet`
         The Tweet being quoted (if any)
-    retweeted : bool
+    retweeted : :class:`bool`
         Whether the tweet is a retweet
-    possibly_sensitive : bool
+    possibly_sensitive : :class:`bool`
         Indicates if the tweet content may be sensitive.
-    possibly_sensitive_editable : bool
+    possibly_sensitive_editable : :class:`bool`
         Indicates if the tweet's sensitivity can be edited.
-    quote_count : int
+    quote_count : :class:`int`
         The count of quotes for the tweet.
-    media : list
+    media : :class:`list`
         A list of media entities associated with the tweet.
-    reply_count : int
+    reply_count : :class:`int`
         The count of replies to the tweet.
-    favorite_count : int
+    favorite_count : :class:`int`
         The count of favorites or likes for the tweet.
-    favorited : bool
+    favorited : :class:`bool`
         Indicates if the tweet is favorited.
-    view_count: int
+    view_count: :class:`int`
         The count of views.
-    retweet_count : int
+    retweet_count : :class:`int`
         The count of retweets for the tweet.
-    editable_until_msecs : int
+    editable_until_msecs : :class:`int`
         The timestamp until which the tweet is editable.
-    is_translatable : bool
+    is_translatable : :class:`bool`
         Indicates if the tweet is translatable.
-    is_edit_eligible : bool
+    is_edit_eligible : :class:`bool`
         Indicates if the tweet is eligible for editing.
-    edits_remaining : int
+    edits_remaining : :class:`int`
         The remaining number of edits allowed for the tweet.
-    state : str
+    state : :class:`str`
         The state of the tweet views.
-    replies: Result[Tweet] | None
+    replies: :class:`Result`[:class:`Tweet`] | None
         Replies to the tweet.
-    reply_to: list[Tweet] | None
+    reply_to: :class:`list`[:class:`Tweet`] | None
         A list of Tweet objects representing the tweets to which to reply.
-    related_tweets : list[Tweet] | None
+    related_tweets : :class:`list`[:class:`Tweet`] | None
         Related tweets.
-    hashtags: list[str]
+    hashtags: :class:`list`[:class:`str`]
         Hashtags included in the tweet text.
-    poll : Poll
+    poll : :class:`Poll`
         Poll attached to the tweet.
     """
 
@@ -183,7 +183,7 @@ class Tweet:
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
@@ -198,7 +198,7 @@ class Tweet:
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         See Also
@@ -213,7 +213,7 @@ class Tweet:
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         See Also
@@ -228,7 +228,7 @@ class Tweet:
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         See Also
@@ -243,7 +243,7 @@ class Tweet:
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         See Also
@@ -258,7 +258,7 @@ class Tweet:
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         See Also
@@ -273,7 +273,7 @@ class Tweet:
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         See Also
@@ -293,15 +293,15 @@ class Tweet:
 
         Parameters
         ----------
-        text : str, default=''
+        text : :class:`str`, default=''
             The text content of the reply.
-        media_ids : list[str], default=None
+        media_ids : :class:`list`[:class:`str`], default=None
             A list of media IDs or URIs to attach to the reply.
             Media IDs can be obtained by using the `upload_media` method.
 
         Returns
         -------
-        Tweet
+        :class:`Tweet`
             The created tweet.
 
         Examples
@@ -332,14 +332,14 @@ class Tweet:
 
         Parameters
         ----------
-        count : int, default=40
+        count : :class:`int`, default=40
             The maximum number of users to retrieve.
-        cursor : str, default=None
+        cursor : :class:`str`, default=None
             A string indicating the position of the cursor for pagination.
 
         Returns
         -------
-        Result[User]
+        :class:`Result`[:class:`User`]
             A list of users who retweeted the tweet.
 
         Examples
@@ -363,16 +363,16 @@ class Tweet:
 
         Parameters
         ----------
-        tweet_id : str
+        tweet_id : :class:`str`
             The ID of the tweet.
         count : int, default=40
             The maximum number of users to retrieve.
-        cursor : str, default=None
+        cursor : :class:`str`, default=None
             A string indicating the position of the cursor for pagination.
 
         Returns
         -------
-        Result[User]
+        :class:`Result`[:class:`User`]
             A list of users who favorited the tweet.
 
         Examples
@@ -419,7 +419,7 @@ class ScheduledTweet:
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
         """
         return self._client.delete_scheduled_tweet(self.id)
@@ -433,23 +433,23 @@ class Poll:
 
     Attributes
     ----------
-    tweet : Tweet
+    tweet : :class:`Tweet`
         The tweet associated with the poll.
-    id : str
+    id : :class:`str`
         The unique identifier of the poll.
-    name : str
+    name : :class:`str`
         The name of the poll.
-    choices : list of dict
+    choices : :class:`list`[:class:`dict`]
         A list containing dictionaries representing poll choices.
         Each dictionary contains 'label' and 'count' keys
         for choice label and count.
-    duration_minutes : int
+    duration_minutes : :class:`int`
         The duration of the poll in minutes.
-    end_datetime_utc : str
+    end_datetime_utc : :class:`str`
         The end date and time of the poll in UTC format.
-    last_updated_datetime_utc : str
+    last_updated_datetime_utc : :class:`str`
         The last updated date and time of the poll in UTC format.
-    selected_choice : str | None
+    selected_choice : :class:`str` | None
         Number of the selected choice.
     """
 
@@ -510,12 +510,12 @@ class Poll:
 
         Parameters
         ----------
-        selected_choice : str
+        selected_choice : :class:`str`
             The label of the selected choice for the vote.
 
         Returns
         -------
-        Poll
+        :class:`Poll`
             The Poll object representing the updated poll after voting.
         """
         return self._client.vote(

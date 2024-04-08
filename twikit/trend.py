@@ -10,13 +10,13 @@ class Trend:
     """
     Attributes
     ----------
-    name : str
+    name : :class:`str`
         The name of the trending topic.
-    tweets_count : int
+    tweets_count : :class:`int`
         The count of tweets associated with the trend.
-    domain_context : str
+    domain_context : :class:`str`
         The context or domain associated with the trend.
-    grouped_trends : list[str]
+    grouped_trends : :class:`list`[:class:`str`]
         A list of trend names grouped under the main trend.
     """
 

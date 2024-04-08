@@ -18,13 +18,13 @@ class Result(Generic[T]):
 
     Attributes
     ----------
-    next_cursor : str
+    next_cursor : :class:`str`
         Cursor used to obtain the next result.
-    previous_cursor : str
+    previous_cursor : :class:`str`
         Cursor used to obtain the previous result.
-    token : str
+    token : :class:`str`
         Alias of `next_cursor`.
-    cursor : str
+    cursor : :class:`str`
         Alias of `next_cursor`.
     """
 

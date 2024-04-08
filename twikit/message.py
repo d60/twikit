@@ -14,13 +14,13 @@ class Message:
 
     Attributes
     ----------
-    id : str
+    id : :class:`str`
         The ID of the message.
-    time : str
+    time : :class:`str`
         The timestamp of the message.
-    text : str
+    text : :class:`str`
         The text content of the message.
-    attachment : dict
+    attachment : :class:`dict`
         Attachment Information.
     """
     def __init__(
@@ -44,16 +44,16 @@ class Message:
 
         Parameters
         ----------
-        text : str
+        text : :class:`str`
             The text content of the direct message.
-        media_id : str, default=None
+        media_id : :class:`str`, default=None
             The media ID associated with any media content
             to be included in the message.
             Media ID can be received by using the :func:`.upload_media` method.
 
         Returns
         -------
-        Message
+        :class:`Message`
             `Message` object containing information about the message sent.
 
         See Also
@@ -74,12 +74,12 @@ class Message:
 
         Parameters
         ----------
-        emoji : str
+        emoji : :class:`str`
             The emoji to be added as a reaction.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
         """
         user_id = self._client.user_id()
@@ -99,12 +99,12 @@ class Message:
 
         Parameters
         ----------
-        emoji : str
+        emoji : :class:`str`
             The emoji to be removed.
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
         """
         user_id = self._client.user_id()
@@ -124,7 +124,7 @@ class Message:
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         See Also
