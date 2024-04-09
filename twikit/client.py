@@ -24,9 +24,10 @@ from .list import List
 from .message import Message
 from .notification import Notification
 from .trend import Trend
-from .tweet import Poll, ScheduledTweet, Tweet
+from .tweet import CommunityNote, Poll, ScheduledTweet, Tweet
 from .user import User
 from .utils import (
+    COMMUNITY_NOTE_FEATURES,
     LIST_FEATURES,
     FEATURES,
     TOKEN,
@@ -1441,6 +1442,48 @@ class Client:
         """
         return self._get_tweet_engagements(
             tweet_id, count, cursor, Endpoint.FAVORITERS
+        )
+
+    def get_community_note(self, note_id: str) -> CommunityNote:
+        """
+        Fetches a community note by ID.
+
+        Parameters
+        ----------
+        note_id : :class:`str`
+            The ID of the community note.
+
+        Returns
+        -------
+        :class:`CommunityNote`
+            A CommunityNote object representing the fetched community note.
+
+        Raises
+        ------
+        :exc:`TwitterException`
+            Invalid note ID.
+
+        Examples
+        --------
+        >>> note_id = '...'
+        >>> note = client.get_community_note(note_id)
+        >>> print(note)
+        <CommunityNote id="...">
+        """
+        params = flatten_params({
+            'variables': {'note_id': note_id},
+            'features': COMMUNITY_NOTE_FEATURES
+        })
+        response = self.http.get(
+            Endpoint.FETCH_COMMUNITY_NOTE,
+            params=params,
+            headers=self._base_headers
+        ).json()
+        note_data = response['data']['birdwatch_note_by_rest_id']
+        if 'data_v1' not in note_data:
+            raise TwitterException(f'Invalid user id: {note_id}')
+        return CommunityNote(
+            self, note_data
         )
 
     def get_user_tweets(

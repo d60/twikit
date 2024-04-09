@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .message import Message
+from .user import User
+from ..utils import build_user_data
 
 if TYPE_CHECKING:
     from httpx import Response
@@ -39,7 +41,9 @@ class Group:
         )
 
         members = data['conversation_timeline']['users'].values()
-        self.members: list[str] = [i['id_str'] for i in members]
+        self.members: list[User] = [
+            User(client, build_user_data(i)) for i in members
+        ]
 
     async def get_history(
         self, max_id: str | None = None

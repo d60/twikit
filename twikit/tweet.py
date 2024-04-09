@@ -149,6 +149,16 @@ class Tweet:
             'is_edit_eligible')
         self.edits_remaining: int = data['edit_control'].get('edits_remaining')
         self.state: str = data['views'].get('state')
+        self.has_community_notes: bool = data.get('has_birdwatch_notes')
+
+        if 'birdwatch_pivot' in data:
+            community_note_data = data['birdwatch_pivot']
+            self.community_note = {
+                'id': community_note_data['note']['rest_id'],
+                'text': community_note_data['subtitle']['text']
+            }
+        else:
+            self.community_note = None
 
         if note_tweet_results:
             hashtags_ = find_dict(note_tweet_results, 'hashtags')
@@ -530,6 +540,67 @@ class Poll:
 
     def __eq__(self, __value: object) -> bool:
         return isinstance(__value, Poll) and self.id == __value.id
+
+    def __ne__(self, __value: object) -> bool:
+        return not self == __value
+
+
+class CommunityNote:
+    """Represents a community note.
+
+    Attributes
+    ----------
+    id : :class:`str`
+        The ID of the community note.
+    text : :class:`str`
+        The text content of the community note.
+    misleading_tags : list[:class:`str`]
+        A list of tags indicating misleading information.
+    trustworthy_sources : :class:`bool`
+        Indicates if the sources are trustworthy.
+    helpful_tags : list[:class:`str`]
+        A list of tags indicating helpful information.
+    created_at : :class:`int`
+        The timestamp when the note was created.
+    can_appeal : :class:`bool`
+        Indicates if the note can be appealed.
+    appeal_status : :class:`str`
+        The status of the appeal.
+    is_media_note : :class:`bool`
+        Indicates if the note is related to media content.
+    media_note_matches : :class:`str`
+        Matches related to media content.
+    birdwatch_profile : :class:`dict`
+        Birdwatch profile associated with the note.
+    tweet_id : :class:`str`
+        The ID of the tweet associated with the note.
+    """
+    def __init__(self, client: Client, data: dict) -> None:
+        self._client = client
+        self.id: str = data['rest_id']
+
+        data_v1 = data['data_v1']
+        self.text: str = data_v1['summary']['text']
+        self.misleading_tags: list[str] = data_v1.get('misleading_tags')
+        self.trustworthy_sources: bool = data_v1.get('trustworthy_sources')
+        self.helpful_tags: list[str] = data.get('helpful_tags')
+        self.created_at: int = data.get('created_at')
+        self.can_appeal: bool = data.get('can_appeal')
+        self.appeal_status: str = data.get('appeal_status')
+        self.is_media_note: bool = data.get('is_media_note')
+        self.media_note_matches: str = data.get('media_note_matches')
+        self.birdwatch_profile: dict = data.get('birdwatch_profile')
+        self.tweet_id: str = data['tweet_results']['result']['rest_id']
+
+    def update(self) -> None:
+        new = self._client.get_community_note(self.id)
+        self.__dict__.update(new.__dict__)
+
+    def __repr__(self) -> str:
+        return f'<CommunityNote id="{self.id}">'
+
+    def __eq__(self, __value: object) -> bool:
+        return isinstance(__value, CommunityNote) and self.id == __value.id
 
     def __ne__(self, __value: object) -> bool:
         return not self == __value

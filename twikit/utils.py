@@ -65,6 +65,15 @@ LIST_FEATURES = {
     'responsive_web_graphql_timeline_navigation_enabled': True
 }
 
+COMMUNITY_NOTE_FEATURES = {
+    'responsive_web_birdwatch_media_notes_enabled': True,
+    'responsive_web_graphql_timeline_navigation_enabled': True,
+    'rweb_tipjar_consumption_enabled': False,
+    'responsive_web_graphql_exclude_directive_enabled': True,
+    'verified_phone_label_enabled': False,
+    'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False
+}
+
 
 class Endpoint:
     """
@@ -139,6 +148,7 @@ class Endpoint:
     NOTIFICATIONS_MENTIONES = 'https://twitter.com/i/api/2/notifications/mentions.json'
     VOTE = 'https://caps.twitter.com/v2/capi/passthrough/1'
     REPORT_FLOW = 'https://twitter.com/i/api/1.1/report/flow.json'
+    FETCH_COMMUNITY_NOTE = 'https://twitter.com/i/api/graphql/fKWPPj271aTM-AB9Xp48IA/BirdwatchFetchOneNote'
 
 T = TypeVar('T')
 
