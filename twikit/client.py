@@ -730,6 +730,51 @@ class Client:
         ).json()
         return response
 
+    def create_media_metadata(
+        self,
+        media_id: str,
+        alt_text: str | None = None,
+        sensitive_warning: list[
+            Literal['adult_content', 'graphic_violence', 'other']] = None
+    ) -> Response:
+        """
+        Adds metadata to uploaded media.
+
+        Parameters
+        ----------
+        media_id : :class:`str`
+            The media id for which to create metadata.
+        alt_text : :class:`str` | None, default=None
+            Alternative text for the media.
+        sensitive_warning : list{'adult_content', 'graphic_violence', 'other'}
+            A list of sensitive content warnings for the media.
+
+        Returns
+        -------
+        :class:`httpx.Response`
+            Response returned from twitter api.
+
+        Examples
+        --------
+        >>> media_id = client.upload_media('media.jpg')
+        >>> client.create_media_metadata(
+        ...     media_id,
+        ...     alt_text='This is a sample media',
+        ...     sensitive_warning=['other']
+        ... )
+        >>> client.create_tweet(media_ids=[media_id])
+        """
+        data = {'media_id': media_id}
+        if alt_text is not None:
+            data['alt_text'] = {'text': alt_text}
+        if sensitive_warning is not None:
+            data['sensitive_media_warning'] = sensitive_warning
+        return self.http.post(
+            Endpoint.CREATE_MEDIA_METADATA,
+            json=data,
+            headers=self._base_headers
+        )
+
     def create_poll(
         self,
         choices: list[str],
@@ -1481,7 +1526,7 @@ class Client:
         ).json()
         note_data = response['data']['birdwatch_note_by_rest_id']
         if 'data_v1' not in note_data:
-            raise TwitterException(f'Invalid user id: {note_id}')
+            raise TwitterException(f'Invalid note id: {note_id}')
         return CommunityNote(
             self, note_data
         )
