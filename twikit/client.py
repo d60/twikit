@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import json
 import time
+import warnings
 from functools import partial
 from typing import Literal
 
@@ -59,10 +60,13 @@ class Client:
     ... )
     """
 
-    def __init__(self, language: str | None = None, **kwargs) -> None:
+    def __init__(
+        self, language: str | None = None,
+        proxies: dict | None = None, **kwargs
+    ) -> None:
         self._token = TOKEN
         self.language = language
-        self.http = HTTPClient(**kwargs)
+        self.http = HTTPClient(proxies=proxies, **kwargs)
         self._user_id = None
         self._user_agent = UserAgent().random.strip()
         self._act_as = None
@@ -2464,8 +2468,15 @@ class Client:
         for item in items:
             entry_id = item['entryId']
             if entry_id.startswith('user'):
-                user_info = find_dict(item, 'result')[0]
-                results.append(User(self, user_info))
+                user_info = find_dict(item, 'result')
+                if not user_info:
+                    warnings.warn(
+                        'Some followers are excluded because '
+                        '"Quality Filter" is enabled. To get all followers, '
+                        'turn this off this in the Twitter settings.'
+                    )
+                    continue
+                results.append(User(self, user_info[0]))
             elif entry_id.startswith('cursor-bottom'):
                 next_cursor = item['content']['value']
 
