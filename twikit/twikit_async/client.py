@@ -2415,6 +2415,7 @@ class Client:
         if category in ['news', 'sports', 'entertainment']:
             category += '_unified'
         params = {
+            'candidate_source': 'trends',
             'count': count,
             'include_page_configuration': True,
             'initial_tab_id': category
