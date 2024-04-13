@@ -2380,7 +2380,8 @@ class Client:
         category: Literal[
             'trending', 'for-you', 'news', 'sports', 'entertainment'
         ],
-        count: int = 20
+        count: int = 20,
+        retry: bool = True
     ) -> list[Trend]:
         """
         Retrieves trending topics on Twitter.
@@ -2396,6 +2397,8 @@ class Client:
             - 'entertainment': Entertainment-related trends.
         count : :class:`int`, default=20
             The number of trends to retrieve.
+        retry : :class:`bool`, default=True
+            If no trends are fetched continuously retry to fetch trends.
 
         Returns
         -------
@@ -2415,6 +2418,7 @@ class Client:
         if category in ['news', 'sports', 'entertainment']:
             category += '_unified'
         params = {
+            'candidate_source': 'trends',
             'count': count,
             'include_page_configuration': True,
             'initial_tab_id': category
@@ -2432,9 +2436,11 @@ class Client:
         ]
 
         if not entries:
+            if not retry:
+                return []
             # Recall the method again, as the trend information
             # may not be returned due to a Twitter error.
-            return await self.get_trends(category, count)
+            return await self.get_trends(category, count, retry)
 
         items = entries[-1]['content']['timelineModule']['items']
 
