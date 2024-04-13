@@ -2362,7 +2362,8 @@ class Client:
         category: Literal[
             'trending', 'for-you', 'news', 'sports', 'entertainment'
         ],
-        count: int = 20
+        count: int = 20,
+        retry: bool = True
     ) -> list[Trend]:
         """
         Retrieves trending topics on Twitter.
@@ -2378,6 +2379,8 @@ class Client:
             - 'entertainment': Entertainment-related trends.
         count : :class:`int`, default=20
             The number of trends to retrieve.
+        retry : :class:`bool`, default=True
+            If no trends are fetched continuously retry to fetch trends.
 
         Returns
         -------
@@ -2415,9 +2418,11 @@ class Client:
         ]
 
         if not entries:
+            if not retry:
+                return []
             # Recall the method again, as the trend information
             # may not be returned due to a Twitter error.
-            return self.get_trends(category, count)
+            return self.get_trends(category, count, retry)
 
         items = entries[-1]['content']['timelineModule']['items']
 
