@@ -13,6 +13,7 @@ from httpx import Response
 
 from ..errors import (
     CouldNotTweet,
+    InvalidMedia,
     TweetNotAvailable,
     TwitterException,
     UserNotFound,
@@ -714,8 +715,11 @@ class Client:
 
         if wait_for_completion:
             while True:
-                state = await self.check_media_status(media_id)
-                if state['processing_info']['state'] == 'succeeded':
+                state = self.check_media_status(media_id)
+                processing_info = state['processing_info']
+                if 'error' in processing_info:
+                    raise InvalidMedia(processing_info['error'].get('message'))
+                if processing_info['state'] == 'succeeded':
                     break
                 await asyncio.sleep(status_check_interval)
 
@@ -791,6 +795,16 @@ class Client:
             json=data,
             headers=self._base_headers
         )
+
+    async def get_media(self, url: str) -> bytes:
+        """Retrieves media bytes.
+
+        Parameters
+        ----------
+        url : str
+            Media URL
+        """
+        return (await self.http.get(url, headers=self._base_headers)).content
 
     async def create_poll(
         self,

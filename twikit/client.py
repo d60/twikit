@@ -13,6 +13,7 @@ from httpx import Response
 
 from .errors import (
     CouldNotTweet,
+    InvalidMedia,
     TweetNotAvailable,
     TwitterException,
     UserNotFound,
@@ -702,7 +703,10 @@ class Client:
         if wait_for_completion:
             while True:
                 state = self.check_media_status(media_id)
-                if state['processing_info']['state'] == 'succeeded':
+                processing_info = state['processing_info']
+                if 'error' in processing_info:
+                    raise InvalidMedia(processing_info['error'].get('message'))
+                if processing_info['state'] == 'succeeded':
                     break
                 time.sleep(status_check_interval)
 
@@ -778,6 +782,16 @@ class Client:
             json=data,
             headers=self._base_headers
         )
+
+    def get_media(self, url: str) -> bytes:
+        """Retrieves media bytes.
+
+        Parameters
+        ----------
+        url : str
+            Media URL
+        """
+        return self.http.get(url, headers=self._base_headers).content
 
     def create_poll(
         self,
@@ -2886,7 +2900,8 @@ class Client:
         ...
         """
         response = self._get_dm_history(f'{user_id}-{self.user_id()}', max_id)
-
+        from jlog import log
+        log(response)
         items = response['conversation_timeline']['entries']
         messages = []
         for item in items:

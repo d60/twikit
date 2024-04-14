@@ -2,6 +2,12 @@ class TwitterException(Exception):
     """
     Base class for Twitter API related exceptions.
     """
+    def __init__(self, *args: object, headers: dict | None = None) -> None:
+        super().__init__(*args)
+        if headers is None:
+            self.headers = None
+        else:
+            self.headers = dict(headers)
 
 class BadRequest(TwitterException):
     """
@@ -33,7 +39,7 @@ class TooManyRequests(TwitterException):
     Exception raised for 429 Too Many Requests errors.
     """
     def __init__(self, *args, headers: dict | None = None) -> None:
-        super().__init__(*args)
+        super().__init__(*args, headers=headers)
         if headers is not None and 'x-rate-limit-reset' in headers:
             self.rate_limit_reset = int(headers.get('x-rate-limit-reset'))
         else:

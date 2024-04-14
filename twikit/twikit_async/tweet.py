@@ -436,6 +436,22 @@ class ScheduledTweet:
         return f'<ScheduledTweet id="{self.id}">'
 
 
+class TweetTombstone:
+    def __init__(self, client: Client, tweet_id: str, data: dict) -> None:
+        self._client = client
+        self.id = tweet_id
+        self.text: str = data['text']['text']
+
+    def __repr__(self) -> str:
+        return f'<TweetTombstone id="{self.id}">'
+
+    def __eq__(self, __value: object) -> bool:
+        return isinstance(__value, TweetTombstone) and self.id == __value.id
+
+    def __ne__(self, __value: object) -> bool:
+        return not self == __value
+
+
 class Poll:
     """Represents a poll associated with a tweet.
     Attributes

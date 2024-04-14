@@ -16,10 +16,7 @@ for i, media in enumerate(tweet.media):
     media_url = media.get('media_url_https')
     extension = media_url.rsplit('.', 1)[-1]
 
-    response = client.http.get(
-        media_url,
-        headers=client._base_headers
-    )
+    response = client.get_media(media_url)
 
     with open(f'media_{i}.{extension}', 'wb') as f:
         f.write(response.content)

@@ -29,21 +29,21 @@ class HTTPClient:
         if status_code >= 400:
             message = f'status: {status_code}, message: "{response.text}"'
             if status_code == 400:
-                raise BadRequest(message)
+                raise BadRequest(message, headers=response.headers)
             elif status_code == 401:
-                raise Unauthorized(message)
+                raise Unauthorized(message, headers=response.headers)
             elif status_code == 403:
-                raise Forbidden(message)
+                raise Forbidden(message, headers=response.headers)
             elif status_code == 404:
-                raise NotFound(message)
+                raise NotFound(message, headers=response.headers)
             elif status_code == 408:
-                raise RequestTimeout(message)
+                raise RequestTimeout(message, headers=response.headers)
             elif status_code == 429:
                 raise TooManyRequests(message, headers=response.headers)
             elif 500 <= status_code < 600:
-                raise ServerError(message)
+                raise ServerError(message, headers=response.headers)
             else:
-                raise TwitterException(message)
+                raise TwitterException(message, headers=response.headers)
 
         return response
 

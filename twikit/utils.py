@@ -377,6 +377,7 @@ def flatten_params(params: dict) -> dict:
         flattened_params[key] = value
     return flattened_params
 
+
 FILTERS = Literal[
     'media',
     'retweets',
