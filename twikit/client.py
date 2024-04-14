@@ -2900,8 +2900,7 @@ class Client:
         ...
         """
         response = self._get_dm_history(f'{user_id}-{self.user_id()}', max_id)
-        from jlog import log
-        log(response)
+
         items = response['conversation_timeline']['entries']
         messages = []
         for item in items:
