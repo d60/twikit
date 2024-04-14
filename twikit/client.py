@@ -2369,7 +2369,8 @@ class Client:
             'trending', 'for-you', 'news', 'sports', 'entertainment'
         ],
         count: int = 20,
-        retry: bool = True
+        retry: bool = True,
+        additional_request_params: dict = {}
     ) -> list[Trend]:
         """
         Retrieves trending topics on Twitter.
@@ -2386,7 +2387,11 @@ class Client:
         count : :class:`int`, default=20
             The number of trends to retrieve.
         retry : :class:`bool`, default=True
-            If no trends are fetched continuously retry to fetch trends.
+            If no trends are fetched, continuously retry to fetch trends.
+        additional_request_params : :class:`dict`, default={}
+            Parameters to be added on top of the existing trends API parameters.
+            Typically, it is used as `additional_request_params =
+            {'candidate_source': 'trends'}` when this function doesn't work otherwise.
 
         Returns
         -------
@@ -2409,7 +2414,7 @@ class Client:
             'count': count,
             'include_page_configuration': True,
             'initial_tab_id': category
-        }
+        } | additional_request_params
         response = self.http.get(
             Endpoint.TREND,
             params=params,
@@ -2427,7 +2432,7 @@ class Client:
                 return []
             # Recall the method again, as the trend information
             # may not be returned due to a Twitter error.
-            return self.get_trends(category, count, retry)
+            return self.get_trends(category, count, retry, additional_request_params)
 
         items = entries[-1]['content']['timelineModule']['items']
 
