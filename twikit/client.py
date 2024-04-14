@@ -1188,6 +1188,8 @@ class Client:
         if 'result' not in response['data']['user']:
             raise TwitterException(f'Invalid user id: {user_id}')
         user_data = response['data']['user']['result']
+        if user_data.get('__typename') == 'UserUnavailable':
+            raise UserUnavailable(user_data.get('message'))
         return User(self, user_data)
 
     def _get_tweet_detail(self, tweet_id: str, cursor: str | None):
@@ -2473,8 +2475,10 @@ class Client:
                     warnings.warn(
                         'Some followers are excluded because '
                         '"Quality Filter" is enabled. To get all followers, '
-                        'turn this off this in the Twitter settings.'
+                        'turn off it in the Twitter settings.'
                     )
+                    continue
+                if user_info[0].get('__typename') == 'UserUnavailable':
                     continue
                 results.append(User(self, user_info[0]))
             elif entry_id.startswith('cursor-bottom'):
