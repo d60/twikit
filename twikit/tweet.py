@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -12,6 +11,7 @@ if TYPE_CHECKING:
     from httpx import Response
 
     from .client import Client
+    from .community import Community
     from .utils import Result
 
 
@@ -459,10 +459,6 @@ class TweetTombstone:
 
     def __ne__(self, __value: object) -> bool:
         return not self == __value
-
-
-# @dataclass
-# class 
 
 
 class Poll:

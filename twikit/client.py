@@ -11,6 +11,7 @@ import filetype
 from fake_useragent import UserAgent
 from httpx import Response
 
+from .community import Community, CommunityMember
 from .errors import (
     CouldNotTweet,
     InvalidMedia,
@@ -29,7 +30,9 @@ from .trend import Trend
 from .tweet import CommunityNote, Poll, ScheduledTweet, Tweet
 from .user import User
 from .utils import (
+    COMMUNITY_TWEETS_FEATURES,
     COMMUNITY_NOTE_FEATURES,
+    JOIN_COMMUNITY_FEATURES,
     LIST_FEATURES,
     FEATURES,
     TOKEN,
@@ -3633,6 +3636,55 @@ class Client:
             cursor
         )
 
+    def search_list(
+        self, query: str, count: int = 20, cursor: str | None = None
+    ) -> Result[List]:
+        """
+        Search for lists based on the provided query.
+
+        Parameters
+        ----------
+        query : :class:`str`
+            The search query.
+        count : :class:`int`, default=20
+            The number of lists to retrieve.
+
+        Returns
+        -------
+        Result[:class:`List`]
+            An instance of the `Result` class containing the
+            search results.
+
+        Examples
+        --------
+        >>> lists = client.search_list('query')
+        >>> for list in lists:
+        ...     print(list)
+        <List id="...">
+        <List id="...">
+        ...
+
+        >>> more_lists = lists.next()  # Retrieve more lists
+        """
+        response = self._search(query, 'Lists', count, cursor)
+        entries = find_dict(response, 'entries')[0]
+
+        if cursor is None:
+            items = entries[0]['content']['items']
+        else:
+            items = find_dict(response, 'moduleItems')[0]
+
+        lists = []
+        for item in items:
+            lists.append(List(self, item['item']['itemContent']['list']))
+        next_cursor = entries[-1]['content']['value']
+
+        return Result(
+            lists,
+            partial(self.search_list, query, count, next_cursor),
+            next_cursor
+        )
+
     def get_notifications(
         self,
         type: Literal['All', 'Verified', 'Mentions'],
@@ -3737,4 +3789,523 @@ class Client:
             notifications,
             partial(self.get_notifications, type, count, next_cursor),
             next_cursor
+        )
+
+    def search_community(
+        self, query: str, cursor: str | None = None
+    ) -> Result[Community]:
+        """
+        Searchs communities based on the specified query.
+
+        Parameters
+        ----------
+        query : :class:`str`
+            The search query.
+
+        Returns
+        -------
+        Result[:class:`Community`]
+            List of retrieved communities.
+
+        Examples
+        --------
+        >>> communities = client.search_communities('query')
+        >>> for community in communities:
+        ...     print(community)
+        <Community id="...">
+        <Community id="...">
+        ...
+
+        >>> more_communities = communities.next()  # Retrieve more communities
+        """
+        variables = {
+            'query': query,
+        }
+        if cursor is not None:
+            variables['cursor'] = cursor
+        params = flatten_params({
+            'variables': variables
+        })
+        response = self.http.get(
+            Endpoint.SEARCH_COMMUNITY,
+            params=params,
+            headers=self._base_headers
+        ).json()
+
+        items = find_dict(response, 'items_results')[0]
+        communities = []
+        for item in items:
+            communities.append(Community(self, item['result']))
+        next_cursor_ = find_dict(response, 'next_cursor')
+        next_cursor = next_cursor_[0] if next_cursor_ else None
+        if next_cursor is None:
+            fetch_next_result = None
+        else:
+            fetch_next_result = partial(self.search_community,
+                                        query, next_cursor)
+        return Result(
+            communities,
+            fetch_next_result,
+            next_cursor
+        )
+
+    def get_community(self, community_id: str) -> Community:
+        """
+        Retrieves community by ID.
+
+        Parameters
+        ----------
+        list_id : :class:`str`
+            The ID of the community to retrieve.
+
+        Returns
+        -------
+        :class:`Community`
+            Community object.
+        """
+        params = flatten_params({
+            'variables': {'communityId': community_id},
+            'features': {
+                'c9s_list_members_action_api_enabled':False,
+                'c9s_superc9s_indication_enabled':False
+            }
+        })
+        response = self.http.get(
+            Endpoint.GET_COMMUNITY,
+            params=params,
+            headers=self._base_headers
+        ).json()
+        community_data = find_dict(response, 'result')[0]
+        return Community(self, community_data)
+
+    def get_community_tweets(
+        self,
+        community_id: str,
+        tweet_type: Literal['Top', 'Latest', 'Media'],
+        count: int = 40,
+        cursor: str | None = None
+    ) -> Result[Tweet]:
+        """
+        Retrieves tweets from a community.
+
+        Parameters
+        ----------
+        community_id : :class:`str`
+            The ID of the community.
+        tweet_type : {'Top', 'Latest', 'Media'}
+            The type of tweets to retrieve.
+        count : :class:`int`, default=40
+            The number of tweets to retrieve.
+
+        Returns
+        -------
+        Result[:class:`Tweet`]
+            List of retrieved tweets.
+
+        Examples
+        --------
+        >>> community_id = '...'
+        >>> tweets = client.get_community_tweets(community_id, 'Latest')
+        >>> for tweet in tweets:
+        ...     print(tweet)
+        <Tweet id="...">
+        <Tweet id="...">
+        ...
+        >>> more_tweets = tweets.next()  # Retrieve more tweets
+        """
+        tweet_type = tweet_type.capitalize()
+
+        variables = {
+            'communityId': community_id,
+            'count': count,
+            'withCommunity': True
+        }
+
+        if tweet_type == 'Media':
+            endpoint = Endpoint.COMMUNITY_MEDIA
+        else:
+            endpoint = Endpoint.COMMUNITY_TWEETS
+            variables['rankingMode'] = {
+                'Top': 'Relevance',
+                'Latest': 'Recency'
+            }[tweet_type]
+
+        if cursor is not None:
+            variables['cursor'] = cursor
+
+        params = flatten_params({
+            'variables': variables,
+            'features': COMMUNITY_TWEETS_FEATURES
+        })
+        response = self.http.get(
+            endpoint,
+            params=params,
+            headers=self._base_headers
+        ).json()
+
+        entries = find_dict(response, 'entries')[0]
+        if tweet_type == 'Media':
+            if cursor is None:
+                items = entries[0]['content']['items']
+                next_cursor = entries[-1]['content']['value']
+                previous_cursor = entries[-2]['content']['value']
+            else:
+                items = find_dict(response, 'moduleItems')[0]
+                next_cursor = entries[-1]['content']['value']
+                previous_cursor = entries[-2]['content']['value']
+        else:
+            items = entries
+            next_cursor = items[-1]['content']['value']
+            previous_cursor = items[-2]['content']['value']
+
+        tweets = []
+        for item in items:
+            if not item['entryId'].startswith(('tweet', 'communities-grid')):
+                continue
+            tweet_data = find_dict(item, 'result')[0]
+            if 'tweet' in tweet_data:
+                tweet_data = tweet_data['tweet']
+            user_data = tweet_data['core']['user_results']['result']
+            tweets.append(Tweet(self, tweet_data, User(self, user_data)))
+
+        return Result(
+            tweets,
+            partial(self.get_community_tweets, community_id,
+                    tweet_type, count, next_cursor),
+            next_cursor,
+            partial(self.get_community_tweets, community_id,
+                    tweet_type, count, previous_cursor),
+            previous_cursor
+        )
+
+    def get_communities_timeline(
+        self, count: int = 20, cursor: str | None = None
+    ) -> Result[Tweet]:
+        """
+        Retrieves tweets from communities timeline.
+
+        Parameters
+        ----------
+        count : :class:`int`, default=20
+            The number of tweets to retrieve.
+
+        Returns
+        -------
+        Result[:class:`Tweet`]
+            List of retrieved tweets.
+
+        Examples
+        --------
+        >>> tweets = client.get_communities_timeline()
+        >>> for tweet in tweets:
+        ...     print(tweet)
+        <Tweet id="...">
+        <Tweet id="...">
+        ...
+        >>> more_tweets = tweets.next()  # Retrieve more tweets
+        """
+        variables = {
+            'count': count,
+            'withCommunity': True
+        }
+        if cursor is not None:
+            variables['cursor'] = cursor
+        params = flatten_params({
+            'variables': variables,
+            'features': COMMUNITY_TWEETS_FEATURES
+        })
+        response = self.http.get(
+            Endpoint.COMMUNITIES_TIMELINE,
+            params=params,
+            headers=self._base_headers
+        ).json()
+        items = find_dict(response, 'entries')[0]
+        tweets = []
+        for item in items:
+            if not item['entryId'].startswith('tweet'):
+                continue
+            tweet_data = find_dict(item, 'result')[0]
+            if 'tweet' in tweet_data:
+                tweet_data = tweet_data['tweet']
+            user_data = tweet_data['core']['user_results']['result']
+            community_data = tweet_data['community_results']['result']
+            community_data['rest_id'] = community_data['id_str']
+            community = Community(self, community_data)
+            tweet = Tweet(
+                self, tweet_data, User(self, user_data)
+            )
+            tweet.community = community
+            tweets.append(tweet)
+
+        next_cursor = items[-1]['content']['value']
+        previous_cursor = items[-2]['content']['value']
+
+        return Result(
+            tweets,
+            partial(self.get_communities_timeline, count, next_cursor),
+            next_cursor,
+            partial(self.get_communities_timeline, count, previous_cursor),
+            previous_cursor
+        )
+
+    def join_community(self, community_id: str) -> Community:
+        """
+        Join a community.
+
+        Parameters
+        ----------
+        community_id : :class:`str`
+            The ID of the community to join.
+
+        Returns
+        -------
+        :class:`Community`
+            The joined community.
+        """
+        data = {
+            'variables': {
+                'communityId': community_id
+            },
+            'features': JOIN_COMMUNITY_FEATURES,
+            'queryId': get_query_id(Endpoint.JOIN_COMMUNITY)
+        }
+        response = self.http.post(
+            Endpoint.JOIN_COMMUNITY,
+            json=data,
+            headers=self._base_headers
+        ).json()
+        community_data = response['data']['community_join']
+        community_data['rest_id'] = community_data['id_str']
+        return Community(self, community_data)
+
+    def leave_community(self, community_id: str) -> Community:
+        """
+        Leave a community.
+
+        Parameters
+        ----------
+        community_id : :class:`str`
+            The ID of the community to leave.
+
+        Returns
+        -------
+        :class:`Community`
+            The left community.
+        """
+        data = {
+            'variables': {
+                'communityId': community_id
+            },
+            'features': JOIN_COMMUNITY_FEATURES,
+            'queryId': get_query_id(Endpoint.LEAVE_COMMUNITY)
+        }
+        response = self.http.post(
+            Endpoint.LEAVE_COMMUNITY,
+            json=data,
+            headers=self._base_headers
+        ).json()
+        community_data = response['data']['community_leave']
+        community_data['rest_id'] = community_data['id_str']
+        return Community(self, community_data)
+
+    def request_to_join_community(
+        self, community_id: str, answer: str | None = None
+    ) -> Community:
+        """
+        Request to join a community.
+
+        Parameters
+        ----------
+        community_id : :class:`str`
+            The ID of the community to request to join.
+        answer : :class:`str`, default=None
+            The answer to the join request.
+
+        Returns
+        -------
+        :class:`Community`
+            The requested community.
+        """
+        data = {
+            'variables': {
+                'communityId': community_id,
+                'answer': '' if answer is None else answer
+            },
+            'features': JOIN_COMMUNITY_FEATURES,
+            'queryId': get_query_id(Endpoint.REQUEST_TO_JOIN_COMMUNITY)
+        }
+        response = self.http.post(
+            Endpoint.REQUEST_TO_JOIN_COMMUNITY,
+            json=data,
+            headers=self._base_headers
+        ).json()
+        community_data = find_dict(response, 'result')[0]
+        community_data['rest_id'] = community_data['id_str']
+        return Community(self, community_data)
+
+    def _get_community_users(
+        self, endpoint: str, community_id: str, count: int, cursor: str | None
+    ):
+        """
+        Base function to retrieve community users.
+        """
+        variables = {
+            'communityId': community_id,
+            'count': count
+        }
+        if cursor is not None:
+            variables['cursor'] = cursor
+        params = flatten_params({
+            'variables': variables,
+            'features': {
+                'responsive_web_graphql_timeline_navigation_enabled': True
+            }
+        })
+        response =  self.http.get(
+            endpoint,
+            params=params,
+            headers=self._base_headers
+        ).json()
+
+        items = find_dict(response, 'items_results')[0]
+        users = []
+        for item in items:
+            if not 'result' in item:
+                continue
+            if item['result'].get('__typename') != 'User':
+                continue
+            users.append(CommunityMember(self, item['result']))
+
+        next_cursor_ = find_dict(response, 'next_cursor')
+        next_cursor = next_cursor_[0] if next_cursor_ else None
+
+        if next_cursor is None:
+            fetch_next_result = None
+        else:
+            fetch_next_result = partial(self._get_community_users, endpoint,
+                                        community_id, count, next_cursor)
+        return Result(
+            users,
+            fetch_next_result,
+            next_cursor
+        )
+
+    def get_community_members(
+        self, community_id: str, count: int = 20, cursor: str | None = None
+    ) -> Result[CommunityMember]:
+        """
+        Retrieves members of a community.
+
+        Parameters
+        ----------
+        community_id : :class:`str`
+            The ID of the community.
+        count : :class:`int`, default=20
+            The number of members to retrieve.
+
+        Returns
+        -------
+        Result[:class:`CommunityMember`]
+            List of retrieved members.
+        """
+        return self._get_community_users(
+            Endpoint.COMMUNITY_MEMBERS,
+            community_id,
+            count,
+            cursor
+        )
+
+    def get_community_moderators(
+        self, community_id: str, count: int = 20, cursor: str | None = None
+    ) -> Result[CommunityMember]:
+        """
+        Retrieves moderators of a community.
+
+        Parameters
+        ----------
+        community_id : :class:`str`
+            The ID of the community.
+        count : :class:`int`, default=20
+            The number of moderators to retrieve.
+
+        Returns
+        -------
+        Result[:class:`CommunityMember`]
+            List of retrieved moderators.
+        """
+        return self._get_community_users(
+            Endpoint.COMMUNITY_MODERATORS,
+            community_id,
+            count,
+            cursor
+        )
+
+    def search_community_tweet(
+        self,
+        community_id: str,
+        query: str,
+        count: int = 20,
+        cursor: str | None = None
+    ) -> Result[Tweet]:
+        """Searchs tweets in a community.
+
+        Parameters
+        ----------
+        community_id : :class:`str`
+            The ID of the community.
+        query : :class:`str`
+            The search query.
+        count : :class:`int`, default=20
+            The number of tweets to retrieve.
+
+        Returns
+        -------
+        Result[:class:`Tweet`]
+            List of retrieved tweets.
+        """
+        variables = {
+            "count": count,
+            "query": query,
+            "communityId": community_id,
+            "includePromotedContent": False,
+            "withBirdwatchNotes": True,
+            "withVoice": False,
+            "isListMemberTargetUserId": "0",
+            "withCommunity": False,
+            "withSafetyModeUserFields": True
+        }
+        if cursor is not None:
+            variables['cursor'] = cursor
+        params = flatten_params({
+            'variables': variables,
+            'features': COMMUNITY_TWEETS_FEATURES
+        })
+        response = self.http.get(
+            Endpoint.SEARCH_COMMUNITY_TWEET,
+            params=params,
+            headers=self._base_headers
+        ).json()
+
+        items = find_dict(response, 'entries')[0]
+        tweets = []
+        for item in items:
+            if not item['entryId'].startswith('tweet'):
+                continue
+            tweet_data = find_dict(item, 'result')[0]
+            if 'tweet' in tweet_data:
+                tweet_data = tweet_data['tweet']
+            user_data = find_dict(tweet_data, 'result')[0]
+            tweets.append(Tweet(self, tweet_data, User(self, user_data)))
+
+        next_cursor = items[-1]['content']['value']
+        previous_cursor = items[-2]['content']['value']
+
+        return Result(
+            tweets,
+            partial(self.search_community_tweet, community_id,
+                    query, count, next_cursor),
+            next_cursor,
+            partial(self.search_community_tweet, community_id,
+                    query, count, previous_cursor),
+            previous_cursor,
         )

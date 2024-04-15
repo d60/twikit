@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 from datetime import datetime
 from typing import (
@@ -72,6 +73,40 @@ COMMUNITY_NOTE_FEATURES = {
     'responsive_web_graphql_exclude_directive_enabled': True,
     'verified_phone_label_enabled': False,
     'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False
+}
+
+COMMUNITY_TWEETS_FEATURES = {
+    'rweb_tipjar_consumption_enabled': True,
+    'responsive_web_graphql_exclude_directive_enabled': True,
+    'verified_phone_label_enabled': False,
+    'creator_subscriptions_tweet_preview_api_enabled': True,
+    'responsive_web_graphql_timeline_navigation_enabled': True,
+    'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
+    'communities_web_enable_tweet_community_results_fetch': True,
+    'c9s_tweet_anatomy_moderator_badge_enabled': True,
+    'tweetypie_unmention_optimization_enabled': True,
+    'responsive_web_edit_tweet_api_enabled': True,
+    'graphql_is_translatable_rweb_tweet_is_translatable_enabled': True,
+    'view_counts_everywhere_api_enabled': True,
+    'longform_notetweets_consumption_enabled': True,
+    'responsive_web_twitter_article_tweet_consumption_enabled': True,
+    'tweet_awards_web_tipping_enabled': False,
+    'creator_subscriptions_quote_tweet_preview_enabled': False,
+    'freedom_of_speech_not_reach_fetch_enabled': True,
+    'standardized_nudges_misinfo': True,
+    'tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled': True,
+    'rweb_video_timestamps_enabled': True,
+    'longform_notetweets_rich_text_read_enabled': True,
+    'longform_notetweets_inline_media_enabled': True,
+    'responsive_web_enhance_cards_enabled': False
+}
+
+JOIN_COMMUNITY_FEATURES = {
+    'rweb_tipjar_consumption_enabled': True,
+    'responsive_web_graphql_exclude_directive_enabled': True,
+    'verified_phone_label_enabled': False,
+    'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
+    'responsive_web_graphql_timeline_navigation_enabled': True
 }
 
 
@@ -150,6 +185,17 @@ class Endpoint:
     VOTE = 'https://caps.twitter.com/v2/capi/passthrough/1'
     REPORT_FLOW = 'https://twitter.com/i/api/1.1/report/flow.json'
     FETCH_COMMUNITY_NOTE = 'https://twitter.com/i/api/graphql/fKWPPj271aTM-AB9Xp48IA/BirdwatchFetchOneNote'
+    SEARCH_COMMUNITY = 'https://twitter.com/i/api/graphql/daVUkhfHn7-Z8llpYVKJSw/CommunitiesSearchQuery'
+    GET_COMMUNITY = 'https://twitter.com/i/api/graphql/lUBKrilodgg9Nikaw3cIiA/CommunityQuery'
+    COMMUNITY_TWEETS = 'https://twitter.com/i/api/graphql/mhwSsmub4JZgHcs0dtsjrw/CommunityTweetsTimeline'
+    COMMUNITY_MEDIA = 'https://twitter.com/i/api/graphql/Ht5K2ckaZYAOuRFmFfbHig/CommunityMediaTimeline'
+    COMMUNITIES_TIMELINE = 'https://twitter.com/i/api/graphql/4-4iuIdaLPpmxKnA3mr2LA/CommunitiesMainPageTimeline'
+    JOIN_COMMUNITY = 'https://twitter.com/i/api/graphql/xZQLbDwbI585YTG0QIpokw/JoinCommunity'
+    REQUEST_TO_JOIN_COMMUNITY = 'https://twitter.com/i/api/graphql/XwWChphD_6g7JnsFus2f2Q/RequestToJoinCommunity'
+    LEAVE_COMMUNITY = 'https://twitter.com/i/api/graphql/OoS6Kd4-noNLXPZYHtygeA/LeaveCommunity'
+    COMMUNITY_MEMBERS = 'https://twitter.com/i/api/graphql/KDAssJ5lafCy-asH4wm1dw/membersSliceTimeline_Query'
+    COMMUNITY_MODERATORS = 'https://twitter.com/i/api/graphql/9KI_r8e-tgp3--N5SZYVjg/moderatorsSliceTimeline_Query'
+    SEARCH_COMMUNITY_TWEET = 'https://twitter.com/i/api/graphql/5341rmzzvdjqfmPKfoHUBw/CommunityTweetSearchModuleQuery'
 
 T = TypeVar('T')
 
@@ -376,6 +422,10 @@ def flatten_params(params: dict) -> dict:
             value = json.dumps(value)
         flattened_params[key] = value
     return flattened_params
+
+
+def b64_to_str(b64: str) -> str:
+    return base64.b64decode(b64).decode()
 
 
 FILTERS = Literal[

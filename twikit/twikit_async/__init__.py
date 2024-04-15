@@ -7,6 +7,8 @@ if os.name == 'nt':
 from ..errors import *
 from ..utils import build_query
 from .client import Client
+from .community import (Community, CommunityCreator, CommunityMember,
+                        CommunityRule)
 from .group import Group, GroupMessage
 from .list import List
 from .message import Message
