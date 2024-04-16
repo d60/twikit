@@ -175,6 +175,8 @@ class Tweet:
 
         if (
             'card' in data and
+            'legacy' in data['card'] and
+            'name' in data['card']['legacy'] and
             data['card']['legacy']['name'].startswith('poll')
         ):
             self._poll_data = data['card']

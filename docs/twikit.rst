@@ -58,6 +58,34 @@ twikit.trend module
    :show-inheritance:
    :member-order: bysource
 
+twikit.list module
+-------------------
+
+.. automodule:: twikit.list
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
+twikit.community module
+-------------------
+
+.. automodule:: twikit.community
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
+twikit.notification module
+-------------------
+
+.. automodule:: twikit.notification
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
+
 twikit.utils module
 -------------------
 

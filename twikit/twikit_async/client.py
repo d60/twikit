@@ -36,7 +36,10 @@ from ..utils import (
     get_query_id,
     urlencode
 )
-from .community import CommunityRule, Community, CommunityCreator, CommunityMember
+from .community import (
+    Community,
+    CommunityMember
+)
 from .group import Group, GroupMessage
 from .http import HTTPClient
 from .list import List
@@ -916,7 +919,9 @@ class Client:
         reply_to: str | None = None,
         conversation_control: Literal[
             'followers', 'verified', 'mentioned'] | None = None,
-        attachment_url: str | None = None
+        attachment_url: str | None = None,
+        community_id: str | None = None,
+        share_with_followers: bool = False
     ) -> Tweet:
         """
         Creates a new tweet on Twitter with the specified
@@ -1017,6 +1022,14 @@ class Client:
 
         if attachment_url is not None:
             variables['attachment_url'] = attachment_url
+
+        if community_id is not None:
+            variables['semantic_annotation_ids'] = [{
+                'entity_id': community_id,
+                'group_id': '8',
+                'domain_id': '31'
+            }]
+            variables['broadcast'] = share_with_followers
 
         data = {
             'variables': variables,
@@ -2405,7 +2418,7 @@ class Client:
         ],
         count: int = 20,
         retry: bool = True,
-        additional_request_params: dict = {}
+        additional_request_params: dict | None = None
     ) -> list[Trend]:
         """
         Retrieves trending topics on Twitter.
@@ -2422,11 +2435,12 @@ class Client:
         count : :class:`int`, default=20
             The number of trends to retrieve.
         retry : :class:`bool`, default=True
-            If no trends are fetched, continuously retry to fetch trends.
-        additional_request_params : :class:`dict`, default={}
-            Parameters to be added on top of the existing trends API parameters.
-            Typically, it is used as `additional_request_params =
-            {'candidate_source': 'trends'}` when this function doesn't work otherwise.
+            If no trends are fetched continuously retry to fetch trends.
+        additional_request_params : :class:`dict`, default=None
+            Parameters to be added on top of the existing trends API
+            parameters. Typically, it is used as `additional_request_params =
+            {'candidate_source': 'trends'}` when this function doesn't work
+            otherwise.
 
         Returns
         -------
@@ -2449,7 +2463,9 @@ class Client:
             'count': count,
             'include_page_configuration': True,
             'initial_tab_id': category
-        } | additional_request_params
+        }
+        if additional_request_params is not None:
+            params |= additional_request_params
         response = (await self.http.get(
             Endpoint.TREND,
             params=params,
@@ -2467,7 +2483,7 @@ class Client:
                 return []
             # Recall the method again, as the trend information
             # may not be returned due to a Twitter error.
-            return await self.get_trends(category, count, retry, additional_request_params)
+            return await self.get_trends(category, count, retry)
 
         items = entries[-1]['content']['timelineModule']['items']
 

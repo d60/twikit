@@ -57,6 +57,33 @@ twikit.twikit\_async.trend module
    :show-inheritance:
    :member-order: bysource
 
+twikit.twikit\_async.list module
+---------------------------------
+
+.. automodule:: twikit.twikit_async.list
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
+twikit.twikit\_async.community module
+---------------------------------
+
+.. automodule:: twikit.twikit_async.community
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
+twikit.twikit\_async.notification module
+---------------------------------
+
+.. automodule:: twikit.twikit_async.notification
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
 twikit.twikit\_async.utils module
 ---------------------------------
 
