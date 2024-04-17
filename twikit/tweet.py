@@ -77,6 +77,12 @@ class Tweet:
         Hashtags included in the tweet text.
     poll : :class:`Poll`
         Poll attached to the tweet.
+    has_card : :class:`bool`
+        Indicates if the tweet contains a card.
+    thumbnail_title : :class:`str` | None
+        The title of the webpage displayed inside tweet's card.
+    thumbnail_url : :class:`str` | None
+        Link to the image displayed in the tweet's card.
     """
 
     def __init__(self, client: Client, data: dict, user: User = None) -> None:
@@ -182,6 +188,35 @@ class Tweet:
             self._poll_data = data['card']
         else:
             self._poll_data = None
+
+        self.thumbnail_url = None
+        self.thumbnail_title = None
+        self.has_card = 'card' in data
+        if (
+            'card' in data and
+            'legacy' in data['card'] and
+            'binding_values' in data['card']['legacy']
+        ):
+            card_data = data['card']['legacy']['binding_values']
+
+            if isinstance(card_data, list):
+                binding_values = {
+                    i.get('key'): i.get('value')
+                    for i in card_data
+                }
+
+            if (
+                'title' in binding_values and
+                'string_value' in binding_values['title']
+            ):
+                self.thumbnail_title = binding_values['title']['string_value']
+
+            if (
+                'thumbnail_image_original' in binding_values and
+                'image_value' in binding_values['thumbnail_image_original'] and
+                'url' in binding_values['thumbnail_image_original']['image_value']
+            ):
+                self.thumbnail_url = binding_values['thumbnail_image_original']['image_value']['url']
 
     @property
     def created_at_datetime(self) -> datetime:
