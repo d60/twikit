@@ -37,7 +37,7 @@ class Tweet:
         Indicates if the tweet is a quote status.
     quote : :class:`Tweet`
         The Tweet being quoted (if any)
-    retweeted : :class:`bool`
+    retweeted_tweet : :class:`bool`
         Whether the tweet is a retweet
     possibly_sensitive : :class:`bool`
         Indicates if the tweet content may be sensitive.
