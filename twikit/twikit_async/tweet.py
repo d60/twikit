@@ -170,14 +170,12 @@ class Tweet:
             i['text'] for i in hashtags
         ]
 
-        if all([
-            'card' in data,
-            'legacy' in data['card'],
-            'name' in data['card']['legacy'],
-            data['card']['legacy']['name'].startswith('poll')
-        ]):
-            self._poll_data = data['card']
-        else:
+        try:
+            if data['card']['legacy']['name'].startswith('poll'):
+                self._poll_data = data['card']
+            else:
+                self._poll_data = None
+        except (KeyError, AttributeError):
             self._poll_data = None
 
     @property
