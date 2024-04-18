@@ -1246,7 +1246,7 @@ class Client:
 
     def _get_more_replies(self, tweet_id: str, cursor: str) -> Result[Tweet]:
         response = self._get_tweet_detail(tweet_id, cursor)
-        entries = find_dict(response, 'entries')[0]
+        entries = find_dict(response, 'entries')
 
         results = []
         for entry in entries:
@@ -1273,6 +1273,20 @@ class Client:
             _fetch_next_result,
             next_cursor
         )
+
+    def _show_more_replies(self, tweet_id: str, cursor: str) -> Result[Tweet]:
+        response = self._get_tweet_detail(tweet_id, cursor)
+        items = find_dict(response, 'moduleItems')[0]
+        results = []
+        for item in items:
+            if 'tweet' not in item['entryId']:
+                continue
+            tweet_data = find_dict(item, 'result')[0]
+            if 'tweet' in tweet_data:
+                tweet_data = tweet_data['tweet']
+            user_data = tweet_data['core']['user_results']['result']
+            results.append(Tweet(self, tweet_data, User(self, user_data)))
+        return Result(results)
 
     def get_tweet_by_id(
         self, tweet_id: str, cursor: str | None = None
@@ -1335,6 +1349,34 @@ class Client:
                 if tweet is None:
                     reply_to.append(tweet_object)
                 else:
+                    replies = []
+                    sr_cursor = None
+                    show_replies = None
+                    # Reply to reply
+                    for reply in entry['content']['items'][1:]:
+                        if 'tweet' in find_dict(reply, 'result'):
+                            reply = reply['tweet']
+                        if 'tweet' in reply.get('entryId'):
+                            rpl_data = find_dict(reply, 'result')[0]
+                            if rpl_data.get('__typename') == 'TweetTombstone':
+                                continue
+                            usr_data = find_dict(
+                                rpl_data, 'user_results')[0]['result']
+                            replies.append(
+                                Tweet(self, rpl_data, User(self, usr_data))
+                            )
+                        if 'cursor' in reply.get('entryId'):
+                            sr_cursor = reply['item']['itemContent']['value']
+                            show_replies = partial(
+                                self._show_more_replies,
+                                tweet_id,
+                                sr_cursor
+                            )
+                    tweet_object.replies = Result(
+                        replies,
+                        show_replies,
+                        sr_cursor
+                    )
                     replies_list.append(tweet_object)
 
         if entries[-1]['entryId'].startswith('cursor'):

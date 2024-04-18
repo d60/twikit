@@ -211,9 +211,11 @@ class Tweet:
             if (
                 'thumbnail_image_original' in binding_values and
                 'image_value' in binding_values['thumbnail_image_original'] and
-                'url' in binding_values['thumbnail_image_original']['image_value']
+                'url' in binding_values['thumbnail_image_original'
+                                        ]['image_value']
             ):
-                self.thumbnail_url = binding_values['thumbnail_image_original']['image_value']['url']
+                self.thumbnail_url = binding_values['thumbnail_image_original'
+                                                    ]['image_value']['url']
 
     @property
     def created_at_datetime(self) -> datetime:
