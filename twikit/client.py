@@ -1246,7 +1246,7 @@ class Client:
 
     def _get_more_replies(self, tweet_id: str, cursor: str) -> Result[Tweet]:
         response = self._get_tweet_detail(tweet_id, cursor)
-        entries = find_dict(response, 'entries')
+        entries = find_dict(response, 'entries')[0]
 
         results = []
         for entry in entries:
