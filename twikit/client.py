@@ -1250,7 +1250,7 @@ class Client:
 
         results = []
         for entry in entries:
-            if entry['entryId'].startswith('cursor'):
+            if entry['entryId'].startswith(('cursor', 'label')):
                 continue
             tweet_info = find_dict(entry, 'result')[0]
             if tweet_info['__typename'] == 'TweetTombstone':
