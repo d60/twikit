@@ -37,6 +37,7 @@ from .utils import (
     FEATURES,
     TOKEN,
     USER_FEATURES,
+    NOTE_TWEET_FEATURES,
     Endpoint,
     Flow,
     Result,
@@ -907,7 +908,10 @@ class Client:
             'followers', 'verified', 'mentioned'] | None = None,
         attachment_url: str | None = None,
         community_id: str | None = None,
-        share_with_followers: bool = False
+        share_with_followers: bool = False,
+        is_note_tweet: bool = False,
+        richtext_options: list[dict] | None = None,
+        edit_tweet_id: str | None = None
     ) -> Tweet:
         """
         Creates a new tweet on Twitter with the specified
@@ -932,6 +936,31 @@ class Client:
             - 'mentioned': Limits replies to mentioned accounts only.
         attachment_url : :class:`str`
             URL of the tweet to be quoted.
+        is_note_tweet : class`bool`, default=False
+            If this option is set to True, tweets longer than 280 characters
+            can be posted (Twitter Premium only).
+        richtext_options : list[:class:`dict`], default=None
+            Options for decorating text (Twitter Premium only). Example:
+            .. code-block:: python
+                [
+                    {
+                        'from_index': 1,
+                        'to_index': 3,
+                        'richtext_types': [
+                            'Bold',
+                        ]
+                    },
+                    {
+                        'from_index': 4,
+                        'to_index': 6,
+                        'richtext_types': [
+                            'Bold',
+                            'Italic'
+                        ]
+                    }
+                ]
+        edit_tweet_id : :class:`str` | None, default=None
+            ID of the tweet to edit (Twitter Premium only).
 
         Raises
         ------
@@ -1017,13 +1046,30 @@ class Client:
             }]
             variables['broadcast'] = share_with_followers
 
+        if richtext_options is not None:
+            is_note_tweet = True
+            variables['richtext_options'] = {
+                'richtext_tags': richtext_options
+            }
+
+        if edit_tweet_id is not None:
+            variables['edit_options'] = {
+                'previous_tweet_id': edit_tweet_id
+            }
+
+        if is_note_tweet:
+            endpoint = Endpoint.CREATE_NOTE_TWEET
+            features = NOTE_TWEET_FEATURES
+        else:
+            endpoint = Endpoint.CREATE_TWEET
+            features = FEATURES
         data = {
             'variables': variables,
             'queryId': get_query_id(Endpoint.CREATE_TWEET),
-            'features': FEATURES,
+            'features': features,
         }
         response = self.http.post(
-            Endpoint.CREATE_TWEET,
+            endpoint,
             json=data,
             headers=self._base_headers,
         ).json()
