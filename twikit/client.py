@@ -940,25 +940,7 @@ class Client:
             If this option is set to True, tweets longer than 280 characters
             can be posted (Twitter Premium only).
         richtext_options : list[:class:`dict`], default=None
-            Options for decorating text (Twitter Premium only). Example:
-            .. code-block:: python
-                [
-                    {
-                        'from_index': 1,
-                        'to_index': 3,
-                        'richtext_types': [
-                            'Bold',
-                        ]
-                    },
-                    {
-                        'from_index': 4,
-                        'to_index': 6,
-                        'richtext_types': [
-                            'Bold',
-                            'Italic'
-                        ]
-                    }
-                ]
+            Options for decorating text (Twitter Premium only).
         edit_tweet_id : :class:`str` | None, default=None
             ID of the tweet to edit (Twitter Premium only).
 
