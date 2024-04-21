@@ -485,7 +485,10 @@ class Client:
                 previous_cursor = item['content']['value']
             if not item['entryId'].startswith(('tweet', 'search-grid')):
                 continue
-            tweet_info = find_dict(item, 'result')[0]
+            tweet_info = find_dict(item, 'result')
+            if not tweet_info:
+                continue
+            tweet_info = tweet_info[0]
             if 'tweet' in tweet_info:
                 tweet_info = tweet_info['tweet']
             user_info = tweet_info['core']['user_results']['result']
