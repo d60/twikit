@@ -454,7 +454,10 @@ class Client:
         product = product.capitalize()
 
         response = self._search(query, product, count, cursor)
-        instructions = find_dict(response, 'instructions')[0]
+        instructions = find_dict(response, 'instructions')
+        if not instructions:
+            return Result([])
+        instructions = instructions[0]
 
         if product == 'Media' and cursor is not None:
             items = find_dict(instructions, 'moduleItems')[0]
