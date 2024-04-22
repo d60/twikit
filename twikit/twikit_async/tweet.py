@@ -435,6 +435,18 @@ class Tweet:
         """
         return await self._client.get_favoriters(self.id, count, cursor)
 
+    async def get_similar_tweets(self) -> list[Tweet]:
+        """
+        Retrieves tweets similar to the tweet (Twitter premium only).
+
+        Returns
+        -------
+        list[:class:`Tweet`]
+            A list of Tweet objects representing tweets
+            similar to the tweet.
+        """
+        return await self._client.get_similar_tweets(self.id)
+
     async def update(self) -> None:
         new = await self._client.get_tweet_by_id(self.id)
         self.__dict__.update(new.__dict__)

@@ -28,6 +28,7 @@ from ..utils import (
     LIST_FEATURES,
     TOKEN,
     USER_FEATURES,
+    SIMILAR_POSTS_FEATURES,
     NOTE_TWEET_FEATURES,
     Endpoint,
     build_tweet_data,
@@ -568,6 +569,44 @@ class Client:
                     query, count, next_cursor),
             next_cursor
         )
+
+    async def get_similar_tweets(self, tweet_id: str) -> list[Tweet]:
+        """
+        Retrieves tweets similar to the specified tweet (Twitter premium only).
+
+        Parameters
+        ----------
+        tweet_id : :class:`str`
+            The ID of the tweet for which similar tweets are to be retrieved.
+
+        Returns
+        -------
+        list[:class:`Tweet`]
+            A list of Tweet objects representing tweets
+            similar to the specified tweet.
+        """
+        params = flatten_params({
+            'variables': {'tweet_id': tweet_id},
+            'features': SIMILAR_POSTS_FEATURES
+        })
+        response = (await self.http.get(
+            Endpoint.SIMILAR_POSTS,
+            params=params,
+            headers=self._base_headers
+        )).json()
+
+        items = find_dict(response, 'entries')[0]
+        results = []
+        for item in items:
+            if not item['entryId'].startswith('tweet'):
+                continue
+            tweet_data = find_dict(item, 'result')[0]
+            if 'tweet' in tweet_data:
+                tweet_data = tweet_data['tweet']
+            user_data = tweet_data['core']['user_results']['result']
+            results.append(Tweet(self, tweet_data, User(self, user_data)))
+
+        return results
 
     async def upload_media(
         self,
