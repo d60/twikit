@@ -487,6 +487,8 @@ class Client:
             tweet_info = tweet_info[0]
             if 'tweet' in tweet_info:
                 tweet_info = tweet_info['tweet']
+            if 'result' not in tweet_info['core']['user_results']:
+                continue
             user_info = tweet_info['core']['user_results']['result']
             results.append(Tweet(self, tweet_info, User(self, user_info)))
 
