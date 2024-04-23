@@ -493,7 +493,8 @@ class Client:
             if 'result' not in tweet_info['core']['user_results']:
                 continue
             user_info = tweet_info['core']['user_results']['result']
-            results.append(Tweet(self, tweet_info, User(self, user_info)))
+            if 'legacy' in tweet_info:
+                results.append(Tweet(self, tweet_info, User(self, user_info)))
 
         if next_cursor is None:
             if product == 'Media':
