@@ -494,6 +494,8 @@ class Client:
             tweet_info = tweet_info[0]
             if 'tweet' in tweet_info:
                 tweet_info = tweet_info['tweet']
+            if 'core' not in tweet_info:
+                continue
             if 'result' not in tweet_info['core']['user_results']:
                 continue
             user_info = tweet_info['core']['user_results']['result']
