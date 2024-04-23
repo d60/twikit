@@ -52,7 +52,7 @@ class Tweet:
         The count of favorites or likes for the tweet.
     favorited : :class:`bool`
         Indicates if the tweet is favorited.
-    view_count: :class:`int` | None
+    view_count: :class:`int`
         The count of views.
     retweet_count : :class:`int`
         The count of retweets for the tweet.
@@ -64,7 +64,7 @@ class Tweet:
         Indicates if the tweet is eligible for editing.
     edits_remaining : :class:`int`
         The remaining number of edits allowed for the tweet.
-    state : :class:`str` | None
+    state : :class:`str`
         The state of the tweet views.
     replies: Result[:class:`Tweet`] | None
         Replies to the tweet.
@@ -144,8 +144,7 @@ class Tweet:
         self.reply_count: int = legacy['reply_count']
         self.favorite_count: int = legacy['favorite_count']
         self.favorited: bool = legacy['favorited']
-        self.view_count: int = (data['views'].get('count')
-                                if 'views' in data else None)
+        self.view_count: int = data['views'].get('count')
         self.retweet_count: int = legacy['retweet_count']
         self.editable_until_msecs: int = data['edit_control'].get(
             'editable_until_msecs')
@@ -153,8 +152,7 @@ class Tweet:
         self.is_edit_eligible: bool = data['edit_control'].get(
             'is_edit_eligible')
         self.edits_remaining: int = data['edit_control'].get('edits_remaining')
-        self.state: str = (data['views'].get('state')
-                           if 'views' in data else None)
+        self.state: str = data['views'].get('state')
         self.has_community_notes: bool = data.get('has_birdwatch_notes')
 
         if 'birdwatch_pivot' in data:

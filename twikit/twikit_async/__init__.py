@@ -4,7 +4,6 @@ import os
 if os.name == 'nt':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-from .bookmark import BookmarkFolder
 from ..errors import *
 from ..utils import build_query
 from .client import Client
