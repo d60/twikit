@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class TwitterException(Exception):
     """
     Base class for Twitter API related exceptions.

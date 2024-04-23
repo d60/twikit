@@ -144,7 +144,8 @@ class Tweet:
         self.reply_count: int = legacy['reply_count']
         self.favorite_count: int = legacy['favorite_count']
         self.favorited: bool = legacy['favorited']
-        self.view_count: int = data['views'].get('count') if 'views' in data else None
+        self.view_count: int = (data['views'].get('count')
+                                if 'views' in data else None)
         self.retweet_count: int = legacy['retweet_count']
         self.editable_until_msecs: int = data['edit_control'].get(
             'editable_until_msecs')
@@ -152,7 +153,8 @@ class Tweet:
         self.is_edit_eligible: bool = data['edit_control'].get(
             'is_edit_eligible')
         self.edits_remaining: int = data['edit_control'].get('edits_remaining')
-        self.state: str = data['views'].get('state') if 'views' in data else None
+        self.state: str = (data['views'].get('state')
+                           if 'views' in data else None)
         self.has_community_notes: bool = data.get('has_birdwatch_notes')
 
         if 'birdwatch_pivot' in data:
