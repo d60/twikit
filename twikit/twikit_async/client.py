@@ -458,7 +458,10 @@ class Client:
         product = product.capitalize()
 
         response = await self._search(query, product, count, cursor)
-        instructions = find_dict(response, 'instructions')[0]
+        instructions = find_dict(response, 'instructions')
+        if not instructions:
+            return Result([])
+        instructions = instructions[0]
 
         if product == 'Media' and cursor is not None:
             items = find_dict(instructions, 'moduleItems')[0]
@@ -485,11 +488,19 @@ class Client:
                 previous_cursor = item['content']['value']
             if not item['entryId'].startswith(('tweet', 'search-grid')):
                 continue
-            tweet_info = find_dict(item, 'result')[0]
+            tweet_info = find_dict(item, 'result')
+            if not tweet_info:
+                continue
+            tweet_info = tweet_info[0]
             if 'tweet' in tweet_info:
                 tweet_info = tweet_info['tweet']
+            if 'core' not in tweet_info:
+                continue
+            if 'result' not in tweet_info['core']['user_results']:
+                continue
             user_info = tweet_info['core']['user_results']['result']
-            results.append(Tweet(self, tweet_info, User(self, user_info)))
+            if 'legacy' in tweet_info:
+                results.append(Tweet(self, tweet_info, User(self, user_info)))
 
         if next_cursor is None:
             if product == 'Media':
