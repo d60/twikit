@@ -11,6 +11,7 @@ import filetype
 from fake_useragent import UserAgent
 from httpx import Response
 
+from .bookmark import BookmarkFolder
 from .community import Community, CommunityMember
 from .errors import (
     CouldNotTweet,
@@ -30,6 +31,7 @@ from .trend import Trend
 from .tweet import CommunityNote, Poll, ScheduledTweet, Tweet
 from .user import User
 from .utils import (
+    BOOKMARK_FOLDER_TIMELINE_FEATURES,
     COMMUNITY_TWEETS_FEATURES,
     COMMUNITY_NOTE_FEATURES,
     JOIN_COMMUNITY_FEATURES,
@@ -454,7 +456,10 @@ class Client:
         product = product.capitalize()
 
         response = self._search(query, product, count, cursor)
-        instructions = find_dict(response, 'instructions')[0]
+        instructions = find_dict(response, 'instructions')
+        if not instructions:
+            return Result([])
+        instructions = instructions[0]
 
         if product == 'Media' and cursor is not None:
             items = find_dict(instructions, 'moduleItems')[0]
@@ -481,11 +486,19 @@ class Client:
                 previous_cursor = item['content']['value']
             if not item['entryId'].startswith(('tweet', 'search-grid')):
                 continue
-            tweet_info = find_dict(item, 'result')[0]
+            tweet_info = find_dict(item, 'result')
+            if not tweet_info:
+                continue
+            tweet_info = tweet_info[0]
             if 'tweet' in tweet_info:
                 tweet_info = tweet_info['tweet']
+            if 'core' not in tweet_info:
+                continue
+            if 'result' not in tweet_info['core']['user_results']:
+                continue
             user_info = tweet_info['core']['user_results']['result']
-            results.append(Tweet(self, tweet_info, User(self, user_info)))
+            if 'legacy' in tweet_info:
+                results.append(Tweet(self, tweet_info, User(self, user_info)))
 
         if next_cursor is None:
             if product == 'Media':
@@ -1421,6 +1434,8 @@ class Client:
                     show_replies = None
                     # Reply to reply
                     for reply in entry['content']['items'][1:]:
+                        if 'tweetcomposer' in reply['entryId']:
+                            continue
                         if 'tweet' in find_dict(reply, 'result'):
                             reply = reply['tweet']
                         if 'tweet' in reply.get('entryId'):
@@ -2123,7 +2138,9 @@ class Client:
         )
         return response
 
-    def bookmark_tweet(self, tweet_id: str) -> Response:
+    def bookmark_tweet(
+        self, tweet_id: str, folder_id: str | None = None
+    ) -> Response:
         """
         Adds the tweet to bookmarks.
 
@@ -2131,6 +2148,8 @@ class Client:
         ----------
         tweet_id : :class:`str`
             The ID of the tweet to be bookmarked.
+        folder_id : :class:`str` | None, default=None
+            The ID of the folder to add the bookmark to.
 
         Returns
         -------
@@ -2141,18 +2160,20 @@ class Client:
         --------
         >>> tweet_id = '...'
         >>> client.bookmark_tweet(tweet_id)
-
-        See Also
-        --------
-        .bookmark_tweet
         """
+        variables = {'tweet_id': tweet_id}
+        if folder_id is None:
+            endpoint = Endpoint.CREATE_BOOKMARK
+        else:
+            endpoint = Endpoint.BOOKMARK_TO_FOLDER
+            variables['bookmark_collection_id'] = folder_id
 
         data = {
-            'variables': {'tweet_id': tweet_id},
+            'variables': variables,
             'queryId': get_query_id(Endpoint.CREATE_BOOKMARK)
         }
         response = self.http.post(
-            Endpoint.CREATE_BOOKMARK,
+            endpoint,
             json=data,
             headers=self._base_headers
         )
@@ -2193,7 +2214,8 @@ class Client:
         return response
 
     def get_bookmarks(
-        self, count: int = 20, cursor: str | None = None
+        self, count: int = 20,
+        cursor: str | None = None, folder_id: str | None = None
     ) -> Result[Tweet]:
         """
         Retrieves bookmarks from the authenticated user's Twitter account.
@@ -2201,9 +2223,9 @@ class Client:
         Parameters
         ----------
         count : :class:`int`, default=20
-            The number of bookmarks to retrieve (default is 20).
-        cursor : :class:`str`, default=None
-            A cursor to paginate through the bookmarks (default is None).
+            The number of bookmarks to retrieve.
+        folder_id : :class:`str` | None, default=None
+            Folder to retrieve bookmarks.
 
         Returns
         -------
@@ -2229,17 +2251,24 @@ class Client:
             'count': count,
             'includePromotedContent': True
         }
+        if folder_id is None:
+            endpoint = Endpoint.BOOKMARKS
+            features = FEATURES | {
+                'graphql_timeline_v2_bookmark_timeline': True
+            }
+        else:
+            endpoint = Endpoint.BOOKMARK_FOLDER_TIMELINE
+            variables['bookmark_collection_id'] = folder_id
+            features = BOOKMARK_FOLDER_TIMELINE_FEATURES
+
         if cursor is not None:
             variables['cursor'] = cursor
-        features = FEATURES | {
-            'graphql_timeline_v2_bookmark_timeline': True
-        }
         params = flatten_params({
             'variables': variables,
             'features': features
         })
         response = self.http.get(
-            Endpoint.BOOKMARKS,
+            endpoint,
             params=params,
             headers=self._base_headers
         ).json()
@@ -2249,7 +2278,13 @@ class Client:
             return Result([])
         items = items_[0]
         next_cursor = items[-1]['content']['value']
-        previous_cursor = items[-2]['content']['value']
+        if folder_id is None:
+            previous_cursor = items[-2]['content']['value']
+            fetch_previous_result = partial(self.get_bookmarks, count,
+                                            previous_cursor, folder_id)
+        else:
+            previous_cursor = None
+            fetch_previous_result = None
 
         results = []
         for item in items:
@@ -2261,9 +2296,9 @@ class Client:
 
         return Result(
             results,
-            partial(self.get_bookmarks, count, next_cursor),
+            partial(self.get_bookmarks, count, next_cursor, folder_id),
             next_cursor,
-            partial(self.get_bookmarks, count, previous_cursor),
+            fetch_previous_result,
             previous_cursor
         )
 
@@ -2290,6 +2325,148 @@ class Client:
             headers=self._base_headers
         )
         return response
+
+    def get_bookmark_folders(
+        self, cursor: str | None = None
+    ) -> Result[BookmarkFolder]:
+        """
+        Retrieves bookmark folders.
+
+        Returns
+        -------
+        Result[:class:`BookmarkFolder`]
+            Result object containing a list of bookmark folders.
+
+        Examples
+        --------
+        >>> folders = client.get_bookmark_folders()
+        >>> print(folders)
+        [<BookmarkFolder id="...">, ..., <BookmarkFolder id="...">]
+        >>> more_folders = folders.next()  # Retrieve more folders
+        """
+        variables = {}
+        if cursor is not None:
+            variables['cursor'] = cursor
+        params = flatten_params({'variables': variables})
+        response = self.http.get(
+            Endpoint.BOOKMARK_FOLDERS,
+            params=params,
+            headers=self._base_headers
+        ).json()
+
+        slice = find_dict(response, 'bookmark_collections_slice')[0]
+        results = []
+        for item in slice['items']:
+            results.append(BookmarkFolder(self, item))
+
+        if 'next_cursor' in slice['slice_info']:
+            next_cursor = slice['slice_info']['next_cursor']
+            fetch_next_result = partial(self.get_bookmark_folders, next_cursor)
+        else:
+            next_cursor = None
+            fetch_next_result = None
+
+        return Result(
+            results,
+            fetch_next_result,
+            next_cursor
+        )
+
+    def edit_bookmark_folder(
+        self, folder_id: str, name: str
+    ) -> BookmarkFolder:
+        """
+        Edits a bookmark folder.
+
+        Parameters
+        ----------
+        folder_id : :class:`str`
+            ID of the folder to edit.
+        name : :class:`str`
+            New name for the folder.
+
+        Returns
+        -------
+        :class:`BookmarkFolder`
+            Updated bookmark folder.
+
+        Examples
+        --------
+        >>> client.edit_bookmark_folder('123456789', 'MyFolder')
+        """
+        variables = {
+            'bookmark_collection_id': folder_id,
+            'name': name
+        }
+        data = {
+            'variables': variables,
+            'queryId': get_query_id(Endpoint.EDIT_BOOKMARK_FOLDER)
+        }
+        response = self.http.post(
+            Endpoint.EDIT_BOOKMARK_FOLDER,
+            json=data,
+            headers=self._base_headers
+        ).json()
+        return BookmarkFolder(
+            self, response['data']['bookmark_collection_update']
+        )
+
+    def delete_bookmark_folder(self, folder_id: str) -> Response:
+        """
+        Deletes a bookmark folder.
+
+        Parameters
+        ----------
+        folder_id : :class:`str`
+            ID of the folder to delete.
+
+        Returns
+        -------
+        :class:`httpx.Response`
+            Response returned from twitter api.
+        """
+        variables = {
+            'bookmark_collection_id': folder_id
+        }
+        data = {
+            'variables': variables,
+            'queryId': get_query_id(Endpoint.DELETE_BOOKMARK_FOLDER)
+        }
+        response = self.http.post(
+            Endpoint.DELETE_BOOKMARK_FOLDER,
+            json=data,
+            headers=self._base_headers
+        )
+        return response
+
+    def create_bookmark_folder(self, name: str) -> BookmarkFolder:
+        """Creates a bookmark folder.
+
+        Parameters
+        ----------
+        name : :class:`str`
+            Name of the folder.
+
+        Returns
+        -------
+        :class:`BookmarkFolder`
+            Newly created bookmark folder.
+        """
+        variables = {
+            'name': name
+        }
+        data = {
+            'variables': variables,
+            'queryId': get_query_id(Endpoint.CREATE_BOOKMARK_FOLDER)
+        }
+        response = self.http.post(
+            Endpoint.CREATE_BOOKMARK_FOLDER,
+            json=data,
+            headers=self._base_headers
+        ).json()
+        return BookmarkFolder(
+            self, response['data']['bookmark_collection_create']
+        )
 
     def follow_user(self, user_id: str) -> Response:
         """
