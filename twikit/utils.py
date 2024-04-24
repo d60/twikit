@@ -401,7 +401,9 @@ class Flow:
         return self.response['subtasks'][0]['subtask_id']
 
 
-def find_dict(obj: list | dict, key: str | int) -> list[Any]:
+def find_dict(
+    obj: list | dict, key: str | int, find_one: bool = False
+) -> list[Any]:
     """
     Retrieves elements from a nested dictionary.
     """
@@ -409,9 +411,14 @@ def find_dict(obj: list | dict, key: str | int) -> list[Any]:
     if isinstance(obj, dict):
         if key in obj:
             results.append(obj.get(key))
+            if find_one:
+                return results
     if isinstance(obj, (list, dict)):
         for elem in (obj if isinstance(obj, list) else obj.values()):
-            results += find_dict(elem, key)
+            r = find_dict(elem, key, find_one)
+            results += r
+            if r and find_one:
+                return results
     return results
 
 

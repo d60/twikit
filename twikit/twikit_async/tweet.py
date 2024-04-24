@@ -90,6 +90,7 @@ class Tweet:
         self.replies: Result[Tweet] | None = None
         self.reply_to: list[Tweet] | None = None
         self.related_tweets: list[Tweet] | None = None
+        self.thread: list[Tweet] | None = None
 
         self.id: str = data['rest_id']
 

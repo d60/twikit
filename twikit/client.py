@@ -164,6 +164,7 @@ class Client:
         ...     password='00000000'
         ... )
         """
+        self.http.client.cookies.clear()
         guest_token = self._get_guest_token()
         headers = self._base_headers | {
             'x-guest-token': guest_token
@@ -1432,7 +1433,7 @@ class Client:
                     replies = []
                     sr_cursor = None
                     show_replies = None
-                    # Reply to reply
+
                     for reply in entry['content']['items'][1:]:
                         if 'tweetcomposer' in reply['entryId']:
                             continue
@@ -1460,6 +1461,10 @@ class Client:
                         sr_cursor
                     )
                     replies_list.append(tweet_object)
+
+                    display_type = find_dict(entry, 'tweetDisplayType', True)
+                    if display_type and display_type[0] == 'SelfThread':
+                        tweet.thread = [tweet_object, *replies]
 
         if entries[-1]['entryId'].startswith('cursor'):
             # if has more replies
