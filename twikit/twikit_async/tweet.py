@@ -130,10 +130,11 @@ class Tweet:
             self.retweeted_tweet = None
 
         note_tweet_results = find_dict(data, 'note_tweet_results')
+        self.full_text: str | None = None
         if note_tweet_results:
-            self.full_text: str = find_dict(note_tweet_results, 'text')[0]
-        else:
-            self.full_text = None
+            text_list = find_dict(note_tweet_results, 'text')
+            if text_list:
+                self.full_text = text_list[0]
 
         self.is_quote_status: bool = legacy['is_quote_status']
         self.possibly_sensitive: bool = legacy.get('possibly_sensitive')
