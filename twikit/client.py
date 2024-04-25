@@ -3561,12 +3561,10 @@ class Client:
         if tweet_type == 'Media':
             if cursor is None:
                 items = entries[0]['content']['items']
-                next_cursor = entries[-1]['content']['value']
-                previous_cursor = entries[-2]['content']['value']
             else:
                 items = find_dict(response, 'moduleItems')[0]
-                next_cursor = entries[-1]['content']['value']
-                previous_cursor = entries[-2]['content']['value']
+            previous_cursor = entries[-2]['content']['value']
+            next_cursor = entries[-1]['content']['value']
         else:
             items = entries
             next_cursor = items[-1]['content']['value']
