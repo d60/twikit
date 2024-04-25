@@ -416,17 +416,9 @@ class Client:
         if product == 'Media' and cursor is not None:
             items = find_dict(instructions, 'moduleItems')[0]
         else:
-            items_ = find_dict(instructions, 'entries')
-            if items_:
-                items = items_[0]
-            else:
-                items = []
+            items = items_[0] if (items_ := find_dict(instructions, 'entries')) else []
             if product == 'Media':
-                if 'items' in items[0]['content']:
-                    items = items[0]['content']['items']
-                else:
-                    items = []
-
+                items = items[0]['content']['items'] if 'items' in items[0]['content'] else []
         next_cursor = None
         previous_cursor = None
 
