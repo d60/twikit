@@ -28,7 +28,7 @@ from .list import List
 from .message import Message
 from .notification import Notification
 from .trend import Trend
-from .tweet import CommunityNote, Poll, ScheduledTweet, Tweet
+from .tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
 from .user import User
 from .utils import (
     BOOKMARK_FOLDER_TIMELINE_FEATURES,
@@ -487,19 +487,10 @@ class Client:
                 previous_cursor = item['content']['value']
             if not item['entryId'].startswith(('tweet', 'search-grid')):
                 continue
-            tweet_info = find_dict(item, 'result')
-            if not tweet_info:
-                continue
-            tweet_info = tweet_info[0]
-            if 'tweet' in tweet_info:
-                tweet_info = tweet_info['tweet']
-            if 'core' not in tweet_info:
-                continue
-            if 'result' not in tweet_info['core']['user_results']:
-                continue
-            user_info = tweet_info['core']['user_results']['result']
-            if 'legacy' in tweet_info:
-                results.append(Tweet(self, tweet_info, User(self, user_info)))
+
+            tweet = tweet_from_data(self, item)
+            if tweet is not None:
+                results.append(tweet)
 
         if next_cursor is None:
             if product == 'Media':
@@ -603,17 +594,18 @@ class Client:
             params=params,
             headers=self._base_headers
         ).json()
-
-        items = find_dict(response, 'entries')[0]
+        items_ = find_dict(response, 'entries')
         results = []
-        for item in items:
+        if not items_:
+            return results
+
+        for item in items_[0]:
             if not item['entryId'].startswith('tweet'):
                 continue
-            tweet_data = find_dict(item, 'result')[0]
-            if 'tweet' in tweet_data:
-                tweet_data = tweet_data['tweet']
-            user_data = tweet_data['core']['user_results']['result']
-            results.append(Tweet(self, tweet_data, User(self, user_data)))
+
+            tweet = tweet_from_data(self, item)
+            if tweet is not None:
+                results.append(tweet)
 
         return results
 
@@ -1333,13 +1325,9 @@ class Client:
         for entry in entries:
             if entry['entryId'].startswith(('cursor', 'label')):
                 continue
-            tweet_info = find_dict(entry, 'result')[0]
-            if tweet_info['__typename'] == 'TweetTombstone':
-                continue
-            if tweet_info['__typename'] == 'TweetWithVisibilityResults':
-                tweet_info = tweet_info['tweet']
-            user_info = tweet_info['core']['user_results']['result']
-            results.append(Tweet(self, tweet_info, User(self, user_info)))
+            tweet = tweet_from_data(self, entry)
+            if tweet is not None:
+                results.append(tweet)
 
         if entries[-1]['entryId'].startswith('cursor'):
             next_cursor = entries[-1]['content']['itemContent']['value']
@@ -1362,11 +1350,9 @@ class Client:
         for item in items:
             if 'tweet' not in item['entryId']:
                 continue
-            tweet_data = find_dict(item, 'result')[0]
-            if 'tweet' in tweet_data:
-                tweet_data = tweet_data['tweet']
-            user_data = tweet_data['core']['user_results']['result']
-            results.append(Tweet(self, tweet_data, User(self, user_data)))
+            tweet = tweet_from_data(self, item)
+            if tweet is not None:
+                results.append(tweet)
         return Result(results)
 
     def get_tweet_by_id(
@@ -1403,28 +1389,15 @@ class Client:
         for entry in entries:
             if entry['entryId'].startswith('cursor'):
                 continue
-            tweet_info_ = find_dict(entry, 'result')
-            if not tweet_info_:
+            tweet_object = tweet_from_data(self, entry)
+            if tweet_object is None:
                 continue
-            tweet_info = tweet_info_[0]
-
-            if tweet_info.get('__typename') == 'TweetTombstone':
-                continue
-
-            if tweet_info.get('__typename') == 'TweetWithVisibilityResults':
-                tweet_info = tweet_info['tweet']
-
-            user_info = find_dict(tweet_info, 'user_results')[0]['result']
-            tweet_object = Tweet(self, tweet_info, User(self, user_info))
 
             if entry['entryId'].startswith('tweetdetailrelatedtweets'):
                 related_tweets.append(tweet_object)
                 continue
 
             if entry['entryId'] == f'tweet-{tweet_id}':
-                if tweet_info.get('__typename') == 'TweetTombstone':
-                    raise TweetNotAvailable('This tweet is not available.')
-
                 tweet = tweet_object
             else:
                 if tweet is None:
@@ -1437,17 +1410,11 @@ class Client:
                     for reply in entry['content']['items'][1:]:
                         if 'tweetcomposer' in reply['entryId']:
                             continue
-                        if 'tweet' in find_dict(reply, 'result'):
-                            reply = reply['tweet']
                         if 'tweet' in reply.get('entryId'):
-                            rpl_data = find_dict(reply, 'result')[0]
-                            if rpl_data.get('__typename') == 'TweetTombstone':
+                            rpl = tweet_from_data(self, reply)
+                            if rpl is None:
                                 continue
-                            usr_data = find_dict(
-                                rpl_data, 'user_results')[0]['result']
-                            replies.append(
-                                Tweet(self, rpl_data, User(self, usr_data))
-                            )
+                            replies.append(rpl)
                         if 'cursor' in reply.get('entryId'):
                             sr_cursor = reply['item']['itemContent']['value']
                             show_replies = partial(
@@ -1809,27 +1776,19 @@ class Client:
             if entry_id.startswith('profile-conversation'):
                 tweets = item['content']['items']
                 replies = []
-
                 for reply in tweets[1:]:
-                    tweet_info = find_dict(reply, 'result')[0]
-                    if 'tweet' in tweet_info:
-                        tweet_info = tweet_info['tweet']
-                    user_info = find_dict(tweet_info, 'result')[0]
-                    user = User(self, user_info)
-
-                    replies.append(Tweet(self, tweet_info, user))
-
+                    tweet_object = tweet_from_data(self, reply)
+                    if tweet_object is None:
+                        continue
+                    replies.append(tweet_object)
                 item = tweets[0]
             else:
                 replies = None
 
-            tweet_info = find_dict(item, 'result')[0]
-            if 'tweet' in tweet_info:
-                tweet_info = tweet_info['tweet']
-            user_info = find_dict(tweet_info, 'result')[0]
-            tweet = Tweet(self, tweet_info, User(self, user_info))
+            tweet = tweet_from_data(self, item)
+            if tweet is None:
+                continue
             tweet.replies = replies
-
             results.append(tweet)
 
         return Result(
@@ -1912,11 +1871,10 @@ class Client:
         for item in items:
             if 'itemContent' not in item['content']:
                 continue
-            tweet_info = find_dict(item, 'result')[0]
-            if tweet_info['__typename'] == 'TweetWithVisibilityResults':
-                tweet_info = tweet_info['tweet']
-            user_info = tweet_info['core']['user_results']['result']
-            results.append(Tweet(self, tweet_info, user_info))
+            tweet = tweet_from_data(self, item)
+            if tweet is None:
+                continue
+            results.append(tweet)
 
         return Result(
             results,
@@ -1994,11 +1952,10 @@ class Client:
         for item in items:
             if 'itemContent' not in item['content']:
                 continue
-            tweet_info = find_dict(item, 'result')[0]
-            if tweet_info['__typename'] == 'TweetWithVisibilityResults':
-                tweet_info = tweet_info['tweet']
-            user_info = tweet_info['core']['user_results']['result']
-            results.append(Tweet(self, tweet_info, user_info))
+            tweet = tweet_from_data(self, item)
+            if tweet is None:
+                continue
+            results.append(tweet)
 
         return Result(
             results,
@@ -2295,9 +2252,10 @@ class Client:
         for item in items:
             if not item['entryId'].startswith('tweet'):
                 continue
-            tweet_info = find_dict(item, 'tweet_results')[0]['result']
-            user_info = tweet_info['core']['user_results']['result']
-            results.append(Tweet(self, tweet_info, User(self, user_info)))
+            tweet = tweet_from_data(self, item)
+            if tweet is None:
+                continue
+            results.append(tweet)
 
         return Result(
             results,
@@ -3825,11 +3783,10 @@ class Client:
         for item in items:
             if not item['entryId'].startswith('tweet'):
                 continue
-            tweet_info = find_dict(item, 'result')[0]
-            if tweet_info['__typename'] == 'TweetWithVisibilityResults':
-                tweet_info = tweet_info['tweet']
-            user_info = find_dict(tweet_info, 'result')[0]
-            results.append(Tweet(self, tweet_info, User(self, user_info)))
+
+            tweet = tweet_from_data(self, item)
+            if tweet is not None:
+                results.append(tweet)
 
         return Result(
             results,
@@ -4273,11 +4230,10 @@ class Client:
         for item in items:
             if not item['entryId'].startswith(('tweet', 'communities-grid')):
                 continue
-            tweet_data = find_dict(item, 'result')[0]
-            if 'tweet' in tweet_data:
-                tweet_data = tweet_data['tweet']
-            user_data = tweet_data['core']['user_results']['result']
-            tweets.append(Tweet(self, tweet_data, User(self, user_data)))
+
+            tweet = tweet_from_data(self, item)
+            if tweet is not None:
+                tweets.append(tweet)
 
         return Result(
             tweets,
@@ -4335,6 +4291,7 @@ class Client:
         for item in items:
             if not item['entryId'].startswith('tweet'):
                 continue
+            tweet = tweet_from_data(self, item)
             tweet_data = find_dict(item, 'result')[0]
             if 'tweet' in tweet_data:
                 tweet_data = tweet_data['tweet']
@@ -4602,11 +4559,10 @@ class Client:
         for item in items:
             if not item['entryId'].startswith('tweet'):
                 continue
-            tweet_data = find_dict(item, 'result')[0]
-            if 'tweet' in tweet_data:
-                tweet_data = tweet_data['tweet']
-            user_data = find_dict(tweet_data, 'result')[0]
-            tweets.append(Tweet(self, tweet_data, User(self, user_data)))
+
+            tweet = tweet_from_data(self, item)
+            if tweet is not None:
+                tweets.append(tweet)
 
         next_cursor = items[-1]['content']['value']
         previous_cursor = items[-2]['content']['value']

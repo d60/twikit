@@ -468,6 +468,27 @@ class Tweet:
         return not self == __value
 
 
+def tweet_from_data(client: Client, data: dict) -> Tweet:
+    tweet_data_ = find_dict(data, 'result', True)
+    if not tweet_data_:
+        return None
+    tweet_data = tweet_data_[0]
+
+    if tweet_data.get('__typename') == 'TweetTombstone':
+        return None
+    if 'tweet' in tweet_data:
+        tweet_data = tweet_data['tweet']
+    if 'core' not in tweet_data:
+        return None
+    if 'result' not in tweet_data['core']['user_results']:
+        return None
+    if 'legacy' not in tweet_data:
+        return None
+
+    user_data = tweet_data['core']['user_results']['result']
+    return Tweet(client, tweet_data, User(client, user_data))
+
+
 class ScheduledTweet:
     def __init__(self, client: Client, data: dict) -> None:
         self._client = client
