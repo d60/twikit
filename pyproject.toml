@@ -1,7 +1,103 @@
 [tool.ruff]
-line-length = 100
+line-length = 120
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".direnv",
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "build",
+    "dist",
+    "docs/sphinx",
+    "node_modules",
+    "venv",
+]
+# Assume Python 3.10.
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    # all possible codes as of this ruff version are listed here,
+    # ones we don't want/need are commented out to make it clear
+    # which have been omitted on purpose vs which ones get added
+    # in new ruff releases and should be considered for enabling
+    "ANN", # flake8-annotations
+    "C90", # mccabe
+    "E",
+    "F", # pyflakes
+    "I", # isort
+    "N", # PEP8 naming
+    "UP", # pyupgrade
+    "W", # pycodestyle
+    "YTT", # flake8-2020
+    # "S",    # flake8-bandit
+    # "BLE",  # flake8-blind-except
+    "A", # flake8-builtins
+    "B", # flake8-bugbear
+    "FBT", # flake8-boolean-trap
+    # "COM",  # flake8-commas
+    "C4", # flake8-comprehensions
+    "DTZ", # flake8-datetimez
+    "T10", # flake8-debugger
+    # "DJ",   # flake8-django
+    # "EM",   # flake8-errmsg
+    # "EXE",  # flake8-executable
+    "ICN", # flake8-import-conventions
+    "ISC", # flake8-implicit-str-concat
+    # "G",    # flake8-logging-format
+    # "INP",  # flake8-no-pep420
+    "ARG", # flake8-unused-arguments
+    "ERA", # eradicate
+    "PIE", # flake8-pie
+    "PT", # flake8-pytest-style
+    "PTH", # flake8-use-pathlib
+    "PYI", # flake8-pyi
+    "Q", # flake8-quotes
+    "RET", # flake8-return
+    "RSE", # flake8-raise
+    "SIM", # flake8-simplify
+    "SLF", # flake8-self
+    "T20", # flake8-print
+    "TCH", # flake8-type-checking
+    "TID", # flake8-tidy-imports
+    # "PD",   # pandas-vet
+    "PGH", # pygrep-hooks
+    "PL", # pylint
+    # "TRY",  # tryceratops
+    # "NPY",  # NumPy-specific rules
+    "RUF", # Ruff-specific rules
+]
+
+ignore = [
+    "ANN101", # no type for self
+    "ANN102", # no type for cls
+    "RET505", # allow else after return
+    "SIM108", # allow if-else in place of ternary
+    # To avoid conflict with ruff formatter. More details on https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    "E111", # indentation is not a multiple of four
+    "E117", # over-indented
+    "ISC001", # single line implicit string concatenation
+    "ISC002", # multi line implicit string concatenation
+    "Q000", # bad quotes inline string
+    "Q001", # bad quotes multiline string
+    "Q002", # bad quotes docstring
+    "Q003", # avoidable escaped quotes
+    "W191", # indentation contains tabs
+]
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/test_*.py" = ["PLR0913"] # too many args
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+suppress-none-returning = true
 
 [tool.ruff.format]
 quote-style = "single"
 docstring-code-format = true
-

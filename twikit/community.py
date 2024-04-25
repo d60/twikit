@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
-from twikit.tweet import Tweet, TweetType
 from twikit.user import User
 from twikit.utils import Result, b64_to_str
 
 if TYPE_CHECKING:
     from twikit.client import Client
+    from twikit.tweet import Tweet, TweetType
 
 
 class CommunityCreator(NamedTuple):
@@ -22,7 +22,7 @@ class CommunityRule(NamedTuple):
 
 
 class CommunityMember:
-    def __init__(self, client: 'Client', data: dict) -> None:
+    def __init__(self, client: Client, data: dict) -> None:
         self._client = client
         self.id: str = data['rest_id']
 
@@ -93,7 +93,7 @@ class Community:
 
     """
 
-    def __init__(self, client: 'Client', data: dict) -> None:
+    def __init__(self, client: Client, data: dict) -> None:
         self._client = client
         self.id: str = data['rest_id']
 
@@ -102,8 +102,7 @@ class Community:
         self.is_nsfw: bool = data['is_nsfw']
 
         self.members_facepile_results: list[str] = [
-            i['result']['legacy']['profile_image_url_https']
-            for i in data['members_facepile_results']
+            i['result']['legacy']['profile_image_url_https'] for i in data['members_facepile_results']
         ]
         self.banner: dict = data['default_banner_media']['media_info']
 

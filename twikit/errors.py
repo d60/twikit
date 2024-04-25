@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from httpx import Headers
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from httpx import Headers
 
 
 class TwitterException(Exception):

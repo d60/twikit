@@ -5,11 +5,11 @@ import json
 import time
 import warnings
 from functools import partial
-from typing import Literal
+from pathlib import Path
+from typing import TYPE_CHECKING, Literal
 
 import filetype
 from fake_useragent import UserAgent
-from httpx import Response
 
 from twikit.bookmark import BookmarkFolder
 from twikit.community import Community, CommunityMember
@@ -44,15 +44,15 @@ from twikit.tweet import (
 from twikit.user import User
 from twikit.utils import (
     BOOKMARK_FOLDER_TIMELINE_FEATURES,
-    COMMUNITY_TWEETS_FEATURES,
     COMMUNITY_NOTE_FEATURES,
+    COMMUNITY_TWEETS_FEATURES,
+    FEATURES,
     JOIN_COMMUNITY_FEATURES,
     LIST_FEATURES,
-    FEATURES,
-    TOKEN,
-    USER_FEATURES,
     NOTE_TWEET_FEATURES,
     SIMILAR_POSTS_FEATURES,
+    TOKEN,
+    USER_FEATURES,
     Endpoint,
     Flow,
     Result,
@@ -64,6 +64,9 @@ from twikit.utils import (
     urlencode,
 )
 
+if TYPE_CHECKING:
+    from httpx import Response
+
 
 class Client:
     """
@@ -73,9 +76,7 @@ class Client:
     --------
     >>> client = Client(language='en-US')
 
-    >>> client.login(
-    ...     auth_info_1='example_user', auth_info_2='email@example.com', password='00000000'
-    ... )
+    >>> client.login(auth_info_1='example_user', auth_info_2='email@example.com', password='00000000')
     """
 
     def __init__(self, language: str | None = None, proxies: dict | None = None, **kwargs) -> None:
@@ -154,9 +155,7 @@ class Client:
 
         Examples
         --------
-        >>> client.login(
-        ...     auth_info_1='example_user', auth_info_2='email@example.com', password='00000000'
-        ... )
+        >>> client.login(auth_info_1='example_user', auth_info_2='email@example.com', password='00000000')
         """
         self.http.client.cookies.clear()
         guest_token = self._get_guest_token()
@@ -200,7 +199,7 @@ class Client:
 
         if flow.response is not None:
             if not flow.response['subtasks']:
-                return
+                return None
 
             self._user_id = find_dict(flow.response, 'id_str')[0]
 
@@ -290,7 +289,7 @@ class Client:
         .get_cookies
         .set_cookies
         """
-        with open(path, 'w', encoding='utf-8') as f:
+        with Path(path).open('w', encoding='utf-8') as f:
             json.dump(self.get_cookies(), f)
 
     def set_cookies(self, cookies: dict, clear_cookies: bool = False) -> None:
@@ -338,7 +337,7 @@ class Client:
         .save_cookies
         .set_cookies
         """
-        with open(path, 'r', encoding='utf-8') as f:
+        with Path(path).open(encoding='utf-8') as f:
             self.set_cookies(json.load(f))
 
     def set_delegate_account(self, user_id: str | None) -> None:
@@ -353,9 +352,7 @@ class Client:
         """
         self._act_as = user_id
 
-    def _search(
-        self, query: str, product: TweetType | TimelineSearchType, count: int, cursor: str | None
-    ) -> dict:
+    def _search(self, query: str, product: TweetType | TimelineSearchType, count: int, cursor: str | None) -> dict:
         """
         Base search function.
         """
@@ -368,9 +365,7 @@ class Client:
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({'variables': variables, 'features': FEATURES})
-        return self.http.get(
-            Endpoint.SEARCH_TIMELINE, params=params, headers=self._base_headers
-        ).json()
+        return self.http.get(Endpoint.SEARCH_TIMELINE, params=params, headers=self._base_headers).json()
 
     def search_tweet(
         self,
@@ -432,7 +427,7 @@ class Client:
         else:
             items = items_[0] if (items_ := find_dict(instructions, 'entries')) else []
             if product == 'Media':
-                items = items[0]['content']['items'] if 'items' in items[0]['content'] else []
+                items = items[0]['content'].get('items', [])
         next_cursor = None
         previous_cursor = None
 
@@ -531,12 +526,8 @@ class Client:
             A list of Tweet objects representing tweets
             similar to the specified tweet.
         """
-        params = flatten_params(
-            {'variables': {'tweet_id': tweet_id}, 'features': SIMILAR_POSTS_FEATURES}
-        )
-        response = self.http.get(
-            Endpoint.SIMILAR_POSTS, params=params, headers=self._base_headers
-        ).json()
+        params = flatten_params({'variables': {'tweet_id': tweet_id}, 'features': SIMILAR_POSTS_FEATURES})
+        response = self.http.get(Endpoint.SIMILAR_POSTS, params=params, headers=self._base_headers).json()
         items_ = find_dict(response, 'entries')
         results: list[Tweet] = []
         if not items_:
@@ -601,13 +592,11 @@ class Client:
         ... )
         """
         if not isinstance(wait_for_completion, bool):
-            raise TypeError(
-                'wait_for_completion must be bool,' f' not {wait_for_completion.__class__.__name__}'
-            )
+            raise TypeError('wait_for_completion must be bool,' f' not {wait_for_completion.__class__.__name__}')
 
         if isinstance(source, str):
             # If the source is a path
-            with open(source, 'rb') as file:
+            with Path(source).open('rb') as file:
                 binary = file.read()
         elif isinstance(source, bytes):
             # If the source is bytes
@@ -634,9 +623,7 @@ class Client:
         params = {'command': 'INIT', 'total_bytes': total_bytes, 'media_type': media_type}
         if media_category is not None:
             params['media_category'] = media_category
-        response = self.http.post(
-            Endpoint.UPLOAD_MEDIA, params=params, headers=self._base_headers
-        ).json()
+        response = self.http.post(Endpoint.UPLOAD_MEDIA, params=params, headers=self._base_headers).json()
         media_id = response['media_id']
         # =========== APPEND ============
         segment_index = 0
@@ -705,16 +692,13 @@ class Client:
             the uploaded media.
         """
         params = {'command': 'STATUS', 'media_id': media_id}
-        return self.http.get(
-            Endpoint.UPLOAD_MEDIA, params=params, headers=self._base_headers
-        ).json()
+        return self.http.get(Endpoint.UPLOAD_MEDIA, params=params, headers=self._base_headers).json()
 
     def create_media_metadata(
         self,
         media_id: str,
         alt_text: str | None = None,
-        sensitive_warning: list[Literal['adult_content', 'graphic_violence', 'other']]
-        | None = None,
+        sensitive_warning: list[Literal['adult_content', 'graphic_violence', 'other']] | None = None,
     ) -> Response:
         """
         Adds metadata to uploaded media.
@@ -736,9 +720,7 @@ class Client:
         Examples
         --------
         >>> media_id = client.upload_media('media.jpg')
-        >>> client.create_media_metadata(
-        ...     media_id, alt_text='This is a sample media', sensitive_warning=['other']
-        ... )
+        >>> client.create_media_metadata(media_id, alt_text='This is a sample media', sensitive_warning=['other'])
         >>> client.create_tweet(media_ids=[media_id])
         """
         data: dict = {'media_id': media_id}
@@ -913,9 +895,7 @@ class Client:
         .upload_media
         .create_poll
         """
-        media_entities = [
-            {'media_id': media_id, 'tagged_users': []} for media_id in (media_ids or [])
-        ]
+        media_entities = [{'media_id': media_id, 'tagged_users': []} for media_id in (media_ids or [])]
         variables = {
             'tweet_text': text,
             'dark_request': False,
@@ -941,9 +921,7 @@ class Client:
             variables['attachment_url'] = attachment_url
 
         if community_id is not None:
-            variables['semantic_annotation_ids'] = [
-                {'entity_id': community_id, 'group_id': '8', 'domain_id': '31'}
-            ]
+            variables['semantic_annotation_ids'] = [{'entity_id': community_id, 'group_id': '8', 'domain_id': '31'}]
             variables['broadcast'] = share_with_followers
 
         if richtext_options is not None:
@@ -973,9 +951,7 @@ class Client:
         _result = find_dict(response, 'result')
         if not _result:
             raise_exceptions_from_response(response['errors'])
-            raise CouldNotTweet(
-                response['errors'][0] if response['errors'] else 'Failed to post a tweet.'
-            )
+            raise CouldNotTweet(response['errors'][0] if response['errors'] else 'Failed to post a tweet.')
 
         tweet_info = _result[0]
         user_info = tweet_info['core']['user_results']['result']
@@ -1091,9 +1067,7 @@ class Client:
                 'fieldToggles': {'withAuxiliaryUserLabels': False},
             }
         )
-        response = self.http.get(
-            Endpoint.USER_BY_SCREEN_NAME, params=params, headers=self._base_headers
-        ).json()
+        response = self.http.get(Endpoint.USER_BY_SCREEN_NAME, params=params, headers=self._base_headers).json()
 
         if 'user' not in response['data']:
             raise UserNotFound('The user does not exist.')
@@ -1127,9 +1101,7 @@ class Client:
         """
         variables = {'userId': user_id, 'withSafetyModeUserFields': True}
         params = flatten_params({'variables': variables, 'features': USER_FEATURES})
-        response = self.http.get(
-            Endpoint.USER_BY_REST_ID, params=params, headers=self._base_headers
-        ).json()
+        response = self.http.get(Endpoint.USER_BY_REST_ID, params=params, headers=self._base_headers).json()
         if 'result' not in response['data']['user']:
             raise TwitterException(f'Invalid user id: {user_id}')
         user_data = response['data']['user']['result']
@@ -1157,9 +1129,7 @@ class Client:
                 'fieldToggles': {'withAuxiliaryUserLabels': False},
             }
         )
-        return self.http.get(
-            Endpoint.TWEET_DETAIL, params=params, headers=self._base_headers
-        ).json()
+        return self.http.get(Endpoint.TWEET_DETAIL, params=params, headers=self._base_headers).json()
 
     def _get_more_replies(self, tweet_id: str, cursor: str) -> Result[Tweet]:
         response = self._get_tweet_detail(tweet_id, cursor)
@@ -1250,8 +1220,7 @@ class Client:
                         rpl = tweet_from_data(self, reply)
                         if rpl is None:
                             continue
-                        else:
-                            replies.append(rpl)
+                        replies.append(rpl)
                     if 'cursor' in reply.get('entryId'):
                         sr_cursor = reply['item']['itemContent']['value']
                         show_replies = partial(self._show_more_replies, tweet_id, sr_cursor)
@@ -1287,9 +1256,7 @@ class Client:
             List of ScheduledTweet objects representing the scheduled tweets.
         """
         params = flatten_params({'variables': {'ascending': True}})
-        response = self.http.get(
-            Endpoint.FETCH_SCHEDULED_TWEETS, params=params, headers=self._base_headers
-        ).json()
+        response = self.http.get(Endpoint.FETCH_SCHEDULED_TWEETS, params=params, headers=self._base_headers).json()
         tweets = find_dict(response, 'scheduled_tweet_list')[0]
         return [ScheduledTweet(self, tweet) for tweet in tweets]
 
@@ -1311,9 +1278,7 @@ class Client:
             'variables': {'scheduled_tweet_id': tweet_id},
             'queryId': get_query_id(Endpoint.DELETE_SCHEDULED_TWEET),
         }
-        return self.http.post(
-            Endpoint.DELETE_SCHEDULED_TWEET, json=data, headers=self._base_headers
-        )
+        return self.http.post(Endpoint.DELETE_SCHEDULED_TWEET, json=data, headers=self._base_headers)
 
     def _get_tweet_engagements(
         self,
@@ -1355,9 +1320,7 @@ class Client:
             previous_cursor,
         )
 
-    def get_retweeters(
-        self, tweet_id: str, count: int = 40, cursor: str | None = None
-    ) -> Result[User]:
+    def get_retweeters(self, tweet_id: str, count: int = 40, cursor: str | None = None) -> Result[User]:
         """
         Retrieve users who retweeted a specific tweet.
 
@@ -1388,9 +1351,7 @@ class Client:
         """
         return self._get_tweet_engagements(tweet_id, count, cursor, Endpoint.RETWEETERS)
 
-    def get_favoriters(
-        self, tweet_id: str, count: int = 40, cursor: str | None = None
-    ) -> Result[User]:
+    def get_favoriters(self, tweet_id: str, count: int = 40, cursor: str | None = None) -> Result[User]:
         """
         Retrieve users who favorited a specific tweet.
 
@@ -1447,12 +1408,8 @@ class Client:
         >>> print(note)
         <CommunityNote id="...">
         """
-        params = flatten_params(
-            {'variables': {'note_id': note_id}, 'features': COMMUNITY_NOTE_FEATURES}
-        )
-        response = self.http.get(
-            Endpoint.FETCH_COMMUNITY_NOTE, params=params, headers=self._base_headers
-        ).json()
+        params = flatten_params({'variables': {'note_id': note_id}, 'features': COMMUNITY_NOTE_FEATURES})
+        response = self.http.get(Endpoint.FETCH_COMMUNITY_NOTE, params=params, headers=self._base_headers).json()
         note_data = response['data']['birdwatch_note_by_rest_id']
         if 'data_v1' not in note_data:
             raise TwitterException(f'Invalid note id: {note_id}')
@@ -1639,9 +1596,7 @@ class Client:
             'queryId': get_query_id(Endpoint.HOME_TIMELINE),
             'features': FEATURES,
         }
-        response = self.http.post(
-            Endpoint.HOME_TIMELINE, json=data, headers=self._base_headers
-        ).json()
+        response = self.http.post(Endpoint.HOME_TIMELINE, json=data, headers=self._base_headers).json()
 
         items = find_dict(response, 'entries')[0]
         next_cursor = items[-1]['content']['value']
@@ -1655,9 +1610,7 @@ class Client:
                 continue
             results.append(tweet)
 
-        return Result(
-            results, partial(self.get_timeline, count, seen_tweet_ids, next_cursor), next_cursor
-        )
+        return Result(results, partial(self.get_timeline, count, seen_tweet_ids, next_cursor), next_cursor)
 
     def get_latest_timeline(
         self, count: int = 20, seen_tweet_ids: list[str] | None = None, cursor: str | None = None
@@ -1713,9 +1666,7 @@ class Client:
             'queryId': get_query_id(Endpoint.HOME_LATEST_TIMELINE),
             'features': FEATURES,
         }
-        response = self.http.post(
-            Endpoint.HOME_LATEST_TIMELINE, json=data, headers=self._base_headers
-        ).json()
+        response = self.http.post(Endpoint.HOME_LATEST_TIMELINE, json=data, headers=self._base_headers).json()
 
         items = find_dict(response, 'entries')[0]
         next_cursor = items[-1]['content']['value']
@@ -1911,9 +1862,7 @@ class Client:
         }
         return self.http.post(Endpoint.DELETE_BOOKMARK, json=data, headers=self._base_headers)
 
-    def get_bookmarks(
-        self, count: int = 20, cursor: str | None = None, folder_id: str | None = None
-    ) -> Result[Tweet]:
+    def get_bookmarks(self, count: int = 20, cursor: str | None = None, folder_id: str | None = None) -> Result[Tweet]:
         """
         Retrieves bookmarks from the authenticated user's Twitter account.
 
@@ -2023,9 +1972,7 @@ class Client:
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({'variables': variables})
-        response = self.http.get(
-            Endpoint.BOOKMARK_FOLDERS, params=params, headers=self._base_headers
-        ).json()
+        response = self.http.get(Endpoint.BOOKMARK_FOLDERS, params=params, headers=self._base_headers).json()
 
         bookmark_slice = find_dict(response, 'bookmark_collections_slice')[0]
         results = [BookmarkFolder(self, item) for item in bookmark_slice['items']]
@@ -2060,9 +2007,7 @@ class Client:
         """
         variables = {'bookmark_collection_id': folder_id, 'name': name}
         data = {'variables': variables, 'queryId': get_query_id(Endpoint.EDIT_BOOKMARK_FOLDER)}
-        response = self.http.post(
-            Endpoint.EDIT_BOOKMARK_FOLDER, json=data, headers=self._base_headers
-        ).json()
+        response = self.http.post(Endpoint.EDIT_BOOKMARK_FOLDER, json=data, headers=self._base_headers).json()
         return BookmarkFolder(self, response['data']['bookmark_collection_update'])
 
     def delete_bookmark_folder(self, folder_id: str) -> Response:
@@ -2081,9 +2026,7 @@ class Client:
         """
         variables = {'bookmark_collection_id': folder_id}
         data = {'variables': variables, 'queryId': get_query_id(Endpoint.DELETE_BOOKMARK_FOLDER)}
-        return self.http.post(
-            Endpoint.DELETE_BOOKMARK_FOLDER, json=data, headers=self._base_headers
-        )
+        return self.http.post(Endpoint.DELETE_BOOKMARK_FOLDER, json=data, headers=self._base_headers)
 
     def create_bookmark_folder(self, name: str) -> BookmarkFolder:
         """Creates a bookmark folder.
@@ -2100,9 +2043,7 @@ class Client:
         """
         variables = {'name': name}
         data = {'variables': variables, 'queryId': get_query_id(Endpoint.CREATE_BOOKMARK_FOLDER)}
-        response = self.http.post(
-            Endpoint.CREATE_BOOKMARK_FOLDER, json=data, headers=self._base_headers
-        ).json()
+        response = self.http.post(Endpoint.CREATE_BOOKMARK_FOLDER, json=data, headers=self._base_headers).json()
         return BookmarkFolder(self, response['data']['bookmark_collection_create'])
 
     def follow_user(self, user_id: str) -> Response:
@@ -2336,9 +2277,7 @@ class Client:
         response = self.http.get(Endpoint.TREND, params=params, headers=self._base_headers).json()
 
         entry_id_prefix = 'trends' if category is TweetTrendType.TRENDING else 'Guide'
-        entries = [
-            i for i in find_dict(response, 'entries')[0] if i['entryId'].startswith(entry_id_prefix)
-        ]
+        entries = [i for i in find_dict(response, 'entries')[0] if i['entryId'].startswith(entry_id_prefix)]
 
         if not entries:
             if retry:
@@ -2357,9 +2296,7 @@ class Client:
 
         return results
 
-    def _get_user_friendship(
-        self, user_id: str, count: int, endpoint: str, cursor: str | None
-    ) -> Result[User]:
+    def _get_user_friendship(self, user_id: str, count: int, endpoint: str, cursor: str | None) -> Result[User]:
         """
         Base function to get friendship.
         """
@@ -2394,9 +2331,7 @@ class Client:
             next_cursor,
         )
 
-    def get_user_followers(
-        self, user_id: str, count: int = 20, cursor: str | None = None
-    ) -> Result[User]:
+    def get_user_followers(self, user_id: str, count: int = 20, cursor: str | None = None) -> Result[User]:
         """
         Retrieves a list of followers for a given user.
 
@@ -2414,9 +2349,7 @@ class Client:
         """
         return self._get_user_friendship(user_id, count, Endpoint.FOLLOWERS, cursor)
 
-    def get_user_verified_followers(
-        self, user_id: str, count: int = 20, cursor: str | None = None
-    ) -> Result[User]:
+    def get_user_verified_followers(self, user_id: str, count: int = 20, cursor: str | None = None) -> Result[User]:
         """
         Retrieves a list of verified followers for a given user.
 
@@ -2434,9 +2367,7 @@ class Client:
         """
         return self._get_user_friendship(user_id, count, Endpoint.BLUE_VERIFIED_FOLLOWERS, cursor)
 
-    def get_user_followers_you_know(
-        self, user_id: str, count: int = 20, cursor: str | None = None
-    ) -> Result[User]:
+    def get_user_followers_you_know(self, user_id: str, count: int = 20, cursor: str | None = None) -> Result[User]:
         """
         Retrieves a list of common followers.
 
@@ -2454,9 +2385,7 @@ class Client:
         """
         return self._get_user_friendship(user_id, count, Endpoint.FOLLOWERS_YOU_KNOW, cursor)
 
-    def get_user_following(
-        self, user_id: str, count: int = 20, cursor: str | None = None
-    ) -> Result[User]:
+    def get_user_following(self, user_id: str, count: int = 20, cursor: str | None = None) -> Result[User]:
         """
         Retrieves a list of users whom the given user is following.
 
@@ -2474,9 +2403,7 @@ class Client:
         """
         return self._get_user_friendship(user_id, count, Endpoint.FOLLOWING, cursor)
 
-    def get_user_subscriptions(
-        self, user_id: str, count: int = 20, cursor: str | None = None
-    ) -> Result[User]:
+    def get_user_subscriptions(self, user_id: str, count: int = 20, cursor: str | None = None) -> Result[User]:
         """
         Retrieves a list of users to which the specified user is subscribed.
 
@@ -2494,9 +2421,7 @@ class Client:
         """
         return self._get_user_friendship(user_id, count, Endpoint.SUBSCRIPTIONS, cursor)
 
-    def _send_dm(
-        self, conversation_id: str, text: str, media_id: str | None, reply_to: str | None
-    ) -> dict:
+    def _send_dm(self, conversation_id: str, text: str, media_id: str | None, reply_to: str | None) -> dict:
         """
         Base function to send dm.
         """
@@ -2528,9 +2453,7 @@ class Client:
             Endpoint.CONVERSASION.format(conversation_id), params=params, headers=self._base_headers
         ).json()
 
-    def send_dm(
-        self, user_id: str, text: str, media_id: str | None = None, reply_to: str | None = None
-    ) -> Message:
+    def send_dm(self, user_id: str, text: str, media_id: str | None = None, reply_to: str | None = None) -> Message:
         """
         Send a direct message to a user.
 
@@ -2577,9 +2500,7 @@ class Client:
             users[1]['id_str'] if len(users) == 2 else users[0]['id_str'],
         )
 
-    def add_reaction_to_message(
-        self, message_id: str, conversation_id: str, emoji: str
-    ) -> Response:
+    def add_reaction_to_message(self, message_id: str, conversation_id: str, emoji: str) -> Response:
         """
         Adds a reaction emoji to a specific message in a conversation.
 
@@ -2613,9 +2534,7 @@ class Client:
         data = {'variables': variables, 'queryId': get_query_id(Endpoint.MESSAGE_ADD_REACTION)}
         return self.http.post(Endpoint.MESSAGE_ADD_REACTION, json=data, headers=self._base_headers)
 
-    def remove_reaction_from_message(
-        self, message_id: str, conversation_id: str, emoji: str
-    ) -> Response:
+    def remove_reaction_from_message(self, message_id: str, conversation_id: str, emoji: str) -> Response:
         """
         Remove a reaction from a message.
 
@@ -2647,9 +2566,7 @@ class Client:
             'emojiReactions': [emoji],
         }
         data = {'variables': variables, 'queryId': get_query_id(Endpoint.MESSAGE_REMOVE_REACTION)}
-        return self.http.post(
-            Endpoint.MESSAGE_REMOVE_REACTION, json=data, headers=self._base_headers
-        )
+        return self.http.post(Endpoint.MESSAGE_REMOVE_REACTION, json=data, headers=self._base_headers)
 
     def delete_dm(self, message_id: str) -> Response:
         """
@@ -2715,12 +2632,8 @@ class Client:
         messages = []
         for item in items:
             message_info = item['message']['message_data']
-            messages.append(
-                Message(self, message_info, message_info['sender_id'], message_info['recipient_id'])
-            )
-        return Result(
-            messages, partial(self.get_dm_history, user_id, messages[-1].id), messages[-1].id
-        )
+            messages.append(Message(self, message_info, message_info['sender_id'], message_info['recipient_id']))
+        return Result(messages, partial(self.get_dm_history, user_id, messages[-1].id), messages[-1].id)
 
     def send_dm_to_group(
         self, group_id: str, text: str, media_id: str | None = None, reply_to: str | None = None
@@ -2767,9 +2680,7 @@ class Client:
         users = list(response['users'].values())
         return GroupMessage(self, message_data, users[0]['id_str'], group_id)
 
-    def get_group_dm_history(
-        self, group_id: str, max_id: str | None = None
-    ) -> Result[GroupMessage]:
+    def get_group_dm_history(self, group_id: str, max_id: str | None = None) -> Result[GroupMessage]:
         """
         Retrieves the DM conversation history in a group.
 
@@ -2814,9 +2725,7 @@ class Client:
                 continue
             message_info = item['message']['message_data']
             messages.append(GroupMessage(self, message_info, message_info['sender_id'], group_id))
-        return Result(
-            messages, partial(self.get_group_dm_history, group_id, messages[-1].id), messages[-1].id
-        )
+        return Result(messages, partial(self.get_group_dm_history, group_id, messages[-1].id), messages[-1].id)
 
     def get_group(self, group_id: str) -> Group:
         """
@@ -2886,9 +2795,7 @@ class Client:
         data = urlencode({'name': name})
         headers = self._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
-        return self.http.post(
-            Endpoint.CHANGE_GROUP_NAME.format(group_id), data=data, headers=headers
-        )
+        return self.http.post(Endpoint.CHANGE_GROUP_NAME.format(group_id), data=data, headers=headers)
 
     def create_list(self, name: str, description: str = '', is_private: bool = False) -> List:
         """
@@ -2920,9 +2827,7 @@ class Client:
             'features': LIST_FEATURES,
             'queryId': get_query_id(Endpoint.CREATE_LIST),
         }
-        response = self.http.post(
-            Endpoint.CREATE_LIST, json=data, headers=self._base_headers
-        ).json()
+        response = self.http.post(Endpoint.CREATE_LIST, json=data, headers=self._base_headers).json()
         list_info = find_dict(response, 'list')[0]
         return List(self, list_info)
 
@@ -3019,9 +2924,7 @@ class Client:
             'features': LIST_FEATURES,
             'queryId': get_query_id(Endpoint.UPDATE_LIST),
         }
-        response = self.http.post(
-            Endpoint.UPDATE_LIST, json=data, headers=self._base_headers
-        ).json()
+        response = self.http.post(Endpoint.UPDATE_LIST, json=data, headers=self._base_headers).json()
         list_info = find_dict(response, 'list')[0]
         return List(self, list_info)
 
@@ -3110,9 +3013,7 @@ class Client:
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({'variables': variables, 'features': FEATURES})
-        response = self.http.get(
-            Endpoint.LIST_MANAGEMENT, params=params, headers=self._base_headers
-        ).json()
+        response = self.http.get(Endpoint.LIST_MANAGEMENT, params=params, headers=self._base_headers).json()
 
         entries = find_dict(response, 'entries')[0]
         items = find_dict(entries, 'items')
@@ -3120,7 +3021,7 @@ class Client:
         if len(items) < 2:
             return Result([])
 
-        lists = [List(self, list['item']['itemContent']['list']) for list in items[1]]
+        lists = [List(self, list_item['item']['itemContent']['list']) for list_item in items[1]]
         next_cursor = entries[-1]['content']['value']
 
         return Result(lists, partial(self.get_lists, count, next_cursor), next_cursor)
@@ -3140,15 +3041,11 @@ class Client:
             List object.
         """
         params = flatten_params({'variables': {'listId': list_id}, 'features': LIST_FEATURES})
-        response = self.http.get(
-            Endpoint.LIST_BY_REST_ID, params=params, headers=self._base_headers
-        ).json()
+        response = self.http.get(Endpoint.LIST_BY_REST_ID, params=params, headers=self._base_headers).json()
         list_info = find_dict(response, 'list')[0]
         return List(self, list_info)
 
-    def get_list_tweets(
-        self, list_id: str, count: int = 20, cursor: str | None = None
-    ) -> Result[Tweet]:
+    def get_list_tweets(self, list_id: str, count: int = 20, cursor: str | None = None) -> Result[Tweet]:
         """
         Retrieves tweets from a list.
 
@@ -3188,9 +3085,7 @@ class Client:
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({'variables': variables, 'features': FEATURES})
-        response = self.http.get(
-            Endpoint.LIST_LATEST_TWEETS, params=params, headers=self._base_headers
-        ).json()
+        response = self.http.get(Endpoint.LIST_LATEST_TWEETS, params=params, headers=self._base_headers).json()
 
         items = find_dict(response, 'entries')[0]
         next_cursor = items[-1]['content']['value']
@@ -3204,13 +3099,9 @@ class Client:
             if tweet is not None:
                 results.append(tweet)
 
-        return Result(
-            results, partial(self.get_list_tweets, list_id, count, next_cursor), next_cursor
-        )
+        return Result(results, partial(self.get_list_tweets, list_id, count, next_cursor), next_cursor)
 
-    def _get_list_users(
-        self, endpoint: str, list_id: str, count: int, cursor: str | None
-    ) -> Result[User]:
+    def _get_list_users(self, endpoint: str, list_id: str, count: int, cursor: str | None) -> Result[User]:
         """
         Base function to retrieve the users associated with a list.
         """
@@ -3240,9 +3131,7 @@ class Client:
             next_cursor,
         )
 
-    def get_list_members(
-        self, list_id: str, count: int = 20, cursor: str | None = None
-    ) -> Result[User]:
+    def get_list_members(self, list_id: str, count: int = 20, cursor: str | None = None) -> Result[User]:
         """Retrieves members of a list.
 
         Parameters
@@ -3270,9 +3159,7 @@ class Client:
         """
         return self._get_list_users(Endpoint.LIST_MEMBERS, list_id, count, cursor)
 
-    def get_list_subscribers(
-        self, list_id: str, count: int = 20, cursor: str | None = None
-    ) -> Result[User]:
+    def get_list_subscribers(self, list_id: str, count: int = 20, cursor: str | None = None) -> Result[User]:
         """Retrieves subscribers of a list.
 
         Parameters
@@ -3392,10 +3279,7 @@ class Client:
         response = self.http.get(endpoint, params=params, headers=self._base_headers).json()
 
         global_objects = response['globalObjects']
-        users = {
-            id: User(self, build_user_data(data))
-            for id, data in global_objects.get('users', {}).items()
-        }
+        users = {id: User(self, build_user_data(data)) for id, data in global_objects.get('users', {}).items()}
         tweets = {}
 
         tweet: Tweet | None = None
@@ -3466,9 +3350,7 @@ class Client:
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({'variables': variables})
-        response = self.http.get(
-            Endpoint.SEARCH_COMMUNITY, params=params, headers=self._base_headers
-        ).json()
+        response = self.http.get(Endpoint.SEARCH_COMMUNITY, params=params, headers=self._base_headers).json()
 
         items = find_dict(response, 'items_results')[0]
         communities = [Community(self, item['result']) for item in items]
@@ -3503,9 +3385,7 @@ class Client:
                 },
             }
         )
-        response = self.http.get(
-            Endpoint.GET_COMMUNITY, params=params, headers=self._base_headers
-        ).json()
+        response = self.http.get(Endpoint.GET_COMMUNITY, params=params, headers=self._base_headers).json()
         community_data = find_dict(response, 'result')[0]
         return Community(self, community_data)
 
@@ -3617,9 +3497,7 @@ class Client:
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({'variables': variables, 'features': COMMUNITY_TWEETS_FEATURES})
-        response = self.http.get(
-            Endpoint.COMMUNITIES_TIMELINE, params=params, headers=self._base_headers
-        ).json()
+        response = self.http.get(Endpoint.COMMUNITIES_TIMELINE, params=params, headers=self._base_headers).json()
         items = find_dict(response, 'entries')[0]
         tweets = []
         for item in items:
@@ -3667,9 +3545,7 @@ class Client:
             'features': JOIN_COMMUNITY_FEATURES,
             'queryId': get_query_id(Endpoint.JOIN_COMMUNITY),
         }
-        response = self.http.post(
-            Endpoint.JOIN_COMMUNITY, json=data, headers=self._base_headers
-        ).json()
+        response = self.http.post(Endpoint.JOIN_COMMUNITY, json=data, headers=self._base_headers).json()
         community_data = response['data']['community_join']
         community_data['rest_id'] = community_data['id_str']
         return Community(self, community_data)
@@ -3693,9 +3569,7 @@ class Client:
             'features': JOIN_COMMUNITY_FEATURES,
             'queryId': get_query_id(Endpoint.LEAVE_COMMUNITY),
         }
-        response = self.http.post(
-            Endpoint.LEAVE_COMMUNITY, json=data, headers=self._base_headers
-        ).json()
+        response = self.http.post(Endpoint.LEAVE_COMMUNITY, json=data, headers=self._base_headers).json()
         community_data = response['data']['community_leave']
         community_data['rest_id'] = community_data['id_str']
         return Community(self, community_data)
@@ -3721,16 +3595,12 @@ class Client:
             'features': JOIN_COMMUNITY_FEATURES,
             'queryId': get_query_id(Endpoint.REQUEST_TO_JOIN_COMMUNITY),
         }
-        response = self.http.post(
-            Endpoint.REQUEST_TO_JOIN_COMMUNITY, json=data, headers=self._base_headers
-        ).json()
+        response = self.http.post(Endpoint.REQUEST_TO_JOIN_COMMUNITY, json=data, headers=self._base_headers).json()
         community_data = find_dict(response, 'result')[0]
         community_data['rest_id'] = community_data['id_str']
         return Community(self, community_data)
 
-    def _get_community_users(
-        self, endpoint: str, community_id: str, count: int, cursor: str | None
-    ):
+    def _get_community_users(self, endpoint: str, community_id: str, count: int, cursor: str | None):
         """
         Base function to retrieve community users.
         """
@@ -3760,9 +3630,7 @@ class Client:
         if next_cursor is None:
             fetch_next_result = None
         else:
-            fetch_next_result = partial(
-                self._get_community_users, endpoint, community_id, count, next_cursor
-            )
+            fetch_next_result = partial(self._get_community_users, endpoint, community_id, count, next_cursor)
         return Result(users, fetch_next_result, next_cursor)
 
     def get_community_members(
@@ -3838,9 +3706,7 @@ class Client:
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({'variables': variables, 'features': COMMUNITY_TWEETS_FEATURES})
-        response = self.http.get(
-            Endpoint.SEARCH_COMMUNITY_TWEET, params=params, headers=self._base_headers
-        ).json()
+        response = self.http.get(Endpoint.SEARCH_COMMUNITY_TWEET, params=params, headers=self._base_headers).json()
 
         items = find_dict(response, 'entries')[0]
         tweets = []

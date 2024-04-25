@@ -1,20 +1,20 @@
 from __future__ import annotations
 
-from enum import Enum
 import re
-from datetime import datetime
+from enum import Enum
 from typing import TYPE_CHECKING
-
 
 from twikit.user import User
 from twikit.utils import find_dict, timestamp_to_datetime
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from httpx import Response
 
     from twikit.client import Client
-    from twikit.utils import Result
     from twikit.community import Community
+    from twikit.utils import Result
 
 
 class UserTweetType(Enum):
@@ -228,11 +228,7 @@ class Tweet:
         self.thumbnail_url = None
         self.thumbnail_title = None
         self.has_card = 'card' in data
-        if (
-            'card' in data
-            and 'legacy' in data['card']
-            and 'binding_values' in data['card']['legacy']
-        ):
+        if 'card' in data and 'legacy' in data['card'] and 'binding_values' in data['card']['legacy']:
             card_data = data['card']['legacy']['binding_values']
 
             if isinstance(card_data, list):
@@ -246,9 +242,7 @@ class Tweet:
                 and 'image_value' in binding_values['thumbnail_image_original']
                 and 'url' in binding_values['thumbnail_image_original']['image_value']
             ):
-                self.thumbnail_url = binding_values['thumbnail_image_original']['image_value'][
-                    'url'
-                ]
+                self.thumbnail_url = binding_values['thumbnail_image_original']['image_value']['url']
 
     @property
     def created_at_datetime(self) -> datetime:

@@ -34,9 +34,7 @@ class Group:
         entries = data['conversation_timeline']['entries']
         name_update_log = next(filter(lambda x: 'conversation_name_update' in x, entries), None)
         self.name: str | None = (
-            name_update_log['conversation_name_update']['conversation_name']
-            if name_update_log
-            else None
+            name_update_log['conversation_name_update']['conversation_name'] if name_update_log else None
         )
 
         members = data['conversation_timeline']['users'].values()
@@ -112,9 +110,7 @@ class Group:
         """
         return self._client.change_group_name(self.id, name)
 
-    def send_message(
-        self, text: str, media_id: str | None = None, reply_to: str | None = None
-    ) -> GroupMessage:
+    def send_message(self, text: str, media_id: str | None = None, reply_to: str | None = None) -> GroupMessage:
         """
         Sends a message to the group.
 

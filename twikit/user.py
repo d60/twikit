@@ -1,19 +1,18 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING
-
 
 from twikit.utils import timestamp_to_datetime
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from httpx import Response
 
     from twikit.client import Client
     from twikit.message import Message
-    from twikit.tweet import Tweet
+    from twikit.tweet import Tweet, UserTweetType
     from twikit.utils import Result
-    from twikit.tweet import UserTweetType
 
 
 class User:
