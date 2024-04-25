@@ -3424,8 +3424,7 @@ class Client:
                 notifications.append(Notification(self, notification, tweet, user))
 
         entries = find_dict(response, 'entries')[0]
-        cursor_bottom_entry = [i for i in entries if i['entryId'].startswith('cursor-bottom')]
-        if cursor_bottom_entry:
+        if cursor_bottom_entry := [i for i in entries if i['entryId'].startswith('cursor-bottom')]:
             next_cursor = find_dict(cursor_bottom_entry[0], 'value')[0]
         else:
             next_cursor = None
