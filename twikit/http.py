@@ -8,7 +8,7 @@ from .errors import (
     NotFound,
     RequestTimeout,
     TooManyRequests,
-    ServerError
+    ServerError,
 )
 
 
@@ -16,12 +16,7 @@ class HTTPClient:
     def __init__(self, **kwargs) -> None:
         self.client = httpx.Client(**kwargs)
 
-    def request(
-        self,
-        method: str,
-        url: str,
-        **kwargs
-    ) -> httpx.Response:
+    def request(self, method: str, url: str, **kwargs) -> httpx.Response:
         response = self.client.request(method, url, **kwargs)
         status_code = response.status_code
         self._remove_duplicate_ct0_cookie()
@@ -54,9 +49,8 @@ class HTTPClient:
         return self.request('POST', url, **kwargs)
 
     def _remove_duplicate_ct0_cookie(self) -> None:
-        cookies = {}
+        cookies = httpx.Cookies()
         for cookie in self.client.cookies.jar:
-            if 'ct0' in cookies and cookie.name == 'ct0':
-                continue
-            cookies[cookie.name] = cookie.value
-        self.client.cookies = list(cookies.items())
+            if cookie.value is not None and (cookie.name != 'ct0' or 'ct0' not in cookies):
+                cookies.set(cookie.name, cookie.value)
+        self.client.cookies = cookies
