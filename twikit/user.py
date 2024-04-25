@@ -153,7 +153,7 @@ class User:
         >>> user = client.get_user_by_screen_name('example_user')
         >>> tweets = user.get_tweets('Tweets', count=20)
         >>> for tweet in tweets:
-        ...    print(tweet)
+        ...     print(tweet)
         <Tweet id="...">
         <Tweet id="...">
         ...
@@ -379,9 +379,7 @@ class User:
         """
         return self._client.get_user_subscriptions(self.id, count)
 
-    def send_dm(
-        self, text: str, media_id: str = None, reply_to = None
-    ) -> Message:
+    def send_dm(self, text: str, media_id: str = None, reply_to=None) -> Message:
         """
         Send a direct message to the user.
 
