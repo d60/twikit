@@ -185,46 +185,40 @@ class Client:
             }
         )
 
-        flow.execute_task(
-            {
-                'subtask_id': 'AccountDuplicationCheck',
-                'check_logged_in_account': {'link': 'AccountDuplicationCheck_false'},
-            }
-        )
+        if flow.response is not None:
+            if not flow.response['subtasks']:
+                return
 
-        if not flow.response['subtasks']:
-            return
+            self._user_id = find_dict(flow.response, 'id_str')[0]
 
-        self._user_id = find_dict(flow.response, 'id_str')[0]
+            if flow.task_id == 'LoginTwoFactorAuthChallenge':
+                print(find_dict(flow.response, 'secondary_text')[0]['text'])
 
-        if flow.task_id == 'LoginTwoFactorAuthChallenge':
-            print(find_dict(flow.response, 'secondary_text')[0]['text'])
+                flow.execute_task(
+                    {
+                        'subtask_id': 'LoginTwoFactorAuthChallenge',
+                        'enter_text': {'text': input('>>> '), 'link': 'next_link'},
+                    }
+                )
 
-            flow.execute_task(
-                {
-                    'subtask_id': 'LoginTwoFactorAuthChallenge',
-                    'enter_text': {'text': input('>>> '), 'link': 'next_link'},
-                }
-            )
+            if flow.task_id == 'LoginAcid':
+                print(find_dict(flow.response, 'secondary_text')[0]['text'])
 
-        if flow.task_id == 'LoginAcid':
-            print(find_dict(flow.response, 'secondary_text')[0]['text'])
+                flow.execute_task(
+                    {
+                        'subtask_id': 'LoginAcid',
+                        'enter_text': {'text': input('>>> '), 'link': 'next_link'},
+                    }
+                )
 
-            flow.execute_task(
-                {
-                    'subtask_id': 'LoginAcid',
-                    'enter_text': {'text': input('>>> '), 'link': 'next_link'},
-                }
-            )
-
-        return flow.response
+            return flow.response
+        raise TwitterException('Failed to login.')
 
     def logout(self) -> Response:
         """
         Logs out of the currently logged-in account.
         """
-        response = self.http.post(Endpoint.LOGOUT, headers=self._base_headers)
-        return response
+        return self.http.post(Endpoint.LOGOUT, headers=self._base_headers)
 
     def user_id(self) -> str:
         """
