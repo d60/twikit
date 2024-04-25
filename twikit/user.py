@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
+from twikit.tweet import UserTweetType
+
 from .utils import timestamp_to_datetime
 
 if TYPE_CHECKING:
@@ -130,7 +132,7 @@ class User:
 
     def get_tweets(
         self,
-        tweet_type: Literal['Tweets', 'Replies', 'Media', 'Likes'],
+        tweet_type: UserTweetType,
         count: int = 40,
     ) -> Result[Tweet]:
         """

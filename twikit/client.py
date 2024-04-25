@@ -27,7 +27,20 @@ from .list import List
 from .message import Message
 from .notification import Notification
 from .trend import Trend
-from .tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
+from .tweet import (
+    CommunityNote,
+    ConversationControl,
+    NotificationType,
+    Poll,
+    ScheduledTweet,
+    TimelineSearchType,
+    Tweet,
+    TweetRankingMode,
+    TweetTrendType,
+    TweetType,
+    UserTweetType,
+    tweet_from_data,
+)
 from .user import User
 from .utils import (
     BOOKMARK_FOLDER_TIMELINE_FEATURES,
@@ -340,7 +353,9 @@ class Client:
         """
         self._act_as = user_id
 
-    def _search(self, query: str, product: str, count: int, cursor: str | None) -> dict:
+    def _search(
+        self, query: str, product: TweetType | TimelineSearchType, count: int, cursor: str | None
+    ) -> dict:
         """
         Base search function.
         """
@@ -348,7 +363,7 @@ class Client:
             'rawQuery': query,
             'count': count,
             'querySource': 'typed_query',
-            'product': product,
+            'product': product.value.capitalize(),
         }
         if cursor is not None:
             variables['cursor'] = cursor
@@ -360,7 +375,7 @@ class Client:
     def search_tweet(
         self,
         query: str,
-        product: Literal['Top', 'Latest', 'Media'],
+        product: TweetType,
         count: int = 20,
         cursor: str | None = None,
     ) -> Result[Tweet]:
@@ -405,7 +420,6 @@ class Client:
 
         >>> previous_tweets = tweets.previous()  # Retrieve previous tweets
         """
-        product = product.capitalize()
 
         response = self._search(query, product, count, cursor)
         instructions = find_dict(response, 'instructions')
@@ -489,7 +503,7 @@ class Client:
         ...
         ...
         """
-        response = self._search(query, 'People', count, cursor)
+        response = self._search(query, TimelineSearchType.PEOPLE, count, cursor)
         items = find_dict(response, 'entries')[0]
         next_cursor = items[-1]['content']['value']
 
@@ -830,7 +844,7 @@ class Client:
         media_ids: list[str] | None = None,
         poll_uri: str | None = None,
         reply_to: str | None = None,
-        conversation_control: Literal['followers', 'verified', 'mentioned'] | None = None,
+        conversation_control: ConversationControl | None = None,
         attachment_url: str | None = None,
         community_id: str | None = None,
         share_with_followers: bool = False,
@@ -916,12 +930,11 @@ class Client:
             variables['reply'] = {'in_reply_to_tweet_id': reply_to, 'exclude_reply_user_ids': []}
 
         if conversation_control is not None:
-            conversation_control = conversation_control.lower()
             limit_mode = {
                 'followers': 'Community',
                 'verified': 'Verified',
                 'mentioned': 'ByInvitation',
-            }[conversation_control]
+            }[conversation_control.value.lower()]
             variables['conversation_control'] = {'mode': limit_mode}
 
         if attachment_url is not None:
@@ -1448,7 +1461,7 @@ class Client:
     def get_user_tweets(
         self,
         user_id: str,
-        tweet_type: Literal['Tweets', 'Replies', 'Media', 'Likes'],
+        tweet_type: UserTweetType,
         count: int = 40,
         cursor: str | None = None,
     ) -> Result[Tweet]:
@@ -1505,7 +1518,6 @@ class Client:
         --------
         .get_user_by_screen_name
         """
-        tweet_type = tweet_type.capitalize()
 
         variables = {
             'userId': user_id,
@@ -1523,7 +1535,7 @@ class Client:
             'Replies': Endpoint.USER_TWEETS_AND_REPLIES,
             'Media': Endpoint.USER_MEDIA,
             'Likes': Endpoint.USER_LIKES,
-        }[tweet_type]
+        }[tweet_type.value.capitalize()]
 
         response = self.http.get(endpoint, params=params, headers=self._base_headers).json()
 
@@ -2015,13 +2027,13 @@ class Client:
             Endpoint.BOOKMARK_FOLDERS, params=params, headers=self._base_headers
         ).json()
 
-        slice = find_dict(response, 'bookmark_collections_slice')[0]
+        bookmark_slice = find_dict(response, 'bookmark_collections_slice')[0]
         results = []
-        for item in slice['items']:
+        for item in bookmark_slice['items']:
             results.append(BookmarkFolder(self, item))
 
-        if 'next_cursor' in slice['slice_info']:
-            next_cursor = slice['slice_info']['next_cursor']
+        if 'next_cursor' in bookmark_slice['slice_info']:
+            next_cursor = bookmark_slice['slice_info']['next_cursor']
             fetch_next_result = partial(self.get_bookmark_folders, next_cursor)
         else:
             next_cursor = None
@@ -2276,7 +2288,7 @@ class Client:
 
     def get_trends(
         self,
-        category: Literal['trending', 'for-you', 'news', 'sports', 'entertainment'],
+        category: TweetTrendType,
         count: int = 20,
         retry: bool = True,
         additional_request_params: dict | None = None,
@@ -2317,15 +2329,16 @@ class Client:
         <Trend name="...">
         ...
         """
-        category = category.lower()
-        if category in ['news', 'sports', 'entertainment']:
-            category += '_unified'
-        params = {'count': count, 'include_page_configuration': True, 'initial_tab_id': category}
+        params = {
+            'count': count,
+            'include_page_configuration': True,
+            'initial_tab_id': category.value.lower(),
+        }
         if additional_request_params is not None:
             params |= additional_request_params
         response = self.http.get(Endpoint.TREND, params=params, headers=self._base_headers).json()
 
-        entry_id_prefix = 'trends' if category == 'trending' else 'Guide'
+        entry_id_prefix = 'trends' if category is TweetTrendType.TRENDING else 'Guide'
         entries = [
             i for i in find_dict(response, 'entries')[0] if i['entryId'].startswith(entry_id_prefix)
         ]
@@ -3321,7 +3334,7 @@ class Client:
 
         >>> more_lists = lists.next()  # Retrieve more lists
         """
-        response = self._search(query, 'Lists', count, cursor)
+        response = self._search(query, TimelineSearchType.LISTS, count, cursor)
         entries = find_dict(response, 'entries')[0]
 
         if cursor is None:
@@ -3338,7 +3351,7 @@ class Client:
 
     def get_notifications(
         self,
-        type: Literal['All', 'Verified', 'Mentions'],
+        notification_type: NotificationType,
         count: int = 40,
         cursor: str | None = None,
     ) -> Result[Notification]:
@@ -3373,13 +3386,12 @@ class Client:
         >>> # Retrieve more notifications
         >>> more_notifications = notifications.next()
         """
-        type = type.capitalize()
 
         endpoint = {
             'All': Endpoint.NOTIFICATIONS_ALL,
             'Verified': Endpoint.NOTIFICATIONS_VERIFIED,
             'Mentions': Endpoint.NOTIFICATIONS_MENTIONES,
-        }[type]
+        }[notification_type.value.capitalize()]
 
         params: dict = {'count': count}
         if cursor is not None:
@@ -3427,7 +3439,9 @@ class Client:
             next_cursor = None
 
         return Result(
-            notifications, partial(self.get_notifications, type, count, next_cursor), next_cursor
+            notifications,
+            partial(self.get_notifications, notification_type, count, next_cursor),
+            next_cursor,
         )
 
     def search_community(self, query: str, cursor: str | None = None) -> Result[Community]:
@@ -3509,7 +3523,7 @@ class Client:
     def get_community_tweets(
         self,
         community_id: str,
-        tweet_type: Literal['Top', 'Latest', 'Media'],
+        tweet_type: TweetType,
         count: int = 40,
         cursor: str | None = None,
     ) -> Result[Tweet]:
@@ -3541,7 +3555,6 @@ class Client:
         ...
         >>> more_tweets = tweets.next()  # Retrieve more tweets
         """
-        tweet_type = tweet_type.capitalize()
 
         variables = {'communityId': community_id, 'count': count, 'withCommunity': True}
 
@@ -3549,7 +3562,7 @@ class Client:
             endpoint = Endpoint.COMMUNITY_MEDIA
         else:
             endpoint = Endpoint.COMMUNITY_TWEETS
-            variables['rankingMode'] = {'Top': 'Relevance', 'Latest': 'Recency'}[tweet_type]
+            variables['rankingMode'] = TweetRankingMode[tweet_type.value].value.value
 
         if cursor is not None:
             variables['cursor'] = cursor

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
-from .tweet import Tweet
+from .tweet import Tweet, TweetType
 from .user import User
 from .utils import Result, b64_to_str
 
@@ -138,7 +138,7 @@ class Community:
 
     def get_tweets(
         self,
-        tweet_type: Literal['Top', 'Latest', 'Media'],
+        tweet_type: TweetType,
         count: int = 40,
         cursor: str | None = None,
     ) -> Result[Tweet]:
