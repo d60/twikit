@@ -379,7 +379,7 @@ class User:
         """
         return self._client.get_user_subscriptions(self.id, count)
 
-    def send_dm(self, text: str, media_id: str = None, reply_to=None) -> Message:
+    def send_dm(self, text: str, media_id: str | None = None, reply_to=None) -> Message:
         """
         Send a direct message to the user.
 
@@ -414,7 +414,7 @@ class User:
         """
         return self._client.send_dm(self.id, text, media_id, reply_to)
 
-    def get_dm_history(self, max_id: str = None) -> Result[Message]:
+    def get_dm_history(self, max_id: str | None = None) -> Result[Message]:
         """
         Retrieves the DM conversation history with the user.
 
