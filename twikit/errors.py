@@ -88,7 +88,13 @@ class InvalidMedia(TwitterException):
 
 class UserNotFound(TwitterException):
     """
-    Exception raised when a user does not exsit.
+    Exception raised when a user does not exist.
+    """
+
+
+class UserUnavailable(TwitterException):
+    """
+    Exception raised when a user is not available.
     """
 
 
