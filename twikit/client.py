@@ -524,7 +524,7 @@ class Client:
             Endpoint.SIMILAR_POSTS, params=params, headers=self._base_headers
         ).json()
         items_ = find_dict(response, 'entries')
-        results = []
+        results: list[Tweet] = []
         if not items_:
             return results
 
@@ -699,7 +699,8 @@ class Client:
         self,
         media_id: str,
         alt_text: str | None = None,
-        sensitive_warning: list[Literal['adult_content', 'graphic_violence', 'other']] = None,
+        sensitive_warning: list[Literal['adult_content', 'graphic_violence', 'other']]
+        | None = None,
     ) -> Response:
         """
         Adds metadata to uploaded media.
@@ -726,7 +727,7 @@ class Client:
         ... )
         >>> client.create_tweet(media_ids=[media_id])
         """
-        data = {'media_id': media_id}
+        data: dict = {'media_id': media_id}
         if alt_text is not None:
             data['alt_text'] = {'text': alt_text}
         if sensitive_warning is not None:
@@ -1207,7 +1208,7 @@ class Client:
         reply_to = []
         replies_list = []
         related_tweets = []
-        tweet = None
+        tweet: Tweet | None = None
 
         for entry in entries:
             if entry['entryId'].startswith('cursor'):
@@ -1222,31 +1223,31 @@ class Client:
 
             if entry['entryId'] == f'tweet-{tweet_id}':
                 tweet = tweet_object
+            elif tweet is None:
+                reply_to.append(tweet_object)
             else:
-                if tweet is None:
-                    reply_to.append(tweet_object)
-                else:
-                    replies = []
-                    sr_cursor = None
-                    show_replies = None
+                replies = []
+                sr_cursor = None
+                show_replies = None
 
-                    for reply in entry['content']['items'][1:]:
-                        if 'tweetcomposer' in reply['entryId']:
+                for reply in entry['content']['items'][1:]:
+                    if 'tweetcomposer' in reply['entryId']:
+                        continue
+                    if 'tweet' in reply.get('entryId'):
+                        rpl = tweet_from_data(self, reply)
+                        if rpl is None:
                             continue
-                        if 'tweet' in reply.get('entryId'):
-                            rpl = tweet_from_data(self, reply)
-                            if rpl is None:
-                                continue
+                        else:
                             replies.append(rpl)
-                        if 'cursor' in reply.get('entryId'):
-                            sr_cursor = reply['item']['itemContent']['value']
-                            show_replies = partial(self._show_more_replies, tweet_id, sr_cursor)
-                    tweet_object.replies = Result(replies, show_replies, sr_cursor)
-                    replies_list.append(tweet_object)
+                    if 'cursor' in reply.get('entryId'):
+                        sr_cursor = reply['item']['itemContent']['value']
+                        show_replies = partial(self._show_more_replies, tweet_id, sr_cursor)
+                tweet_object.replies = Result(replies, show_replies, sr_cursor)
+                replies_list.append(tweet_object)
 
-                    display_type = find_dict(entry, 'tweetDisplayType', True)
-                    if display_type and display_type[0] == 'SelfThread':
-                        tweet.thread = [tweet_object, *replies]
+                display_type = find_dict(entry, 'tweetDisplayType', True)
+                if display_type and display_type[0] == 'SelfThread':
+                    tweet.thread = [tweet_object, *replies]
 
         if entries[-1]['entryId'].startswith('cursor'):
             # if has more replies
@@ -1255,7 +1256,8 @@ class Client:
         else:
             reply_next_cursor = None
             _fetch_more_replies = None
-
+        if tweet is None:
+            raise TwitterException('Tweet not found.')
         tweet.replies = Result(replies_list, _fetch_more_replies, reply_next_cursor)
         tweet.reply_to = reply_to
         tweet.related_tweets = related_tweets
@@ -1304,7 +1306,7 @@ class Client:
         self,
         tweet_id: str,
         count: int,
-        cursor: str,
+        cursor: str | None,
         endpoint: str,
     ) -> Result[User]:
         """
@@ -1542,6 +1544,10 @@ class Client:
 
         results = []
         for item in items:
+            tweet = tweet_from_data(self, item)
+            if tweet is None:
+                continue
+
             entry_id = item['entryId']
 
             if not entry_id.startswith(('tweet', 'profile-conversation', 'profile-grid')):
@@ -1556,13 +1562,7 @@ class Client:
                         continue
                     replies.append(tweet_object)
                 item = tweets[0]
-            else:
-                replies = None
-
-            tweet = tweet_from_data(self, item)
-            if tweet is None:
-                continue
-            tweet.replies = replies
+                tweet.replies = Result(results=replies)
             results.append(tweet)
 
         return Result(
