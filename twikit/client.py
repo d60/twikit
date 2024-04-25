@@ -2331,12 +2331,13 @@ class Client:
         ]
 
         if not entries:
-            if not retry:
-                return []
-            # Recall the method again, as the trend information
-            # may not be returned due to a Twitter error.
-            return self.get_trends(category, count, retry, additional_request_params)
+            if retry:
+                # Recall the method again, as the trend information
+                # may not be returned due to a Twitter error.
+                return self.get_trends(category, count, retry, additional_request_params)
 
+            else:
+                return []
         items = entries[-1]['content']['timelineModule']['items']
 
         results = []
