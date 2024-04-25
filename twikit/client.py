@@ -2028,10 +2028,7 @@ class Client:
         ).json()
 
         bookmark_slice = find_dict(response, 'bookmark_collections_slice')[0]
-        results = []
-        for item in bookmark_slice['items']:
-            results.append(BookmarkFolder(self, item))
-
+        results = [BookmarkFolder(self, item) for item in bookmark_slice['items']]
         if 'next_cursor' in bookmark_slice['slice_info']:
             next_cursor = bookmark_slice['slice_info']['next_cursor']
             fetch_next_result = partial(self.get_bookmark_folders, next_cursor)
@@ -3123,10 +3120,7 @@ class Client:
         if len(items) < 2:
             return Result([])
 
-        lists = []
-        for list in items[1]:
-            lists.append(List(self, list['item']['itemContent']['list']))
-
+        lists = [List(self, list['item']['itemContent']['list']) for list in items[1]]
         next_cursor = entries[-1]['content']['value']
 
         return Result(lists, partial(self.get_lists, count, next_cursor), next_cursor)
@@ -3342,9 +3336,7 @@ class Client:
         else:
             items = find_dict(response, 'moduleItems')[0]
 
-        lists = []
-        for item in items:
-            lists.append(List(self, item['item']['itemContent']['list']))
+        lists = [List(self, item['item']['itemContent']['list']) for item in items]
         next_cursor = entries[-1]['content']['value']
 
         return Result(lists, partial(self.search_list, query, count, next_cursor), next_cursor)
@@ -3480,9 +3472,7 @@ class Client:
         ).json()
 
         items = find_dict(response, 'items_results')[0]
-        communities = []
-        for item in items:
-            communities.append(Community(self, item['result']))
+        communities = [Community(self, item['result']) for item in items]
         next_cursor_ = find_dict(response, 'next_cursor')
         next_cursor = next_cursor_[0] if next_cursor_ else None
         if next_cursor is None:
