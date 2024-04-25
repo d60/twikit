@@ -450,11 +450,10 @@ def find_dict(obj: list | dict, key: str | int, find_one: bool = False) -> list[
     Retrieves elements from a nested dictionary.
     """
     results = []
-    if isinstance(obj, dict):
-        if key in obj:
-            results.append(obj.get(key))
-            if find_one:
-                return results
+    if isinstance(obj, dict) and key in obj:
+        results.append(obj.get(key))
+        if find_one:
+            return results
     if isinstance(obj, (list, dict)):
         for elem in obj if isinstance(obj, list) else obj.values():
             r = find_dict(elem, key, find_one)
