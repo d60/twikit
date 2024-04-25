@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import Enum
 import re
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -14,6 +15,54 @@ if TYPE_CHECKING:
 
     from .client import Client
     from .utils import Result
+
+
+class UserTweetType(Enum):
+    TWEETS = 'Tweets'
+    REPLIES = 'Replies'
+    MEDIA = 'Media'
+    LIKES = 'Likes'
+
+
+class TweetType(Enum):
+    TOP = 'Top'
+    LATEST = 'Latest'
+    MEDIA = 'Media'
+
+
+class RankingModeType(Enum):
+    RELEVANCE = 'Relevance'
+    RECENCY = 'Recency'
+
+
+class TweetRankingMode(Enum):
+    TOP = RankingModeType.RELEVANCE
+    LATEST = RankingModeType.RECENCY
+
+
+class ConversationControl(Enum):
+    FOLLOWERS = 'followers'
+    VERIFIED = 'verified'
+    MENTIONED = 'mentioned'
+
+
+class TimelineSearchType(Enum):
+    PEOPLE = 'People'
+    LISTS = 'Lists'
+
+
+class NotificationType(Enum):
+    ALL = 'All'
+    VERIFIED = 'Verified'
+    MENTIONS = 'Mentions'
+
+
+class TweetTrendType(Enum):
+    TRENDING = 'trending'
+    FOR_YOU = 'for-you'
+    NEWS = 'news_unified'
+    SPORTS = 'sports_unified'
+    ENTERTAINMENT = 'entertainment_unified'
 
 
 class Tweet:
