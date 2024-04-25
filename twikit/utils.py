@@ -390,12 +390,12 @@ class Result(Generic[T]):
         return self.__fetch_previous_result()
 
     @property
-    def cursor(self) -> str:
+    def cursor(self) -> str | None:
         """Alias of `next_token`"""
         return self.next_cursor
 
     @property
-    def token(self) -> str:
+    def token(self) -> str | None:
         """Alias of `next_token`"""
         return self.next_cursor
 
