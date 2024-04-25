@@ -420,7 +420,7 @@ class Flow:
         self.response = None
 
     def execute_task(self, *subtask_inputs, **kwargs) -> None:
-        data = {}
+        data: dict[str, str | list[str]] = {}
 
         if self.token is not None:
             data['flow_token'] = self.token
