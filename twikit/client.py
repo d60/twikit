@@ -69,7 +69,7 @@ class Client:
         self._token = TOKEN
         self.language = language
         self.http = HTTPClient(proxies=proxies, **kwargs)
-        self._user_id = None
+        self._user_id: str | None = None
         self._user_agent = UserAgent().random.strip()
         self._act_as: str | None = None
 
@@ -228,7 +228,8 @@ class Client:
             return self._user_id
         response = self.http.get(Endpoint.SETTINGS, headers=self._base_headers).json()
         screen_name = response['screen_name']
-        self._user_id = self.get_user_by_screen_name(screen_name).id
+        user = self.get_user_by_screen_name(screen_name)
+        self._user_id = user.id
         return self._user_id
 
     def user(self) -> User:
