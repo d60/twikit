@@ -48,6 +48,7 @@ class List:
     subscriber_count : :class:`int`
         The number of subscribers to the List.
     """
+
     def __init__(self, client: Client, data: dict) -> None:
         self._client = client
 
@@ -55,10 +56,9 @@ class List:
         self.created_at: int = data['created_at']
         self.default_banner: dict = data['default_banner_media']['media_info']
 
+        self.banner: dict = self.default_banner
         if 'custom_banner_media' in data:
-            self.banner: dict = data["custom_banner_media"]["media_info"]
-        else:
-            self.banner: dict = self.default_banner
+            self.banner = data['custom_banner_media']['media_info']
 
         self.description: str = data['description']
         self.following: bool = data['following']
@@ -72,7 +72,7 @@ class List:
 
     @property
     def created_at_datetime(self) -> datetime:
-        return timestamp_to_datetime(self.created_at)
+        return timestamp_to_datetime(str(self.created_at))
 
     def edit_banner(self, media_id: str) -> Response:
         """
@@ -105,7 +105,7 @@ class List:
         self,
         name: str | None = None,
         description: str | None = None,
-        is_private: bool | None = None
+        is_private: bool | None = None,
     ) -> List:
         """
         Edits list information.
@@ -127,9 +127,7 @@ class List:
 
         Examples
         --------
-        >>> list.edit(
-        ...     'new name', 'new description', True
-        ... )
+        >>> list.edit('new name', 'new description', True)
         """
         return self._client.edit_list(self.id, name, description, is_private)
 
@@ -145,9 +143,7 @@ class List:
         """
         return self._client.remove_list_member(self.id, user_id)
 
-    def get_tweets(
-        self, count: int = 20, cursor: str | None = None
-    ) -> Result[Tweet]:
+    def get_tweets(self, count: int = 20, cursor: str | None = None) -> Result[Tweet]:
         """
         Retrieves tweets from the list.
 
@@ -167,7 +163,7 @@ class List:
         --------
         >>> tweets = list.get_tweets()
         >>> for tweet in tweets:
-        ...    print(tweet)
+        ...     print(tweet)
         <Tweet id="...">
         <Tweet id="...">
         ...
@@ -183,9 +179,7 @@ class List:
         """
         return self._client.get_list_tweets(self.id, count, cursor)
 
-    def get_members(
-        self, count: int = 20, cursor: str | None = None
-    ) -> Result[User]:
+    def get_members(self, count: int = 20, cursor: str | None = None) -> Result[User]:
         """Retrieves members of the list.
 
         Parameters
@@ -211,9 +205,7 @@ class List:
         """
         return self._client.get_list_members(self.id, count, cursor)
 
-    def get_subscribers(
-        self, count: int = 20, cursor: str | None = None
-    ) -> Result[User]:
+    def get_subscribers(self, count: int = 20, cursor: str | None = None) -> Result[User]:
         """Retrieves subscribers of the list.
 
         Parameters
