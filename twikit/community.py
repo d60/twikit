@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
-from .tweet import Tweet, TweetType
+from twikit.tweet import Tweet, TweetType
 from .user import User
 from .utils import Result, b64_to_str
 
