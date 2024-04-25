@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from httpx import Response
 
     from .client import Client
-    from .community import Community
     from .utils import Result
 
 
@@ -85,7 +84,7 @@ class Tweet:
         Link to the image displayed in the tweet's card.
     """
 
-    def __init__(self, client: Client, data: dict, user: User = None) -> None:
+    def __init__(self, client: Client, data: dict, user: User | None = None) -> None:
         self._client = client
         self._data = data
         self.user = user
@@ -105,33 +104,30 @@ class Tweet:
         self.is_quote_status: bool = legacy['is_quote_status']
         self.in_reply_to: str | None = self._data['legacy'].get('in_reply_to_status_id_str')
 
+        self.quote: Tweet | None = None
+        self.retweeted_tweet: Tweet | None = None
+
         if data.get('quoted_status_result'):
             quoted_tweet = data.pop('quoted_status_result')['result']
             if 'tweet' in quoted_tweet:
                 quoted_tweet = quoted_tweet['tweet']
             if quoted_tweet.get('__typename') != 'TweetTombstone':
                 quoted_user = User(client, quoted_tweet['core']['user_results']['result'])
-                self.quote: Tweet = Tweet(client, quoted_tweet, quoted_user)
-        else:
-            self.quote = None
+                self.quote = Tweet(client, quoted_tweet, quoted_user)
 
         if legacy.get('retweeted_status_result'):
             retweeted_tweet = legacy.pop('retweeted_status_result')['result']
             if 'tweet' in retweeted_tweet:
                 retweeted_tweet = retweeted_tweet['tweet']
             retweeted_user = User(client, retweeted_tweet['core']['user_results']['result'])
-            self.retweeted_tweet: Tweet = Tweet(client, retweeted_tweet, retweeted_user)
-        else:
-            self.retweeted_tweet = None
+            self.retweeted_tweet = Tweet(client, retweeted_tweet, retweeted_user)
 
         note_tweet_results = find_dict(data, 'note_tweet_results')
         self.full_text: str | None = None
         if note_tweet_results:
-            text_list = find_dict(note_tweet_results, 'text')
-            if text_list:
+            if text_list := find_dict(note_tweet_results, 'text'):
                 self.full_text = text_list[0]
 
-        self.is_quote_status: bool = legacy['is_quote_status']
         self.possibly_sensitive: bool = legacy.get('possibly_sensitive')
         self.possibly_sensitive_editable: bool = legacy.get('possibly_sensitive_editable')
         self.quote_count: int = legacy['quote_count']
@@ -143,11 +139,13 @@ class Tweet:
         self.view_count: int = data['views'].get('count') if 'views' in data else None
         self.retweet_count: int = legacy['retweet_count']
         self.editable_until_msecs: int = data['edit_control'].get('editable_until_msecs')
-        self.is_translatable: bool = data.get('is_translatable')
+        self.is_translatable: bool | None = data.get('is_translatable')
         self.is_edit_eligible: bool = data['edit_control'].get('is_edit_eligible')
         self.edits_remaining: int = data['edit_control'].get('edits_remaining')
         self.state: str = data['views'].get('state') if 'views' in data else None
-        self.has_community_notes: bool = data.get('has_birdwatch_notes')
+        self.has_community_notes: bool | None = data.get('has_birdwatch_notes')
+
+        self.community_note: dict | None = None
 
         if 'birdwatch_pivot' in data:
             community_note_data = data['birdwatch_pivot']
@@ -155,12 +153,9 @@ class Tweet:
                 'id': community_note_data['note']['rest_id'],
                 'text': community_note_data['subtitle']['text'],
             }
-        else:
-            self.community_note = None
 
         if note_tweet_results:
-            hashtags_ = find_dict(note_tweet_results, 'hashtags')
-            if hashtags_:
+            if hashtags_ := find_dict(note_tweet_results, 'hashtags'):
                 hashtags = hashtags_[0]
             else:
                 hashtags = []
@@ -344,7 +339,7 @@ class Tweet:
         """
         return self._client.create_tweet(text, media_ids, reply_to=self.id, **kwargs)
 
-    def get_retweeters(self, count: str = 40, cursor: str | None = None) -> Result[User]:
+    def get_retweeters(self, count: int = 40, cursor: str | None = None) -> Result[User]:
         """
         Retrieve users who retweeted the tweet.
 
@@ -373,7 +368,7 @@ class Tweet:
         """
         return self._client.get_retweeters(self.id, count, cursor)
 
-    def get_favoriters(self, count: str = 40, cursor: str | None = None) -> Result[User]:
+    def get_favoriters(self, count: int = 40, cursor: str | None = None) -> Result[User]:
         """
         Retrieve users who favorited a specific tweet.
 
@@ -430,7 +425,7 @@ class Tweet:
         return not self == __value
 
 
-def tweet_from_data(client: Client, data: dict) -> Tweet:
+def tweet_from_data(client: Client, data: dict) -> Tweet | None:
     tweet_data_ = find_dict(data, 'result', True)
     if not tweet_data_:
         return None
@@ -564,11 +559,10 @@ class Poll:
         counts_are_final = binding_values['counts_are_final']['boolean_value']
         self.counts_are_final: bool = counts_are_final
 
+        self.selected_choice: str | None = None
         if 'selected_choice' in binding_values:
             selected_choice = binding_values['selected_choice']['string_value']
-            self.selected_choice: str = selected_choice
-        else:
-            self.selected_choice = None
+            self.selected_choice = selected_choice
 
     def vote(self, selected_choice: str) -> Poll:
         """
@@ -584,6 +578,8 @@ class Poll:
         :class:`Poll`
             The Poll object representing the updated poll after voting.
         """
+        if not self.tweet:
+            raise ValueError('Tweet object is required to vote on the poll.')
         return self._client.vote(selected_choice, self.id, self.tweet.id, self.name)
 
     def __repr__(self) -> str:
@@ -635,13 +631,13 @@ class CommunityNote:
         self.text: str = data_v1['summary']['text']
         self.misleading_tags: list[str] = data_v1.get('misleading_tags')
         self.trustworthy_sources: bool = data_v1.get('trustworthy_sources')
-        self.helpful_tags: list[str] = data.get('helpful_tags')
-        self.created_at: int = data.get('created_at')
-        self.can_appeal: bool = data.get('can_appeal')
-        self.appeal_status: str = data.get('appeal_status')
-        self.is_media_note: bool = data.get('is_media_note')
-        self.media_note_matches: str = data.get('media_note_matches')
-        self.birdwatch_profile: dict = data.get('birdwatch_profile')
+        self.helpful_tags: list[str] | None = data.get('helpful_tags')
+        self.created_at: int | None = data.get('created_at')
+        self.can_appeal: bool | None = data.get('can_appeal')
+        self.appeal_status: str | None = data.get('appeal_status')
+        self.is_media_note: bool | None = data.get('is_media_note')
+        self.media_note_matches: str | None = data.get('media_note_matches')
+        self.birdwatch_profile: dict | None = data.get('birdwatch_profile')
         self.tweet_id: str = data['tweet_results']['result']['rest_id']
 
     def update(self) -> None:
