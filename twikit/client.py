@@ -1932,7 +1932,7 @@ class Client:
         <Tweet id="...">
         <Tweet id="...">
         """
-        variables = {'count': count, 'includePromotedContent': True}
+        variables: dict = {'count': count, 'includePromotedContent': True}
         if folder_id is None:
             endpoint = Endpoint.BOOKMARKS
             features = FEATURES | {'graphql_timeline_v2_bookmark_timeline': True}
@@ -2996,7 +2996,7 @@ class Client:
         --------
         >>> client.edit_list('new name', 'new description', True)
         """
-        variables = {'listId': list_id}
+        variables: dict = {'listId': list_id}
         if name is not None:
             variables['name'] = name
         if description is not None:
@@ -3070,7 +3070,7 @@ class Client:
         }
         return self.http.post(Endpoint.LIST_REMOVE_MEMBER, json=data, headers=self._base_headers)
 
-    def get_lists(self, count: int = 100, cursor: str = None) -> Result[List]:
+    def get_lists(self, count: int = 100, cursor: str | None = None) -> Result[List]:
         """
         Retrieves a list of user lists.
 
@@ -3095,7 +3095,7 @@ class Client:
         ...
         >>> more_lists = lists.next()  # Retrieve more lists
         """
-        variables = {'count': count}
+        variables: dict = {'count': count}
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({'variables': variables, 'features': FEATURES})
@@ -3200,7 +3200,9 @@ class Client:
             results, partial(self.get_list_tweets, list_id, count, next_cursor), next_cursor
         )
 
-    def _get_list_users(self, endpoint: str, list_id: str, count: int, cursor: str) -> Result[User]:
+    def _get_list_users(
+        self, endpoint: str, list_id: str, count: int, cursor: str | None
+    ) -> Result[User]:
         """
         Base function to retrieve the users associated with a list.
         """
@@ -3378,7 +3380,7 @@ class Client:
             'Mentions': Endpoint.NOTIFICATIONS_MENTIONES,
         }[type]
 
-        params = {'count': count}
+        params: dict = {'count': count}
         if cursor is not None:
             params['cursor'] = cursor
 
@@ -3390,6 +3392,9 @@ class Client:
             for id, data in global_objects.get('users', {}).items()
         }
         tweets = {}
+
+        tweet: Tweet | None = None
+        user: User | None = None
 
         for id, tweet_data in global_objects.get('tweets', {}).items():
             user_id = tweet_data['user_id_str']
@@ -3405,17 +3410,13 @@ class Client:
             if target_objects and 'tweet' in target_objects[0]:
                 tweet_id = target_objects[0]['tweet']['id']
                 tweet = tweets[tweet_id]
-            else:
-                tweet = None
 
             from_users = user_actions['fromUsers']
             if from_users and 'user' in from_users[0]:
                 user_id = from_users[0]['user']['id']
                 user = users[user_id]
-            else:
-                user = None
-
-            notifications.append(Notification(self, notification, tweet, user))
+            if tweet and user:
+                notifications.append(Notification(self, notification, tweet, user))
 
         entries = find_dict(response, 'entries')[0]
         cursor_bottom_entry = [i for i in entries if i['entryId'].startswith('cursor-bottom')]
@@ -3611,7 +3612,7 @@ class Client:
         ...
         >>> more_tweets = tweets.next()  # Retrieve more tweets
         """
-        variables = {'count': count, 'withCommunity': True}
+        variables: dict = {'count': count, 'withCommunity': True}
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({'variables': variables, 'features': COMMUNITY_TWEETS_FEATURES})

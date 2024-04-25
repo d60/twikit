@@ -4,6 +4,8 @@ import re
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from twikit.community import Community
+
 from .user import User
 from .utils import find_dict, timestamp_to_datetime
 
@@ -93,6 +95,7 @@ class Tweet:
         self.reply_to: list[Tweet] | None = None
         self.related_tweets: list[Tweet] | None = None
         self.thread: list[Tweet] | None = None
+        self.community: Community | None = None
 
         self.id: str = data['rest_id']
 
