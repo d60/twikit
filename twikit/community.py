@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, NamedTuple
 
 from twikit.tweet import Tweet, TweetType
-from .user import User
-from .utils import Result, b64_to_str
+from twikit.user import User
+from twikit.utils import Result, b64_to_str
 
 if TYPE_CHECKING:
-    from .client import Client
+    from twikit.client import Client
 
 
 class CommunityCreator(NamedTuple):
@@ -22,7 +22,7 @@ class CommunityRule(NamedTuple):
 
 
 class CommunityMember:
-    def __init__(self, client: Client, data: dict) -> None:
+    def __init__(self, client: 'Client', data: dict) -> None:
         self._client = client
         self.id: str = data['rest_id']
 
@@ -93,7 +93,7 @@ class Community:
 
     """
 
-    def __init__(self, client: Client, data: dict) -> None:
+    def __init__(self, client: 'Client', data: dict) -> None:
         self._client = client
         self.id: str = data['rest_id']
 

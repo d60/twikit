@@ -1,6 +1,6 @@
 import httpx
 
-from .errors import (
+from twikit.errors import (
     TwitterException,
     BadRequest,
     Unauthorized,

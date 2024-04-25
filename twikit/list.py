@@ -3,15 +3,15 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
-from .utils import timestamp_to_datetime
+from twikit.utils import timestamp_to_datetime
 
 if TYPE_CHECKING:
     from httpx import Response
 
-    from .client import Client
-    from .tweet import Tweet
-    from .user import User
-    from .utils import Result
+    from twikit.client import Client
+    from twikit.tweet import Tweet
+    from twikit.user import User
+    from twikit.utils import Result
 
 
 class List:

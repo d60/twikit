@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from httpx import Response
 
-    from .client import Client
-    from .tweet import Tweet
-    from .utils import Result
+    from twikit.client import Client
+    from twikit.tweet import Tweet
+    from twikit.utils import Result
 
 
 class BookmarkFolder:
@@ -21,6 +21,7 @@ class BookmarkFolder:
     media : :class:`str`
         Icon image data.
     """
+
     def __init__(self, client: Client, data: dict) -> None:
         self._client = client
 

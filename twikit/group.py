@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .message import Message
-from .user import User
-from .utils import build_user_data
+from twikit.message import Message
+from twikit.user import User
+from twikit.utils import build_user_data
 
 if TYPE_CHECKING:
     from httpx import Response
 
-    from .client import Client
-    from .utils import Result
+    from twikit.client import Client
+    from twikit.utils import Result
 
 
 class Group:

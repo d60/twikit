@@ -5,16 +5,16 @@ import re
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from twikit.community import Community
 
-from .user import User
-from .utils import find_dict, timestamp_to_datetime
+from twikit.user import User
+from twikit.utils import find_dict, timestamp_to_datetime
 
 if TYPE_CHECKING:
     from httpx import Response
 
-    from .client import Client
-    from .utils import Result
+    from twikit.client import Client
+    from twikit.utils import Result
+    from twikit.community import Community
 
 
 class UserTweetType(Enum):

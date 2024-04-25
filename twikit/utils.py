@@ -7,7 +7,7 @@ from typing import Any, TYPE_CHECKING, Callable, Generic, Iterator, Literal, Typ
 from urllib import parse
 
 if TYPE_CHECKING:
-    from .client import Client
+    from twikit.client import Client
 
 # This token is common to all accounts and does not need to be changed.
 TOKEN = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from httpx import Response
 
-    from .client import Client
+    from twikit.client import Client
 
 
 class Message:

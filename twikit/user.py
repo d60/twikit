@@ -3,17 +3,17 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from twikit.tweet import UserTweetType
 
-from .utils import timestamp_to_datetime
+from twikit.utils import timestamp_to_datetime
 
 if TYPE_CHECKING:
     from httpx import Response
 
-    from .client import Client
-    from .message import Message
-    from .tweet import Tweet
-    from .utils import Result
+    from twikit.client import Client
+    from twikit.message import Message
+    from twikit.tweet import Tweet
+    from twikit.utils import Result
+    from twikit.tweet import UserTweetType
 
 
 class User:

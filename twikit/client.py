@@ -11,9 +11,9 @@ import filetype
 from fake_useragent import UserAgent
 from httpx import Response
 
-from .bookmark import BookmarkFolder
-from .community import Community, CommunityMember
-from .errors import (
+from twikit.bookmark import BookmarkFolder
+from twikit.community import Community, CommunityMember
+from twikit.errors import (
     CouldNotTweet,
     InvalidMedia,
     TwitterException,
@@ -21,13 +21,13 @@ from .errors import (
     UserUnavailable,
     raise_exceptions_from_response,
 )
-from .group import Group, GroupMessage
-from .http import HTTPClient
-from .list import List
-from .message import Message
-from .notification import Notification
-from .trend import Trend
-from .tweet import (
+from twikit.group import Group, GroupMessage
+from twikit.http import HTTPClient
+from twikit.list import List
+from twikit.message import Message
+from twikit.notification import Notification
+from twikit.trend import Trend
+from twikit.tweet import (
     CommunityNote,
     ConversationControl,
     NotificationType,
@@ -41,8 +41,8 @@ from .tweet import (
     UserTweetType,
     tweet_from_data,
 )
-from .user import User
-from .utils import (
+from twikit.user import User
+from twikit.utils import (
     BOOKMARK_FOLDER_TIMELINE_FEATURES,
     COMMUNITY_TWEETS_FEATURES,
     COMMUNITY_NOTE_FEATURES,
