@@ -26,24 +26,21 @@ class Group:
     members : list[:class:`str`]
         Member IDs
     """
+
     def __init__(self, client: Client, group_id: str, data: dict) -> None:
         self._client = client
         self.id = group_id
 
         entries = data['conversation_timeline']['entries']
-        name_update_log = next(
-            filter(lambda x: 'conversation_name_update' in x, entries),
-            None
-        )
+        name_update_log = next(filter(lambda x: 'conversation_name_update' in x, entries), None)
         self.name: str | None = (
             name_update_log['conversation_name_update']['conversation_name']
-            if name_update_log else None
+            if name_update_log
+            else None
         )
 
         members = data['conversation_timeline']['users'].values()
-        self.members: list[User] = [
-            User(client, build_user_data(i)) for i in members
-        ]
+        self.members: list[User] = [User(client, build_user_data(i)) for i in members]
 
     def get_history(self, max_id: str | None = None) -> Result[GroupMessage]:
         """
@@ -116,10 +113,7 @@ class Group:
         return self._client.change_group_name(self.id, name)
 
     def send_message(
-        self,
-        text: str,
-        media_id: str | None = None,
-        reply_to: str | None = None
+        self, text: str, media_id: str | None = None, reply_to: str | None = None
     ) -> GroupMessage:
         """
         Sends a message to the group.
@@ -176,14 +170,9 @@ class GroupMessage(Message):
     group_id : :class:`str`
         The ID of the group.
     """
-    def __init__(
-        self,
-        client: Client,
-        data: dict,
-        sender_id: str,
-        group_id: str
-    ) -> None:
-        super().__init__(client, data, sender_id, None)
+
+    def __init__(self, client: Client, data: dict, sender_id: str, group_id: str) -> None:
+        super().__init__(client, data, sender_id, sender_id)
         self.group_id = group_id
 
     def group(self) -> Group:
@@ -214,9 +203,7 @@ class GroupMessage(Message):
         --------
         Client.send_dm_to_group
         """
-        return self._client.send_dm_to_group(
-            self.group_id, text, media_id, self.id
-        )
+        return self._client.send_dm_to_group(self.group_id, text, media_id, self.id)
 
     def add_reaction(self, emoji: str) -> Response:
         """
@@ -232,9 +219,7 @@ class GroupMessage(Message):
         :class:`httpx.Response`
             Response returned from twitter api.
         """
-        return self._client.add_reaction_to_message(
-            self.id, self.group_id, emoji
-        )
+        return self._client.add_reaction_to_message(self.id, self.group_id, emoji)
 
     def remove_reaction(self, emoji: str) -> Response:
         """
@@ -250,9 +235,7 @@ class GroupMessage(Message):
         httpx.Response
             Response returned from twitter api.
         """
-        return self._client.remove_reaction_from_message(
-            self.id, self.group_id, emoji
-        )
+        return self._client.remove_reaction_from_message(self.id, self.group_id, emoji)
 
     def __repr__(self) -> str:
         return f'<GroupMessage id="{self.id}">'
