@@ -681,13 +681,13 @@ def build_query(text: str, options: SearchOptions) -> str:
     if until := options.get('until'):
         text += f' until:{until}'
 
-    if options.get('positive') == True:
-        text += f' :)'
+    if options.get('positive') is True:
+        text += ' :)'
 
-    if options.get('negative') == True:
-        text += f' :('
+    if options.get('negative') is True:
+        text += ' :('
 
-    if options.get('question') == True:
-        text += f' ?'
+    if options.get('question') is True:
+        text += ' ?'
 
     return text
