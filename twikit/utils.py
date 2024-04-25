@@ -3,16 +3,7 @@ from __future__ import annotations
 import base64
 import json
 from datetime import datetime
-from typing import (
-    Any,
-    TYPE_CHECKING,
-    Callable,
-    Generic,
-    Iterator,
-    Literal,
-    TypedDict,
-    TypeVar
-)
+from typing import Any, TYPE_CHECKING, Callable, Generic, Iterator, Literal, TypedDict, TypeVar
 from urllib import parse
 
 if TYPE_CHECKING:
@@ -42,7 +33,7 @@ FEATURES = {
     'responsive_web_media_download_video_enabled': False,
     'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
     'responsive_web_graphql_timeline_navigation_enabled': True,
-    'responsive_web_enhance_cards_enabled': False
+    'responsive_web_enhance_cards_enabled': False,
 }
 
 USER_FEATURES = {
@@ -56,14 +47,14 @@ USER_FEATURES = {
     'responsive_web_twitter_article_notes_tab_enabled': False,
     'creator_subscriptions_tweet_preview_api_enabled': True,
     'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
-    'responsive_web_graphql_timeline_navigation_enabled': True
+    'responsive_web_graphql_timeline_navigation_enabled': True,
 }
 
 LIST_FEATURES = {
     'responsive_web_graphql_exclude_directive_enabled': True,
     'verified_phone_label_enabled': False,
     'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
-    'responsive_web_graphql_timeline_navigation_enabled': True
+    'responsive_web_graphql_timeline_navigation_enabled': True,
 }
 
 COMMUNITY_NOTE_FEATURES = {
@@ -72,7 +63,7 @@ COMMUNITY_NOTE_FEATURES = {
     'rweb_tipjar_consumption_enabled': False,
     'responsive_web_graphql_exclude_directive_enabled': True,
     'verified_phone_label_enabled': False,
-    'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False
+    'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
 }
 
 COMMUNITY_TWEETS_FEATURES = {
@@ -98,7 +89,7 @@ COMMUNITY_TWEETS_FEATURES = {
     'rweb_video_timestamps_enabled': True,
     'longform_notetweets_rich_text_read_enabled': True,
     'longform_notetweets_inline_media_enabled': True,
-    'responsive_web_enhance_cards_enabled': False
+    'responsive_web_enhance_cards_enabled': False,
 }
 
 JOIN_COMMUNITY_FEATURES = {
@@ -106,7 +97,7 @@ JOIN_COMMUNITY_FEATURES = {
     'responsive_web_graphql_exclude_directive_enabled': True,
     'verified_phone_label_enabled': False,
     'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
-    'responsive_web_graphql_timeline_navigation_enabled': True
+    'responsive_web_graphql_timeline_navigation_enabled': True,
 }
 
 NOTE_TWEET_FEATURES = {
@@ -133,7 +124,7 @@ NOTE_TWEET_FEATURES = {
     'tweet_with_visibility_results_prefer_gql_media_interstitial_enabled': True,
     'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
     'responsive_web_graphql_timeline_navigation_enabled': True,
-    'responsive_web_enhance_cards_enabled': False
+    'responsive_web_enhance_cards_enabled': False,
 }
 
 SIMILAR_POSTS_FEATURES = {
@@ -161,7 +152,7 @@ SIMILAR_POSTS_FEATURES = {
     'rweb_video_timestamps_enabled': True,
     'longform_notetweets_rich_text_read_enabled': True,
     'longform_notetweets_inline_media_enabled': True,
-    'responsive_web_enhance_cards_enabled': False
+    'responsive_web_enhance_cards_enabled': False,
 }
 
 BOOKMARK_FOLDER_TIMELINE_FEATURES = {
@@ -189,7 +180,7 @@ BOOKMARK_FOLDER_TIMELINE_FEATURES = {
     'rweb_video_timestamps_enabled': True,
     'longform_notetweets_rich_text_read_enabled': True,
     'longform_notetweets_inline_media_enabled': True,
-    'responsive_web_enhance_cards_enabled': False
+    'responsive_web_enhance_cards_enabled': False,
 }
 
 
@@ -197,6 +188,7 @@ class Endpoint:
     """
     A class containing Twitter API endpoints.
     """
+
     LOGIN_FLOW = 'https://api.twitter.com/1.1/onboarding/task.json'
     LOGOUT = 'https://api.twitter.com/1.1/account/logout.json'
     CREATE_TWEET = 'https://twitter.com/i/api/graphql/SiM_cAu83R0wnrpmKQQSEw/CreateTweet'
@@ -207,10 +199,14 @@ class Endpoint:
     CREATE_MEDIA_METADATA = 'https://api.twitter.com/1.1/media/metadata/create.json'
     GUEST_TOKEN = 'https://api.twitter.com/1.1/guest/activate.json'
     CREATE_CARD = 'https://caps.twitter.com/v2/cards/create.json'
-    USER_BY_SCREEN_NAME = 'https://twitter.com/i/api/graphql/NimuplG1OB7Fd2btCLdBOw/UserByScreenName'
+    USER_BY_SCREEN_NAME = (
+        'https://twitter.com/i/api/graphql/NimuplG1OB7Fd2btCLdBOw/UserByScreenName'
+    )
     USER_BY_REST_ID = 'https://twitter.com/i/api/graphql/tD8zKvQzwY3kdx5yz6YmOw/UserByRestId'
     USER_TWEETS = 'https://twitter.com/i/api/graphql/QWF3SzpHmykQHsQMixG0cg/UserTweets'
-    USER_TWEETS_AND_REPLIES = 'https://twitter.com/i/api/graphql/vMkJyzx1wdmvOeeNG0n6Wg/UserTweetsAndReplies'
+    USER_TWEETS_AND_REPLIES = (
+        'https://twitter.com/i/api/graphql/vMkJyzx1wdmvOeeNG0n6Wg/UserTweetsAndReplies'
+    )
     USER_MEDIA = 'https://twitter.com/i/api/graphql/2tLOJWwGuCTytDrGBg8VwQ/UserMedia'
     USER_LIKES = 'https://twitter.com/i/api/graphql/IohM3gxQHfvWePH5E3KuNA/Likes'
     TWEET_DETAIL = 'https://twitter.com/i/api/graphql/U0HTv-bAWTBYylwEMT7x5A/TweetDetail'
@@ -224,26 +220,40 @@ class Endpoint:
     CREATE_FRIENDSHIPS = 'https://twitter.com/i/api/1.1/friendships/create.json'
     DESTROY_FRIENDSHIPS = 'https://twitter.com/i/api/1.1/friendships/destroy.json'
     HOME_TIMELINE = 'https://twitter.com/i/api/graphql/-X_hcgQzmHGl29-UXxz4sw/HomeTimeline'
-    HOME_LATEST_TIMELINE = 'https://twitter.com/i/api/graphql/U0cdisy7QFIoTfu3-Okw0A/HomeLatestTimeline'
+    HOME_LATEST_TIMELINE = (
+        'https://twitter.com/i/api/graphql/U0cdisy7QFIoTfu3-Okw0A/HomeLatestTimeline'
+    )
     FOLLOWERS = 'https://twitter.com/i/api/graphql/gC_lyAxZOptAMLCJX5UhWw/Followers'
-    BLUE_VERIFIED_FOLLOWERS = 'https://twitter.com/i/api/graphql/VmIlPJNEDVQ29HfzIhV4mw/BlueVerifiedFollowers'
+    BLUE_VERIFIED_FOLLOWERS = (
+        'https://twitter.com/i/api/graphql/VmIlPJNEDVQ29HfzIhV4mw/BlueVerifiedFollowers'
+    )
     FOLLOWING = 'https://twitter.com/i/api/graphql/2vUj-_Ek-UmBVDNtd8OnQA/Following'
     FOLLOWERS_YOU_KNOW = 'https://twitter.com/i/api/graphql/f2tbuGNjfOE8mNUO5itMew/FollowersYouKnow'
-    SUBSCRIPTIONS = 'https://twitter.com/i/api/graphql/Wsm5ZTCYtg2eH7mXAXPIgw/UserCreatorSubscriptions'
+    SUBSCRIPTIONS = (
+        'https://twitter.com/i/api/graphql/Wsm5ZTCYtg2eH7mXAXPIgw/UserCreatorSubscriptions'
+    )
     SEND_DM = 'https://twitter.com/i/api/1.1/dm/new2.json'
     DELETE_DM = 'https://twitter.com/i/api/graphql/BJ6DtxA2llfjnRoRjaiIiw/DMMessageDeleteMutation'
     INBOX_INITIAL_STATE = 'https://twitter.com/i/api/1.1/dm/inbox_initial_state.json'
     CONVERSASION = 'https://twitter.com/i/api/1.1/dm/conversation/{}.json'
-    CREATE_SCHEDULED_TWEET = 'https://twitter.com/i/api/graphql/LCVzRQGxOaGnOnYH01NQXg/CreateScheduledTweet'
+    CREATE_SCHEDULED_TWEET = (
+        'https://twitter.com/i/api/graphql/LCVzRQGxOaGnOnYH01NQXg/CreateScheduledTweet'
+    )
     BOOKMARKS = 'https://twitter.com/i/api/graphql/qToeLeMs43Q8cr7tRYXmaQ/Bookmarks'
-    BOOKMARKS_ALL_DELETE = 'https://twitter.com/i/api/graphql/skiACZKC1GDYli-M8RzEPQ/BookmarksAllDelete'
+    BOOKMARKS_ALL_DELETE = (
+        'https://twitter.com/i/api/graphql/skiACZKC1GDYli-M8RzEPQ/BookmarksAllDelete'
+    )
     RETWEETERS = 'https://twitter.com/i/api/graphql/X-XEqG5qHQSAwmvy00xfyQ/Retweeters'
     FAVORITERS = 'https://twitter.com/i/api/graphql/LLkw5EcVutJL6y-2gkz22A/Favoriters'
-    ADD_MEMBER_TO_GROUP = 'https://twitter.com/i/api/graphql/oBwyQ0_xVbAQ8FAyG0pCRA/AddParticipantsMutation'
+    ADD_MEMBER_TO_GROUP = (
+        'https://twitter.com/i/api/graphql/oBwyQ0_xVbAQ8FAyG0pCRA/AddParticipantsMutation'
+    )
     CHANGE_GROUP_NAME = 'https://twitter.com/i/api/1.1/dm/conversation/{}/update_name.json'
     CREATE_LIST = 'https://twitter.com/i/api/graphql/EYg7JZU3A1eJ-wr2eygPHQ/CreateList'
     LIST_ADD_MEMBER = 'https://twitter.com/i/api/graphql/lLNsL7mW6gSEQG6rXP7TNw/ListAddMember'
-    LIST_LATEST_TWEETS = 'https://twitter.com/i/api/graphql/HjsWc-nwwHKYwHenbHm-tw/ListLatestTweetsTimeline'
+    LIST_LATEST_TWEETS = (
+        'https://twitter.com/i/api/graphql/HjsWc-nwwHKYwHenbHm-tw/ListLatestTweetsTimeline'
+    )
     UPDATE_LIST = 'https://twitter.com/i/api/graphql/dIEI1sbSAuZlxhE0ggrezA/UpdateList'
     LIST_MEMBERS = 'https://twitter.com/i/api/graphql/BQp2IEYkgxuSxqbTAr1e1g/ListMembers'
     LIST_SUBSCRIBERS = 'https://twitter.com/i/api/graphql/74wGEkaBxrdoXakWTWMxRQ/ListSubscribers'
@@ -257,36 +267,75 @@ class Endpoint:
     UNBLOCK_USER = 'https://twitter.com/i/api/1.1/blocks/destroy.json'
     MUTE_USER = 'https://twitter.com/i/api/1.1/mutes/users/create.json'
     UNMUTE_USER = 'https://twitter.com/i/api/1.1/mutes/users/destroy.json'
-    MESSAGE_ADD_REACTION = 'https://twitter.com/i/api/graphql/VyDyV9pC2oZEj6g52hgnhA/useDMReactionMutationAddMutation'
+    MESSAGE_ADD_REACTION = (
+        'https://twitter.com/i/api/graphql/VyDyV9pC2oZEj6g52hgnhA/useDMReactionMutationAddMutation'
+    )
     MESSAGE_REMOVE_REACTION = 'https://twitter.com/i/api/graphql/bV_Nim3RYHsaJwMkTXJ6ew/useDMReactionMutationRemoveMutation'
-    FETCH_SCHEDULED_TWEETS = 'https://twitter.com/i/api/graphql/ITtjAzvlZni2wWXwf295Qg/FetchScheduledTweets'
-    DELETE_SCHEDULED_TWEET = 'https://twitter.com/i/api/graphql/CTOVqej0JBXAZSwkp1US0g/DeleteScheduledTweet'
+    FETCH_SCHEDULED_TWEETS = (
+        'https://twitter.com/i/api/graphql/ITtjAzvlZni2wWXwf295Qg/FetchScheduledTweets'
+    )
+    DELETE_SCHEDULED_TWEET = (
+        'https://twitter.com/i/api/graphql/CTOVqej0JBXAZSwkp1US0g/DeleteScheduledTweet'
+    )
     SETTINGS = 'https://api.twitter.com/1.1/account/settings.json'
-    LIST_MANAGEMENT = 'https://twitter.com/i/api/graphql/47170qwZCt5aFo9cBwFoNA/ListsManagementPageTimeline'
+    LIST_MANAGEMENT = (
+        'https://twitter.com/i/api/graphql/47170qwZCt5aFo9cBwFoNA/ListsManagementPageTimeline'
+    )
     NOTIFICATIONS_ALL = 'https://twitter.com/i/api/2/notifications/all.json'
     NOTIFICATIONS_VERIFIED = 'https://twitter.com/i/api/2/notifications/verified.json'
     NOTIFICATIONS_MENTIONES = 'https://twitter.com/i/api/2/notifications/mentions.json'
     VOTE = 'https://caps.twitter.com/v2/capi/passthrough/1'
     REPORT_FLOW = 'https://twitter.com/i/api/1.1/report/flow.json'
-    FETCH_COMMUNITY_NOTE = 'https://twitter.com/i/api/graphql/fKWPPj271aTM-AB9Xp48IA/BirdwatchFetchOneNote'
-    SEARCH_COMMUNITY = 'https://twitter.com/i/api/graphql/daVUkhfHn7-Z8llpYVKJSw/CommunitiesSearchQuery'
+    FETCH_COMMUNITY_NOTE = (
+        'https://twitter.com/i/api/graphql/fKWPPj271aTM-AB9Xp48IA/BirdwatchFetchOneNote'
+    )
+    SEARCH_COMMUNITY = (
+        'https://twitter.com/i/api/graphql/daVUkhfHn7-Z8llpYVKJSw/CommunitiesSearchQuery'
+    )
     GET_COMMUNITY = 'https://twitter.com/i/api/graphql/lUBKrilodgg9Nikaw3cIiA/CommunityQuery'
-    COMMUNITY_TWEETS = 'https://twitter.com/i/api/graphql/mhwSsmub4JZgHcs0dtsjrw/CommunityTweetsTimeline'
-    COMMUNITY_MEDIA = 'https://twitter.com/i/api/graphql/Ht5K2ckaZYAOuRFmFfbHig/CommunityMediaTimeline'
-    COMMUNITIES_TIMELINE = 'https://twitter.com/i/api/graphql/4-4iuIdaLPpmxKnA3mr2LA/CommunitiesMainPageTimeline'
+    COMMUNITY_TWEETS = (
+        'https://twitter.com/i/api/graphql/mhwSsmub4JZgHcs0dtsjrw/CommunityTweetsTimeline'
+    )
+    COMMUNITY_MEDIA = (
+        'https://twitter.com/i/api/graphql/Ht5K2ckaZYAOuRFmFfbHig/CommunityMediaTimeline'
+    )
+    COMMUNITIES_TIMELINE = (
+        'https://twitter.com/i/api/graphql/4-4iuIdaLPpmxKnA3mr2LA/CommunitiesMainPageTimeline'
+    )
     JOIN_COMMUNITY = 'https://twitter.com/i/api/graphql/xZQLbDwbI585YTG0QIpokw/JoinCommunity'
-    REQUEST_TO_JOIN_COMMUNITY = 'https://twitter.com/i/api/graphql/XwWChphD_6g7JnsFus2f2Q/RequestToJoinCommunity'
+    REQUEST_TO_JOIN_COMMUNITY = (
+        'https://twitter.com/i/api/graphql/XwWChphD_6g7JnsFus2f2Q/RequestToJoinCommunity'
+    )
     LEAVE_COMMUNITY = 'https://twitter.com/i/api/graphql/OoS6Kd4-noNLXPZYHtygeA/LeaveCommunity'
-    COMMUNITY_MEMBERS = 'https://twitter.com/i/api/graphql/KDAssJ5lafCy-asH4wm1dw/membersSliceTimeline_Query'
-    COMMUNITY_MODERATORS = 'https://twitter.com/i/api/graphql/9KI_r8e-tgp3--N5SZYVjg/moderatorsSliceTimeline_Query'
-    SEARCH_COMMUNITY_TWEET = 'https://twitter.com/i/api/graphql/5341rmzzvdjqfmPKfoHUBw/CommunityTweetSearchModuleQuery'
+    COMMUNITY_MEMBERS = (
+        'https://twitter.com/i/api/graphql/KDAssJ5lafCy-asH4wm1dw/membersSliceTimeline_Query'
+    )
+    COMMUNITY_MODERATORS = (
+        'https://twitter.com/i/api/graphql/9KI_r8e-tgp3--N5SZYVjg/moderatorsSliceTimeline_Query'
+    )
+    SEARCH_COMMUNITY_TWEET = (
+        'https://twitter.com/i/api/graphql/5341rmzzvdjqfmPKfoHUBw/CommunityTweetSearchModuleQuery'
+    )
     SIMILAR_POSTS = 'https://twitter.com/i/api/graphql/EToazR74i0rJyZYalfVEAQ/SimilarPosts'
-    BOOKMARK_FOLDERS = 'https://twitter.com/i/api/graphql/i78YDd0Tza-dV4SYs58kRg/BookmarkFoldersSlice'
-    EDIT_BOOKMARK_FOLDER = 'https://twitter.com/i/api/graphql/a6kPp1cS1Dgbsjhapz1PNw/EditBookmarkFolder'
-    DELETE_BOOKMARK_FOLDER = 'https://twitter.com/i/api/graphql/2UTTsO-6zs93XqlEUZPsSg/DeleteBookmarkFolder'
-    CREATE_BOOKMARK_FOLDER = 'https://twitter.com/i/api/graphql/6Xxqpq8TM_CREYiuof_h5w/createBookmarkFolder'
-    BOOKMARK_FOLDER_TIMELINE = 'https://twitter.com/i/api/graphql/8HoabOvl7jl9IC1Aixj-vg/BookmarkFolderTimeline'
-    BOOKMARK_TO_FOLDER = 'https://twitter.com/i/api/graphql/4KHZvvNbHNf07bsgnL9gWA/bookmarkTweetToFolder'
+    BOOKMARK_FOLDERS = (
+        'https://twitter.com/i/api/graphql/i78YDd0Tza-dV4SYs58kRg/BookmarkFoldersSlice'
+    )
+    EDIT_BOOKMARK_FOLDER = (
+        'https://twitter.com/i/api/graphql/a6kPp1cS1Dgbsjhapz1PNw/EditBookmarkFolder'
+    )
+    DELETE_BOOKMARK_FOLDER = (
+        'https://twitter.com/i/api/graphql/2UTTsO-6zs93XqlEUZPsSg/DeleteBookmarkFolder'
+    )
+    CREATE_BOOKMARK_FOLDER = (
+        'https://twitter.com/i/api/graphql/6Xxqpq8TM_CREYiuof_h5w/createBookmarkFolder'
+    )
+    BOOKMARK_FOLDER_TIMELINE = (
+        'https://twitter.com/i/api/graphql/8HoabOvl7jl9IC1Aixj-vg/BookmarkFolderTimeline'
+    )
+    BOOKMARK_TO_FOLDER = (
+        'https://twitter.com/i/api/graphql/4KHZvvNbHNf07bsgnL9gWA/bookmarkTweetToFolder'
+    )
+
 
 T = TypeVar('T')
 
@@ -316,7 +365,7 @@ class Result(Generic[T]):
         fetch_next_result: Callable | None = None,
         next_cursor: str | None = None,
         fetch_previous_result: Callable | None = None,
-        previous_cursor: str | None = None
+        previous_cursor: str | None = None,
     ) -> None:
         self.__results = results
         self.next_cursor = next_cursor
@@ -342,14 +391,12 @@ class Result(Generic[T]):
 
     @property
     def cursor(self) -> str:
-        """Alias of `next_token`
-        """
+        """Alias of `next_token`"""
         return self.next_cursor
 
     @property
     def token(self) -> str:
-        """Alias of `next_token`
-        """
+        """Alias of `next_token`"""
         return self.next_cursor
 
     def __iter__(self) -> Iterator[T]:
@@ -381,10 +428,7 @@ class Flow:
             data['subtask_inputs'] = list(subtask_inputs)
 
         response = self._client.http.post(
-            self.endpoint,
-            data=json.dumps(data),
-            headers=self.headers,
-            **kwargs
+            self.endpoint, data=json.dumps(data), headers=self.headers, **kwargs
         ).json()
         self.response = response
 
@@ -401,9 +445,7 @@ class Flow:
         return self.response['subtasks'][0]['subtask_id']
 
 
-def find_dict(
-    obj: list | dict, key: str | int, find_one: bool = False
-) -> list[Any]:
+def find_dict(obj: list | dict, key: str | int, find_one: bool = False) -> list[Any]:
     """
     Retrieves elements from a nested dictionary.
     """
@@ -414,7 +456,7 @@ def find_dict(
             if find_one:
                 return results
     if isinstance(obj, (list, dict)):
-        for elem in (obj if isinstance(obj, list) else obj.values()):
+        for elem in obj if isinstance(obj, list) else obj.values():
             r = find_dict(elem, key, find_one)
             results += r
             if r and find_one:
@@ -469,8 +511,8 @@ def build_tweet_data(raw_data: dict) -> dict:
             'reply_count': raw_data.get('reply_count'),
             'favorite_count': raw_data.get('favorite_count'),
             'favorited': raw_data.get('favorited'),
-            'retweet_count': raw_data.get('retweet_count')
-        }
+            'retweet_count': raw_data.get('retweet_count'),
+        },
     }
 
 
@@ -508,8 +550,8 @@ def build_user_data(raw_data: dict) -> dict:
             'translator_type': raw_data.get('translator_type'),
             'withheld_in_countries': raw_data.get('withheld_in_countries'),
             'url': raw_data.get('url'),
-            'profile_banner_url': raw_data.get('profile_banner_url')
-        }
+            'profile_banner_url': raw_data.get('profile_banner_url'),
+        },
     }
 
 
@@ -527,14 +569,7 @@ def b64_to_str(b64: str) -> str:
 
 
 FILTERS = Literal[
-    'media',
-    'retweets',
-    'native_video',
-    'periscope',
-    'vine',
-    'images',
-    'twimg',
-    'links'
+    'media', 'retweets', 'native_video', 'periscope', 'vine', 'images', 'twimg', 'links'
 ]
 
 
@@ -612,48 +647,34 @@ def build_query(text: str, options: SearchOptions) -> str:
         The constructed Twitter search query.
     """
     if exact_phrases := options.get('exact_phrases'):
-        text += ' ' + ' '.join(
-            [f'"{i}"' for i in exact_phrases]
-        )
+        text += ' ' + ' '.join([f'"{i}"' for i in exact_phrases])
 
     if or_keywords := options.get('or_keywords'):
         text += ' ' + ' OR '.join(or_keywords)
 
     if exclude_keywords := options.get('exclude_keywords'):
-        text += ' ' + ' '.join(
-            [f'-"{i}"' for i in exclude_keywords]
-        )
+        text += ' ' + ' '.join([f'-"{i}"' for i in exclude_keywords])
 
     if hashtags := options.get('hashtags'):
-        text += ' ' + ' '.join(
-            [f'#{i}' for i in hashtags]
-        )
+        text += ' ' + ' '.join([f'#{i}' for i in hashtags])
 
     if from_user := options.get('from_user'):
-        text +=f' from:{from_user}'
+        text += f' from:{from_user}'
 
     if to_user := options.get('to_user'):
         text += f' to:{to_user}'
 
     if mentioned_users := options.get('mentioned_users'):
-        text += ' ' + ' '.join(
-            [f'@{i}' for i in mentioned_users]
-        )
+        text += ' ' + ' '.join([f'@{i}' for i in mentioned_users])
 
     if filters := options.get('filters'):
-        text += ' ' + ' '.join(
-            [f'filter:{i}' for i in filters]
-        )
+        text += ' ' + ' '.join([f'filter:{i}' for i in filters])
 
     if exclude_filters := options.get('exclude_filters'):
-        text += ' ' + ' '.join(
-            [f'-filter:{i}' for i in exclude_filters]
-        )
+        text += ' ' + ' '.join([f'-filter:{i}' for i in exclude_filters])
 
     if urls := options.get('urls'):
-        text += ' ' + ' '.join(
-            [f'url:{i}' for i in urls]
-        )
+        text += ' ' + ' '.join([f'url:{i}' for i in urls])
 
     if since := options.get('since'):
         text += f' since:{since}'
