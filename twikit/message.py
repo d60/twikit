@@ -23,13 +23,8 @@ class Message:
     attachment : :class:`dict`
         Attachment Information.
     """
-    def __init__(
-        self,
-        client: Client,
-        data: dict,
-        sender_id: str,
-        recipient_id: str
-    ) -> None:
+
+    def __init__(self, client: Client, data: dict, sender_id: str, recipient_id: str) -> None:
         self._client = client
         self.sender_id = sender_id
         self.recipient_id = recipient_id
@@ -61,11 +56,7 @@ class Message:
         Client.send_dm
         """
         user_id = self._client.user_id()
-        send_to = (
-            self.recipient_id
-            if user_id == self.sender_id else
-            self.sender_id
-        )
+        send_to = self.recipient_id if user_id == self.sender_id else self.sender_id
         return self._client.send_dm(send_to, text, media_id, self.id)
 
     def add_reaction(self, emoji: str) -> Response:
@@ -82,16 +73,8 @@ class Message:
         :class:`httpx.Response`
             Response returned from twitter api.
         """
-        user_id = self._client.user_id()
-        partner_id = (
-            self.recipient_id
-            if user_id == self.sender_id else
-            self.sender_id
-        )
-        conversation_id = f'{partner_id}-{user_id}'
-        return self._client.add_reaction_to_message(
-            self.id, conversation_id, emoji
-        )
+        conversation_id = self._get_conversation_id()
+        return self._client.add_reaction_to_message(self.id, conversation_id, emoji)
 
     def remove_reaction(self, emoji: str) -> Response:
         """
@@ -107,16 +90,22 @@ class Message:
         :class:`httpx.Response`
             Response returned from twitter api.
         """
+        conversation_id = self._get_conversation_id()
+        return self._client.remove_reaction_from_message(self.id, conversation_id, emoji)
+
+    def _get_conversation_id(self):
+        """
+        Returns a unique conversation ID based on the user IDs involved.
+
+        Args:
+            self: The instance of the class.
+
+        Returns:
+            str: A string representing the unique conversation ID.
+        """
         user_id = self._client.user_id()
-        partner_id = (
-            self.recipient_id
-            if user_id == self.sender_id else
-            self.sender_id
-        )
-        conversation_id = f'{partner_id}-{user_id}'
-        return self._client.remove_reaction_from_message(
-            self.id, conversation_id, emoji
-        )
+        partner_id = self.recipient_id if user_id == self.sender_id else self.sender_id
+        return f'{partner_id}-{user_id}'
 
     def delete(self) -> Response:
         """
