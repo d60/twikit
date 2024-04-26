@@ -93,7 +93,7 @@ class Message:
         conversation_id = self._get_conversation_id()
         return self._client.remove_reaction_from_message(self.id, conversation_id, emoji)
 
-    def _get_conversation_id(self):
+    def _get_conversation_id(self) -> str:
         """
         Returns a unique conversation ID based on the user IDs involved.
 

@@ -2,23 +2,23 @@ from __future__ import annotations
 
 import io
 import json
+import mimetypes
 import time
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
-import filetype
 from fake_useragent import UserAgent
 
 from twikit.bookmark import BookmarkFolder
 from twikit.community import Community, CommunityMember
 from twikit.errors import (
-    CouldNotTweet,
-    InvalidMedia,
-    TwitterException,
-    UserNotFound,
-    UserUnavailable,
+    CouldNotTweetError,
+    InvalidMediaError,
+    TwitterError,
+    UserNotFoundError,
+    UserUnavailableError,
     raise_exceptions_from_response,
 )
 from twikit.group import Group, GroupMessage
@@ -79,7 +79,7 @@ class Client:
     >>> client.login(auth_info_1='example_user', auth_info_2='email@example.com', password='00000000')
     """
 
-    def __init__(self, language: str | None = None, proxies: dict | None = None, **kwargs) -> None:
+    def __init__(self, language: str | None = None, proxies: dict | None = None, **kwargs: Any) -> None:
         self._token = TOKEN
         self.language = language
         self.http = HTTPClient(proxies=proxies, **kwargs)
@@ -224,7 +224,7 @@ class Client:
                 )
 
             return flow.response
-        raise TwitterException('Failed to login.')
+        raise TwitterError('Failed to login.')
 
     def logout(self) -> Response:
         """
@@ -598,18 +598,18 @@ class Client:
             # If the source is a path
             with Path(source).open('rb') as file:
                 binary = file.read()
+            if media_type is None:
+                # Guess mimetype if not specified
+                media_type = mimetypes.guess_type(source)[0]
+
         elif isinstance(source, bytes):
             # If the source is bytes
             binary = source
 
-        if media_type is None:
-            # Guess mimetype if not specified
-            media_type = filetype.guess(binary).mime
-
-        if wait_for_completion:
+        if wait_for_completion and media_type is not None:
             if media_type == 'image/gif':
                 if media_category is None:
-                    raise TwitterException(
+                    raise TwitterError(
                         '`media_category` must be specified to check the '
                         "upload status of gif images ('dm_gif' or 'tweet_gif')"
                     )
@@ -628,10 +628,10 @@ class Client:
         # =========== APPEND ============
         segment_index = 0
         bytes_sent = 0
-        MAX_SEGMENT_SIZE = 8 * 1024 * 1024  # The maximum segment size is 8 MB
+        _max_segment_size = 8 * 1024 * 1024  # The maximum segment size is 8 MB
 
         while bytes_sent < total_bytes:
-            chunk = binary[bytes_sent : bytes_sent + MAX_SEGMENT_SIZE]
+            chunk = binary[bytes_sent : bytes_sent + _max_segment_size]
             chunk_stream = io.BytesIO(chunk)
             params = {
                 'command': 'APPEND',
@@ -669,7 +669,7 @@ class Client:
                 state = self.check_media_status(media_id)
                 processing_info = state['processing_info']
                 if 'error' in processing_info:
-                    raise InvalidMedia(processing_info['error'].get('message'))
+                    raise InvalidMediaError(processing_info['error'].get('message'))
                 if processing_info['state'] == 'succeeded':
                     break
                 time.sleep(status_check_interval)
@@ -951,7 +951,7 @@ class Client:
         _result = find_dict(response, 'result')
         if not _result:
             raise_exceptions_from_response(response['errors'])
-            raise CouldNotTweet(response['errors'][0] if response['errors'] else 'Failed to post a tweet.')
+            raise CouldNotTweetError(response['errors'][0] if response['errors'] else 'Failed to post a tweet.')
 
         tweet_info = _result[0]
         user_info = tweet_info['core']['user_results']['result']
@@ -1070,10 +1070,10 @@ class Client:
         response = self.http.get(Endpoint.USER_BY_SCREEN_NAME, params=params, headers=self._base_headers).json()
 
         if 'user' not in response['data']:
-            raise UserNotFound('The user does not exist.')
+            raise UserNotFoundError('The user does not exist.')
         user_data = response['data']['user']['result']
         if user_data.get('__typename') == 'UserUnavailable':
-            raise UserUnavailable(user_data.get('message'))
+            raise UserUnavailableError(user_data.get('message'))
 
         return User(self, user_data)
 
@@ -1103,13 +1103,13 @@ class Client:
         params = flatten_params({'variables': variables, 'features': USER_FEATURES})
         response = self.http.get(Endpoint.USER_BY_REST_ID, params=params, headers=self._base_headers).json()
         if 'result' not in response['data']['user']:
-            raise TwitterException(f'Invalid user id: {user_id}')
+            raise TwitterError(f'Invalid user id: {user_id}')
         user_data = response['data']['user']['result']
         if user_data.get('__typename') == 'UserUnavailable':
-            raise UserUnavailable(user_data.get('message'))
+            raise UserUnavailableError(user_data.get('message'))
         return User(self, user_data)
 
-    def _get_tweet_detail(self, tweet_id: str, cursor: str | None):
+    def _get_tweet_detail(self, tweet_id: str, cursor: str | None) -> dict:
         variables = {
             'focalTweetId': tweet_id,
             'with_rux_injections': False,
@@ -1239,7 +1239,7 @@ class Client:
             reply_next_cursor = None
             _fetch_more_replies = None
         if tweet is None:
-            raise TwitterException('Tweet not found.')
+            raise TwitterError('Tweet not found.')
         tweet.replies = Result(replies_list, _fetch_more_replies, reply_next_cursor)
         tweet.reply_to = reply_to
         tweet.related_tweets = related_tweets
@@ -1412,7 +1412,7 @@ class Client:
         response = self.http.get(Endpoint.FETCH_COMMUNITY_NOTE, params=params, headers=self._base_headers).json()
         note_data = response['data']['birdwatch_note_by_rest_id']
         if 'data_v1' not in note_data:
-            raise TwitterException(f'Invalid note id: {note_id}')
+            raise TwitterError(f'Invalid note id: {note_id}')
         return CommunityNote(self, note_data)
 
     def get_user_tweets(
@@ -1530,7 +1530,6 @@ class Client:
                     if tweet_object is None:
                         continue
                     replies.append(tweet_object)
-                item = tweets[0]
                 tweet.replies = Result(results=replies)
             results.append(tweet)
 
@@ -2492,12 +2491,16 @@ class Client:
         response = self._send_dm(f'{user_id}-{self.user_id()}', text, media_id, reply_to)
 
         message_data = find_dict(response, 'message_data')[0]
-        users = list(response['users'].values())
+        if users := list(response['users'].values()):
+            user_id_1 = users[0]['id_str']
+            user_id_2 = users[1]['id_str'] if len(users) > 1 else user_id_1
+        else:
+            user_id_1 = user_id_2 = None
         return Message(
             self,
             message_data,
-            users[0]['id_str'],
-            users[1]['id_str'] if len(users) == 2 else users[0]['id_str'],
+            user_id_1,
+            user_id_2,
         )
 
     def add_reaction_to_message(self, message_id: str, conversation_id: str, emoji: str) -> Response:
@@ -2984,7 +2987,7 @@ class Client:
         }
         return self.http.post(Endpoint.LIST_REMOVE_MEMBER, json=data, headers=self._base_headers)
 
-    def get_lists(self, count: int = 100, cursor: str | None = None) -> Result[List]:
+    def get_lists(self, count: int = 100, cursor: str | None = None, minimum_item_count: int = 2) -> Result[List]:
         """
         Retrieves a list of user lists.
 
@@ -3018,11 +3021,12 @@ class Client:
         entries = find_dict(response, 'entries')[0]
         items = find_dict(entries, 'items')
 
-        if len(items) < 2:
-            return Result([])
-
-        lists = [List(self, list_item['item']['itemContent']['list']) for list_item in items[1]]
-        next_cursor = entries[-1]['content']['value']
+        if len(items) < minimum_item_count:
+            lists = []
+            next_cursor = None
+        else:
+            lists = [List(self, list_item['item']['itemContent']['list']) for list_item in items[1]]
+            next_cursor = entries[-1]['content']['value']
 
         return Result(lists, partial(self.get_lists, count, next_cursor), next_cursor)
 
@@ -3279,17 +3283,17 @@ class Client:
         response = self.http.get(endpoint, params=params, headers=self._base_headers).json()
 
         global_objects = response['globalObjects']
-        users = {id: User(self, build_user_data(data)) for id, data in global_objects.get('users', {}).items()}
+        users = {id_: User(self, build_user_data(data)) for id_, data in global_objects.get('users', {}).items()}
         tweets = {}
 
         tweet: Tweet | None = None
         user: User | None = None
 
-        for id, tweet_data in global_objects.get('tweets', {}).items():
+        for id_, tweet_data in global_objects.get('tweets', {}).items():
             user_id = tweet_data['user_id_str']
             user = users[user_id]
             tweet = Tweet(self, build_tweet_data(tweet_data), user)
-            tweets[id] = tweet
+            tweets[id_] = tweet
 
         notifications = []
 
@@ -3600,7 +3604,9 @@ class Client:
         community_data['rest_id'] = community_data['id_str']
         return Community(self, community_data)
 
-    def _get_community_users(self, endpoint: str, community_id: str, count: int, cursor: str | None):
+    def _get_community_users(
+        self, endpoint: str, community_id: str, count: int, cursor: str | None
+    ) -> Result[CommunityMember]:
         """
         Base function to retrieve community users.
         """

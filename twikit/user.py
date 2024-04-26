@@ -380,7 +380,7 @@ class User:
         """
         return self._client.get_user_subscriptions(self.id, count)
 
-    def send_dm(self, text: str, media_id: str | None = None, reply_to=None) -> Message:
+    def send_dm(self, text: str, media_id: str | None = None, reply_to: str | None = None) -> Message:
         """
         Send a direct message to the user.
 

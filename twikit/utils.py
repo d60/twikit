@@ -367,7 +367,7 @@ class Flow:
         self.headers = headers
         self.response = None
 
-    def execute_task(self, *subtask_inputs, **kwargs) -> None:
+    def execute_task(self, *subtask_inputs: Any, **kwargs: Any) -> None:
         data: dict[str, str | list[str]] = {}
 
         if self.token is not None:
@@ -400,7 +400,7 @@ def find_dict(obj: list | dict, key: str | int, find_one: bool = False) -> list[
         results.append(obj.get(key))
         if find_one:
             return results
-    if isinstance(obj, (list, dict)):
+    if isinstance(obj, list | dict):
         for elem in obj if isinstance(obj, list) else obj.values():
             r = find_dict(elem, key, find_one)
             results += r
@@ -502,7 +502,7 @@ def build_user_data(raw_data: dict) -> dict:
 def flatten_params(params: dict) -> dict:
     flattened_params = {}
     for key, value in params.items():
-        if isinstance(value, (list, dict)):
+        if isinstance(value, list | dict):
             value = json.dumps(value)
         flattened_params[key] = value
     return flattened_params

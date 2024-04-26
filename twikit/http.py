@@ -1,51 +1,50 @@
+from http import HTTPStatus
+from typing import Any
+
 import httpx
 
 from twikit.errors import (
-    BadRequest,
-    Forbidden,
-    NotFound,
-    RequestTimeout,
+    BadRequestError,
+    ForbiddenError,
+    NotFoundError,
+    RequestTimeoutError,
     ServerError,
-    TooManyRequests,
-    TwitterException,
-    Unauthorized,
+    TooManyRequestsError,
+    TwitterError,
+    UnauthorizedError,
 )
 
 
 class HTTPClient:
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         self.client = httpx.Client(**kwargs)
 
-    def request(self, method: str, url: str, **kwargs) -> httpx.Response:
+    def request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
         response = self.client.request(method, url, **kwargs)
         status_code = response.status_code
         self._remove_duplicate_ct0_cookie()
 
-        if status_code >= 400:
+        exceptions = {
+            HTTPStatus.BAD_REQUEST: BadRequestError,
+            HTTPStatus.UNAUTHORIZED: UnauthorizedError,
+            HTTPStatus.FORBIDDEN: ForbiddenError,
+            HTTPStatus.NOT_FOUND: NotFoundError,
+            HTTPStatus.REQUEST_TIMEOUT: RequestTimeoutError,
+            HTTPStatus.TOO_MANY_REQUESTS: TooManyRequestsError,
+        }
+        if status_code >= HTTPStatus.BAD_REQUEST:
             message = f'status: {status_code}, message: "{response.text}"'
-            if status_code == 400:
-                raise BadRequest(message, headers=response.headers)
-            elif status_code == 401:
-                raise Unauthorized(message, headers=response.headers)
-            elif status_code == 403:
-                raise Forbidden(message, headers=response.headers)
-            elif status_code == 404:
-                raise NotFound(message, headers=response.headers)
-            elif status_code == 408:
-                raise RequestTimeout(message, headers=response.headers)
-            elif status_code == 429:
-                raise TooManyRequests(message, headers=response.headers)
-            elif 500 <= status_code < 600:
-                raise ServerError(message, headers=response.headers)
-            else:
-                raise TwitterException(message, headers=response.headers)
+            exception_class = exceptions.get(HTTPStatus(status_code), TwitterError)
+            if HTTPStatus.INTERNAL_SERVER_ERROR <= status_code < HTTPStatus.HTTP_VERSION_NOT_SUPPORTED:
+                exception_class = ServerError
+            raise exception_class(message, headers=response.headers)
 
         return response
 
-    def get(self, url, **kwargs) -> httpx.Response:
+    def get(self, url: str, **kwargs: Any) -> httpx.Response:
         return self.request('GET', url, **kwargs)
 
-    def post(self, url, **kwargs) -> httpx.Response:
+    def post(self, url: str, **kwargs: Any) -> httpx.Response:
         return self.request('POST', url, **kwargs)
 
     def _remove_duplicate_ct0_cookie(self) -> None:

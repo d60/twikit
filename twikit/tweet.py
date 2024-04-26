@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from twikit.user import User
 from twikit.utils import find_dict, timestamp_to_datetime
@@ -176,9 +176,8 @@ class Tweet:
 
         note_tweet_results = find_dict(data, 'note_tweet_results')
         self.full_text: str | None = None
-        if note_tweet_results:
-            if text_list := find_dict(note_tweet_results, 'text'):
-                self.full_text = text_list[0]
+        if note_tweet_results and (text_list := find_dict(note_tweet_results, 'text')):
+            self.full_text = text_list[0]
 
         self.possibly_sensitive: bool = legacy.get('possibly_sensitive')
         self.possibly_sensitive_editable: bool = legacy.get('possibly_sensitive_editable')
@@ -356,7 +355,7 @@ class Tweet:
         """
         return self._client.delete_bookmark(self.id)
 
-    def reply(self, text: str = '', media_ids: list[str] | None = None, **kwargs) -> Tweet:
+    def reply(self, text: str = '', media_ids: list[str] | None = None, **kwargs: Any) -> Tweet:
         """
         Replies to the tweet.
 
