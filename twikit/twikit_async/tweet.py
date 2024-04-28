@@ -80,6 +80,10 @@ class Tweet:
         The title of the webpage displayed inside tweet's card.
     thumbnail_url : :class:`str` | None
         Link to the image displayed in the tweet's card.
+    urls : :class:`list`
+        Information about URLs contained in the tweet.
+    full_text : :class:`str` | None
+        The full text of the tweet.
     """
 
     def __init__(self, client: Client, data: dict, user: User = None) -> None:
@@ -159,14 +163,14 @@ class Tweet:
                            if 'views' in data else None)
         self.has_community_notes: bool = data.get('has_birdwatch_notes')
 
+        self.community_note = None
         if 'birdwatch_pivot' in data:
             community_note_data = data['birdwatch_pivot']
-            self.community_note = {
-                'id': community_note_data['note']['rest_id'],
-                'text': community_note_data['subtitle']['text']
-            }
-        else:
-            self.community_note = None
+            if 'note' in community_note_data:
+                self.community_note = {
+                    'id': community_note_data['note']['rest_id'],
+                    'text': community_note_data['subtitle']['text']
+                }
 
         if note_tweet_results:
             hashtags_ = find_dict(note_tweet_results, 'hashtags')

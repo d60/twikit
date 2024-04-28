@@ -83,6 +83,10 @@ class Tweet:
         The title of the webpage displayed inside tweet's card.
     thumbnail_url : :class:`str` | None
         Link to the image displayed in the tweet's card.
+    urls : :class:`list`
+        Information about URLs contained in the tweet.
+    full_text : :class:`str` | None
+        The full text of the tweet.
     """
 
     def __init__(self, client: Client, data: dict, user: User = None) -> None:
