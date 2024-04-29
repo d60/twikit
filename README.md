@@ -126,10 +126,7 @@ for tweet in tweets:
     print(tweet.text)
 ```
 
-
 More Examples: [examples](https://github.com/d60/twikit/tree/main/examples) <br>
-
-
 
 ## Contributing
 
