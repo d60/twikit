@@ -134,7 +134,7 @@ class Tweet:
             self.retweeted_tweet = None
 
         note_tweet_results = find_dict(data, 'note_tweet_results')
-        self.full_text: str | None = None
+        self.full_text: str = self.text
         if note_tweet_results:
             text_list = find_dict(note_tweet_results, 'text')
             if text_list:
