@@ -118,10 +118,15 @@ for tweet in tweets:
     )
 ```
 
+**Retrieve user tweets**
+```python
+tweets = client.get_user_tweets('123456', 'Tweet')
+
+for tweet in tweets:
+    print(tweet.text)
+```
 
 More Examples: [examples](https://github.com/d60/twikit/tree/main/examples) <br>
-
-
 
 ## Contributing
 
@@ -130,6 +135,3 @@ I would like to hear your thoughts and suggestions.
 If you have any features you'd like to see added or encounter any issues,
 
 please let me know in the [issues](https://github.com/d60/twikit/issues) section.
-
-
-Additionally, if you find this library useful, I would appreciate it if you would star this repository or share this library⭐! Thank you very much!

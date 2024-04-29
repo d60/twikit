@@ -179,6 +179,7 @@ class Tweet:
             self.retweeted_tweet = Tweet(client, retweeted_tweet, retweeted_user)
 
         note_tweet_results = find_dict(data, 'note_tweet_results')
+
         self.urls: list
         self.full_text: str = self.text
         if note_tweet_results:
@@ -187,6 +188,7 @@ class Tweet:
                 self.full_text = text_list[0]
 
             entity_set = note_tweet_results[0]['result']['entity_set']
+
             self.urls = entity_set.get('urls')
             hashtags = entity_set.get('hashtags', [])
         else:

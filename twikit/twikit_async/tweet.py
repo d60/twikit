@@ -80,6 +80,10 @@ class Tweet:
         The title of the webpage displayed inside tweet's card.
     thumbnail_url : :class:`str` | None
         Link to the image displayed in the tweet's card.
+    urls : :class:`list`
+        Information about URLs contained in the tweet.
+    full_text : :class:`str` | None
+        The full text of the tweet.
     """
 
     def __init__(self, client: Client, data: dict, user: User = None) -> None:
@@ -130,11 +134,22 @@ class Tweet:
             self.retweeted_tweet = None
 
         note_tweet_results = find_dict(data, 'note_tweet_results')
-        self.full_text: str | None = None
+        self.full_text: str = self.text
         if note_tweet_results:
             text_list = find_dict(note_tweet_results, 'text')
             if text_list:
                 self.full_text = text_list[0]
+
+            entity_set = note_tweet_results[0]['result']['entity_set']
+            self.urls: list = entity_set.get('urls')
+            hashtags = entity_set.get('hashtags', [])
+        else:
+            self.urls: list = legacy['entities'].get('urls')
+            hashtags = legacy['entities'].get('hashtags', [])
+
+        self.hashtags: list[str] = [
+            i['text'] for i in hashtags
+        ]
 
         self.is_quote_status: bool = legacy['is_quote_status']
         self.possibly_sensitive: bool = legacy.get('possibly_sensitive')
@@ -142,7 +157,6 @@ class Tweet:
             'possibly_sensitive_editable')
         self.quote_count: int = legacy['quote_count']
         self.media: list = legacy['entities'].get('media')
-        self.urls: list = legacy['entities'].get('urls')
         self.reply_count: int = legacy['reply_count']
         self.favorite_count: int = legacy['favorite_count']
         self.favorited: bool = legacy['favorited']
@@ -159,26 +173,14 @@ class Tweet:
                            if 'views' in data else None)
         self.has_community_notes: bool = data.get('has_birdwatch_notes')
 
+        self.community_note = None
         if 'birdwatch_pivot' in data:
             community_note_data = data['birdwatch_pivot']
-            self.community_note = {
-                'id': community_note_data['note']['rest_id'],
-                'text': community_note_data['subtitle']['text']
-            }
-        else:
-            self.community_note = None
-
-        if note_tweet_results:
-            hashtags_ = find_dict(note_tweet_results, 'hashtags')
-            if hashtags_:
-                hashtags = hashtags_[0]
-            else:
-                hashtags = []
-        else:
-            hashtags = legacy['entities'].get('hashtags', [])
-        self.hashtags: list[str] = [
-            i['text'] for i in hashtags
-        ]
+            if 'note' in community_note_data:
+                self.community_note = {
+                    'id': community_note_data['note']['rest_id'],
+                    'text': community_note_data['subtitle']['text']
+                }
 
         if (
             'card' in data and
