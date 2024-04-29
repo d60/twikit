@@ -143,13 +143,23 @@ class Tweet:
             if text_list:
                 self.full_text = text_list[0]
 
+            entity_set = note_tweet_results[0]['result']['entity_set']
+            self.urls: list = entity_set.get('urls')
+            hashtags = entity_set.get('hashtags', [])
+        else:
+            self.urls: list = legacy['entities'].get('urls')
+            hashtags = legacy['entities'].get('hashtags', [])
+
+        self.hashtags: list[str] = [
+            i['text'] for i in hashtags
+        ]
+
         self.is_quote_status: bool = legacy['is_quote_status']
         self.possibly_sensitive: bool = legacy.get('possibly_sensitive')
         self.possibly_sensitive_editable: bool = legacy.get(
             'possibly_sensitive_editable')
         self.quote_count: int = legacy['quote_count']
         self.media: list = legacy['entities'].get('media')
-        self.urls: list = legacy['entities'].get('urls')
         self.reply_count: int = legacy['reply_count']
         self.favorite_count: int = legacy['favorite_count']
         self.favorited: bool = legacy['favorited']
@@ -174,18 +184,6 @@ class Tweet:
                     'id': community_note_data['note']['rest_id'],
                     'text': community_note_data['subtitle']['text']
                 }
-
-        if note_tweet_results:
-            hashtags_ = find_dict(note_tweet_results, 'hashtags')
-            if hashtags_:
-                hashtags = hashtags_[0]
-            else:
-                hashtags = []
-        else:
-            hashtags = legacy['entities'].get('hashtags', [])
-        self.hashtags: list[str] = [
-            i['text'] for i in hashtags
-        ]
 
         if (
             'card' in data and
