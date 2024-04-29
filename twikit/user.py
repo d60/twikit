@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
-from .utils import timestamp_to_datetime
+from twikit.utils import timestamp_to_datetime
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from httpx import Response
 
-    from .client import Client
-    from .message import Message
-    from .tweet import Tweet
-    from .utils import Result
+    from twikit.client import Client
+    from twikit.message import Message
+    from twikit.tweet import Tweet, UserTweetType
+    from twikit.utils import Result
 
 
 class User:
@@ -130,7 +131,7 @@ class User:
 
     def get_tweets(
         self,
-        tweet_type: Literal['Tweets', 'Replies', 'Media', 'Likes'],
+        tweet_type: UserTweetType,
         count: int = 40,
     ) -> Result[Tweet]:
         """
@@ -153,7 +154,7 @@ class User:
         >>> user = client.get_user_by_screen_name('example_user')
         >>> tweets = user.get_tweets('Tweets', count=20)
         >>> for tweet in tweets:
-        ...    print(tweet)
+        ...     print(tweet)
         <Tweet id="...">
         <Tweet id="...">
         ...
@@ -379,9 +380,7 @@ class User:
         """
         return self._client.get_user_subscriptions(self.id, count)
 
-    def send_dm(
-        self, text: str, media_id: str = None, reply_to = None
-    ) -> Message:
+    def send_dm(self, text: str, media_id: str | None = None, reply_to: str | None = None) -> Message:
         """
         Send a direct message to the user.
 
@@ -416,7 +415,7 @@ class User:
         """
         return self._client.send_dm(self.id, text, media_id, reply_to)
 
-    def get_dm_history(self, max_id: str = None) -> Result[Message]:
+    def get_dm_history(self, max_id: str | None = None) -> Result[Message]:
         """
         Retrieves the DM conversation history with the user.
 
