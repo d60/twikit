@@ -6,7 +6,7 @@ Twikit Twitter API Wrapper
 A Python library for interacting with the Twitter API.
 """
 
-__version__ = '1.5.10'
+__version__ = '1.5.11'
 
 from .bookmark import BookmarkFolder
 from .client import Client
