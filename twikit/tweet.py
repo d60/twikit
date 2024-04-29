@@ -481,7 +481,7 @@ class Tweet:
 
 
 def tweet_from_data(client: Client, data: dict) -> Tweet | None:
-    tweet_data_ = find_dict(data, 'result', True)
+    tweet_data_ = find_dict(data, 'result', find_one=True)
     if not tweet_data_:
         return None
     tweet_data = tweet_data_[0]

@@ -391,7 +391,7 @@ class Flow:
         return self.response['subtasks'][0]['subtask_id']
 
 
-def find_dict(obj: list | dict, key: str | int, find_one: bool = False) -> list[Any]:
+def find_dict(obj: list | dict, key: str | int, *, find_one: bool = False) -> list[Any]:
     """
     Retrieves elements from a nested dictionary.
     """
@@ -402,7 +402,7 @@ def find_dict(obj: list | dict, key: str | int, find_one: bool = False) -> list[
             return results
     if isinstance(obj, list | dict):
         for elem in obj if isinstance(obj, list) else obj.values():
-            r = find_dict(elem, key, find_one)
+            r = find_dict(elem, key, find_one=find_one)
             results += r
             if r and find_one:
                 return results
@@ -500,12 +500,7 @@ def build_user_data(raw_data: dict) -> dict:
 
 
 def flatten_params(params: dict) -> dict:
-    flattened_params = {}
-    for key, value in params.items():
-        if isinstance(value, list | dict):
-            value = json.dumps(value)
-        flattened_params[key] = value
-    return flattened_params
+    return {key: (json.dumps(value) if isinstance(value, (list | dict)) else value) for key, value in params.items()}
 
 
 def b64_to_str(b64: str) -> str:

@@ -292,7 +292,7 @@ class Client:
         with Path(path).open('w', encoding='utf-8') as f:
             json.dump(self.get_cookies(), f)
 
-    def set_cookies(self, cookies: dict, clear_cookies: bool = False) -> None:
+    def set_cookies(self, cookies: dict, *, clear_cookies: bool = False) -> None:
         """
         Sets cookies.
         You can skip the login procedure by loading a saved cookies.
@@ -546,10 +546,11 @@ class Client:
     def upload_media(
         self,
         source: str | bytes,
-        wait_for_completion: bool = False,
         status_check_interval: float = 1.0,
         media_type: str | None = None,
         media_category: str | None = None,
+        *,
+        wait_for_completion: bool = False,
     ) -> str:
         """
         Uploads media to twitter.
@@ -829,10 +830,11 @@ class Client:
         conversation_control: ConversationControl | None = None,
         attachment_url: str | None = None,
         community_id: str | None = None,
-        share_with_followers: bool = False,
-        is_note_tweet: bool = False,
         richtext_options: list[dict] | None = None,
         edit_tweet_id: str | None = None,
+        *,
+        share_with_followers: bool = False,
+        is_note_tweet: bool = False,
     ) -> Tweet:
         """
         Creates a new tweet on Twitter with the specified
@@ -1227,7 +1229,7 @@ class Client:
                 tweet_object.replies = Result(replies, show_replies, sr_cursor)
                 replies_list.append(tweet_object)
 
-                display_type = find_dict(entry, 'tweetDisplayType', True)
+                display_type = find_dict(entry, 'tweetDisplayType', find_one=True)
                 if display_type and display_type[0] == 'SelfThread':
                     tweet.thread = [tweet_object, *replies]
 
@@ -2227,8 +2229,9 @@ class Client:
         self,
         category: TweetTrendType,
         count: int = 20,
-        retry: bool = True,
         additional_request_params: dict | None = None,
+        *,
+        retry: bool = True,
     ) -> list[Trend]:
         """
         Retrieves trending topics on Twitter.
@@ -2282,7 +2285,7 @@ class Client:
             if retry:
                 # Recall the method again, as the trend information
                 # may not be returned due to a Twitter error.
-                return self.get_trends(category, count, retry, additional_request_params)
+                return self.get_trends(category, count, additional_request_params, retry=retry)
 
             else:
                 return []
@@ -2800,7 +2803,7 @@ class Client:
         headers['content-type'] = 'application/x-www-form-urlencoded'
         return self.http.post(Endpoint.CHANGE_GROUP_NAME.format(group_id), data=data, headers=headers)
 
-    def create_list(self, name: str, description: str = '', is_private: bool = False) -> List:
+    def create_list(self, name: str, description: str = '', *, is_private: bool = False) -> List:
         """
         Creates a list.
 
