@@ -620,7 +620,8 @@ class Client:
         wait_for_completion: bool = False,
         status_check_interval: float = 1.0,
         media_type: str | None = None,
-        media_category: str | None = None
+        media_category: str | None = None,
+        is_long_video: bool = False
     ) -> str:
         """
         Uploads media to twitter.
@@ -640,6 +641,9 @@ class Client:
             If not specified, it will be guessed from the source.
         media_category : :class:`str`, default=None
             The media category.
+        is_long_video : :class:`bool`, default=False
+            If this is True, videos longer than 2:20 can be uploaded.
+            (Twitter Premium only)
 
         Returns
         -------
@@ -694,6 +698,11 @@ class Client:
                 # Checking the upload status of an image is impossible.
                 wait_for_completion = False
 
+        if is_long_video:
+            endpoint = Endpoint.UPLOAD_MEDIA_2
+        else:
+            endpoint = Endpoint.UPLOAD_MEDIA
+
         total_bytes = len(binary)
 
         # ============ INIT =============
@@ -705,7 +714,7 @@ class Client:
         if media_category is not None:
             params['media_category'] = media_category
         response = (await self.http.post(
-            Endpoint.UPLOAD_MEDIA,
+            endpoint,
             params=params,
             headers=self._base_headers
         )).json()
@@ -736,7 +745,7 @@ class Client:
             }
 
             coro = self.http.post(
-                Endpoint.UPLOAD_MEDIA,
+                endpoint,
                 params=params,
                 headers=headers,
                 files=files
@@ -760,7 +769,7 @@ class Client:
             'media_id': media_id,
         }
         await self.http.post(
-            Endpoint.UPLOAD_MEDIA,
+            endpoint,
             params=params,
             headers=self._base_headers,
         )
@@ -777,7 +786,9 @@ class Client:
 
         return media_id
 
-    async def check_media_status(self, media_id: str) -> dict:
+    async def check_media_status(
+        self, media_id: str, is_long_video: bool = False
+    ) -> dict:
         """
         Check the status of uploaded media.
 
@@ -796,8 +807,12 @@ class Client:
             'command': 'STATUS',
             'media_id': media_id
         }
+        if is_long_video:
+            endpoint = Endpoint.UPLOAD_MEDIA_2
+        else:
+            endpoint = Endpoint.UPLOAD_MEDIA
         response = (await self.http.get(
-            Endpoint.UPLOAD_MEDIA,
+            endpoint,
             params=params,
             headers=self._base_headers
         )).json()
