@@ -22,7 +22,7 @@ You can log in to Twitter using your account username, email address and passwor
 
 
 
-If you have any questions, please ask on [Discord](https://discord.gg/nCrByrr8cX).
+If you have any questions, you can ask on [Discord](https://discord.gg/nCrByrr8cX).
 
 
 
