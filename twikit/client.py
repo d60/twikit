@@ -551,6 +551,7 @@ class Client:
         media_category: str | None = None,
         *,
         wait_for_completion: bool = False,
+        is_long_video: bool = False
     ) -> str:
         """
         Uploads media to twitter.
@@ -570,6 +571,9 @@ class Client:
             If not specified, it will be guessed from the source.
         media_category : :class:`str`, default=None
             The media category.
+        is_long_video : :class:`bool`, default=False
+            If this is True, videos longer than 2:20 can be uploaded.
+            (Twitter Premium only)
 
         Returns
         -------
@@ -618,13 +622,22 @@ class Client:
                 # Checking the upload status of an image is impossible.
                 wait_for_completion = False
 
+        if is_long_video:
+            endpoint = Endpoint.UPLOAD_MEDIA_2
+        else:
+            endpoint = Endpoint.UPLOAD_MEDIA
+
         total_bytes = len(binary)
 
         # ============ INIT =============
         params = {'command': 'INIT', 'total_bytes': total_bytes, 'media_type': media_type}
         if media_category is not None:
             params['media_category'] = media_category
-        response = self.http.post(Endpoint.UPLOAD_MEDIA, params=params, headers=self._base_headers).json()
+        response = self.http.post(
+            endpoint,
+            params=params,
+            headers=self._base_headers
+        ).json()
         media_id = response['media_id']
         # =========== APPEND ============
         segment_index = 0
@@ -648,7 +661,12 @@ class Client:
                     'application/octet-stream',
                 )
             }
-            self.http.post(Endpoint.UPLOAD_MEDIA, params=params, headers=headers, files=files)
+            self.http.post(
+                endpoint,
+                params=params,
+                headers=headers,
+                files=files
+            )
 
             chunk_stream.close()
             segment_index += 1
@@ -660,14 +678,14 @@ class Client:
             'media_id': media_id,
         }
         self.http.post(
-            Endpoint.UPLOAD_MEDIA,
+            endpoint,
             params=params,
             headers=self._base_headers,
         )
 
         if wait_for_completion:
             while True:
-                state = self.check_media_status(media_id)
+                state = self.check_media_status(media_id, is_long_video)
                 processing_info = state['processing_info']
                 if 'error' in processing_info:
                     raise InvalidMediaError(processing_info['error'].get('message'))
@@ -677,7 +695,9 @@ class Client:
 
         return media_id
 
-    def check_media_status(self, media_id: str) -> dict:
+    def check_media_status(
+        self, media_id: str, is_long_video: bool = False
+    ) -> dict:
         """
         Check the status of uploaded media.
 
@@ -692,8 +712,14 @@ class Client:
             A dictionary containing information about the status of
             the uploaded media.
         """
-        params = {'command': 'STATUS', 'media_id': media_id}
-        return self.http.get(Endpoint.UPLOAD_MEDIA, params=params, headers=self._base_headers).json()
+        params = {
+            'command': 'STATUS',
+            'media_id': media_id
+        }
+        endpoint = Endpoint.UPLOAD_MEDIA_2 if is_long_video else Endpoint.UPLOAD_MEDIA
+        return self.http.get(
+            endpoint, params=params, headers=self._base_headers
+        ).json()
 
     def create_media_metadata(
         self,
