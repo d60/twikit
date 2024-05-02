@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .client import Client
+    from twikit.client import Client
 
 
 class Trend:
@@ -26,10 +26,8 @@ class Trend:
         metadata: dict = data['trendMetadata']
         self.name: str = data['name']
         self.tweets_count: int | None = metadata.get('metaDescription')
-        self.domain_context: str = metadata.get('domainContext')
-        self.grouped_trends: list[str] = [
-            trend['name'] for trend in data.get('groupedTrends', [])
-        ]
+        self.domain_context: str | None = metadata.get('domainContext')
+        self.grouped_trends: list[str] = [trend['name'] for trend in data.get('groupedTrends', [])]
 
     def __repr__(self) -> str:
         return f'<Trend name="{self.name}">'

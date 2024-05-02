@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .client import Client
-    from .tweet import Tweet
-    from .user import User
+    from twikit.client import Client
+    from twikit.tweet import Tweet
+    from twikit.user import User
 
 
 class Notification:
@@ -25,9 +25,8 @@ class Notification:
     from_user : :class:`User`
         The user who triggered the notification.
     """
-    def __init__(
-        self, client: Client, data: dict, tweet: Tweet, from_user: User
-    ) -> None:
+
+    def __init__(self, client: Client, data: dict, tweet: Tweet, from_user: User) -> None:
         self._client = client
         self.tweet = tweet
         self.from_user = from_user

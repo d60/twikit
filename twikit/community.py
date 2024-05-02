@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
-from .tweet import Tweet
-from .user import User
-from .utils import Result, b64_to_str
+from twikit.user import User
+from twikit.utils import Result, b64_to_str
 
 if TYPE_CHECKING:
-    from .client import Client
+    from twikit.client import Client
+    from twikit.tweet import Tweet, TweetType
 
 
 class CommunityCreator(NamedTuple):
@@ -53,6 +53,7 @@ class CommunityMember:
     def __repr__(self) -> str:
         return f'<CommunityMember id="{self.id}">'
 
+
 class Community:
     """
     Attributes
@@ -91,6 +92,7 @@ class Community:
         The rules of the community.
 
     """
+
     def __init__(self, client: Client, data: dict) -> None:
         self._client = client
         self.id: str = data['rest_id']
@@ -100,15 +102,15 @@ class Community:
         self.is_nsfw: bool = data['is_nsfw']
 
         self.members_facepile_results: list[str] = [
-            i['result']['legacy']['profile_image_url_https']
-            for i in data['members_facepile_results']
+            i['result']['legacy']['profile_image_url_https'] for i in data['members_facepile_results']
         ]
         self.banner: dict = data['default_banner_media']['media_info']
 
-        self.is_member: bool = data.get('is_member')
-        self.role: str = data.get('role')
-        self.description: str = data.get('description')
+        self.is_member: bool | None = data.get('is_member')
+        self.role: str | None = data.get('role')
+        self.description: str | None = data.get('description')
 
+        self.creator: User | CommunityCreator | None
         if 'creator_results' in data:
             creator = data['creator_results']['result']
             if 'rest_id' in creator:
@@ -117,34 +119,27 @@ class Community:
                 self.creator = CommunityCreator(
                     b64_to_str(creator['id']).removeprefix('User:'),
                     creator['legacy']['screen_name'],
-                    creator['legacy']['verified']
+                    creator['legacy']['verified'],
                 )
-        else:
-            self.creator = None
-
+        self.admin: User | None
         if 'admin_results' in data:
             admin = data['admin_results']['result']
             self.admin = User(client, admin)
-        else:
-            self.admin = None
 
-        self.join_policy: str = data.get('join_policy')
-        self.created_at: int = data.get('created_at')
-        self.invites_policy: str = data.get('invites_policy')
-        self.is_pinned: bool = data.get('is_pinned')
+        self.join_policy: str | None = data.get('join_policy')
+        self.created_at: int | None = data.get('created_at')
+        self.invites_policy: str | None = data.get('invites_policy')
+        self.is_pinned: bool | None = data.get('is_pinned')
 
+        self.rules: list[CommunityRule] | None
         if 'rules' in data:
-            self.rules: list = [
-                CommunityRule(i['rest_id'], i['name']) for i in data['rules']
-            ]
-        else:
-            self.rules = None
+            self.rules = [CommunityRule(i['rest_id'], i['name']) for i in data['rules']]
 
     def get_tweets(
         self,
-        tweet_type: Literal['Top', 'Latest', 'Media'],
+        tweet_type: TweetType,
         count: int = 40,
-        cursor: str | None = None
+        cursor: str | None = None,
     ) -> Result[Tweet]:
         """
         Retrieves tweets from the community.
@@ -171,12 +166,7 @@ class Community:
         ...
         >>> more_tweets = tweets.next()  # Retrieve more tweets
         """
-        return self._client.get_community_tweets(
-            self.id,
-            tweet_type,
-            count,
-            cursor
-        )
+        return self._client.get_community_tweets(self.id, tweet_type, count, cursor)
 
     def join(self) -> Community:
         """
@@ -196,9 +186,7 @@ class Community:
         """
         return self._client.request_to_join_community(self.id, answer)
 
-    def get_members(
-        self, count: int = 20, cursor: str | None = None
-    ) -> Result[CommunityMember]:
+    def get_members(self, count: int = 20, cursor: str | None = None) -> Result[CommunityMember]:
         """
         Retrieves members of the community.
 
@@ -212,15 +200,9 @@ class Community:
         Result[:class:`CommunityMember`]
             List of retrieved members.
         """
-        return self._client.get_community_members(
-            self.id,
-            count,
-            cursor
-        )
+        return self._client.get_community_members(self.id, count, cursor)
 
-    def get_moderators(
-        self, count: int = 20, cursor: str | None = None
-    ) -> Result[CommunityMember]:
+    def get_moderators(self, count: int = 20, cursor: str | None = None) -> Result[CommunityMember]:
         """
         Retrieves moderators of the community.
 
@@ -234,18 +216,9 @@ class Community:
         Result[:class:`CommunityMember`]
             List of retrieved moderators.
         """
-        return self._client.get_community_moderators(
-            self.id,
-            count,
-            cursor
-        )
+        return self._client.get_community_moderators(self.id, count, cursor)
 
-    def search_tweet(
-        self,
-        query: str,
-        count: int = 20,
-        cursor: str | None = None
-    )-> Result[Tweet]:
+    def search_tweet(self, query: str, count: int = 20, cursor: str | None = None) -> Result[Tweet]:
         """Searchs tweets in the community.
 
         Parameters
@@ -260,12 +233,7 @@ class Community:
         Result[:class:`Tweet`]
             List of retrieved tweets.
         """
-        return self._client.search_community_tweet(
-            self.id,
-            query,
-            count,
-            cursor
-        )
+        return self._client.search_community_tweet(self.id, query, count, cursor)
 
     def update(self) -> None:
         new = self._client.get_community(self.id)

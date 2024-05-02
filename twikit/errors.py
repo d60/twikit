@@ -1,100 +1,114 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
 
-class TwitterException(Exception):
+if TYPE_CHECKING:
+    from httpx import Headers
+
+
+class TwitterError(Exception):
     """
     Base class for Twitter API related exceptions.
     """
-    def __init__(self, *args: object, headers: dict | None = None) -> None:
-        super().__init__(*args)
-        if headers is None:
-            self.headers = None
-        else:
-            self.headers = dict(headers)
 
-class BadRequest(TwitterException):
+    def __init__(self, *args: object, headers: Headers | None = None) -> None:
+        super().__init__(*args)
+        self.headers = None if headers is None else dict(headers)
+
+
+class BadRequestError(TwitterError):
     """
     Exception raised for 400 Bad Request errors.
     """
 
-class Unauthorized(TwitterException):
+
+class UnauthorizedError(TwitterError):
     """
     Exception raised for 401 Unauthorized errors.
     """
 
-class Forbidden(TwitterException):
+
+class ForbiddenError(TwitterError):
     """
     Exception raised for 403 Forbidden errors.
     """
 
-class NotFound(TwitterException):
+
+class NotFoundError(TwitterError):
     """
     Exception raised for 404 Not Found errors.
     """
 
-class RequestTimeout(TwitterException):
+
+class RequestTimeoutError(TwitterError):
     """
     Exception raised for 408 Request Timeout errors.
     """
 
-class TooManyRequests(TwitterException):
+
+class TooManyRequestsError(TwitterError):
     """
     Exception raised for 429 Too Many Requests errors.
     """
-    def __init__(self, *args, headers: dict | None = None) -> None:
+
+    def __init__(self, *args: Any, headers: Headers | None = None) -> None:
         super().__init__(*args, headers=headers)
+        self.rate_limit_reset: int | None
         if headers is not None and 'x-rate-limit-reset' in headers:
             self.rate_limit_reset = int(headers.get('x-rate-limit-reset'))
-        else:
-            self.rate_limit_reset = None
 
-class ServerError(TwitterException):
+
+class ServerError(TwitterError):
     """
     Exception raised for 5xx Server Error responses.
     """
 
-class CouldNotTweet(TwitterException):
+
+class CouldNotTweetError(TwitterError):
     """
     Exception raised when a tweet could not be sent.
     """
 
-class DuplicateTweet(CouldNotTweet):
+
+class DuplicateTweetError(CouldNotTweetError):
     """
     Exception raised when a tweet is a duplicate of another.
     """
 
-class TweetNotAvailable(TwitterException):
+
+class TweetNotAvailableError(TwitterError):
     """
     Exceptions raised when a tweet is not available.
     """
 
-class InvalidMedia(TwitterException):
+
+class InvalidMediaError(TwitterError):
     """
     Exception raised when there is a problem with the media ID
     sent with the tweet.
     """
 
-class UserNotFound(TwitterException):
+
+class UserNotFoundError(TwitterError):
     """
-    Exception raised when a user does not exsit.
+    Exception raised when a user does not exist.
     """
 
-class UserUnavailable(TwitterException):
+
+class UserUnavailableError(TwitterError):
     """
-    Exception raised when a user is unavailable.
+    Exception raised when a user is not available.
     """
 
-ERROR_CODE_TO_EXCEPTION: dict[int, TwitterException] = {
-    187: DuplicateTweet,
-    324: InvalidMedia
+
+ERROR_CODE_TO_EXCEPTION: dict[int, type[TwitterError]] = {
+    187: DuplicateTweetError,
+    324: InvalidMediaError,
 }
 
 
 def raise_exceptions_from_response(errors: list[dict]):
     for error in errors:
-        code = error.get('code')
-        if code not in ERROR_CODE_TO_EXCEPTION:
-            code = error.get('extensions', {}).get('code')
-        exception = ERROR_CODE_TO_EXCEPTION.get(code)
-        if exception is not None:
+        code = error.get('code', error.get('extensions', {}).get('code'))
+        if exception := ERROR_CODE_TO_EXCEPTION.get(code):
             raise exception(error['message'])

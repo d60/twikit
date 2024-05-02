@@ -3,20 +3,13 @@ from __future__ import annotations
 import base64
 import json
 from datetime import datetime
-from typing import (
-    Any,
-    TYPE_CHECKING,
-    Callable,
-    Generic,
-    Iterator,
-    Literal,
-    TypedDict,
-    TypeVar
-)
+from typing import TYPE_CHECKING, Any, Generic, Literal, TypedDict, TypeVar
 from urllib import parse
 
 if TYPE_CHECKING:
-    from .client import Client
+    from collections.abc import Callable, Iterator
+
+    from twikit.client import Client
 
 # This token is common to all accounts and does not need to be changed.
 TOKEN = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'
@@ -42,7 +35,7 @@ FEATURES = {
     'responsive_web_media_download_video_enabled': False,
     'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
     'responsive_web_graphql_timeline_navigation_enabled': True,
-    'responsive_web_enhance_cards_enabled': False
+    'responsive_web_enhance_cards_enabled': False,
 }
 
 USER_FEATURES = {
@@ -56,14 +49,14 @@ USER_FEATURES = {
     'responsive_web_twitter_article_notes_tab_enabled': False,
     'creator_subscriptions_tweet_preview_api_enabled': True,
     'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
-    'responsive_web_graphql_timeline_navigation_enabled': True
+    'responsive_web_graphql_timeline_navigation_enabled': True,
 }
 
 LIST_FEATURES = {
     'responsive_web_graphql_exclude_directive_enabled': True,
     'verified_phone_label_enabled': False,
     'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
-    'responsive_web_graphql_timeline_navigation_enabled': True
+    'responsive_web_graphql_timeline_navigation_enabled': True,
 }
 
 COMMUNITY_NOTE_FEATURES = {
@@ -72,7 +65,7 @@ COMMUNITY_NOTE_FEATURES = {
     'rweb_tipjar_consumption_enabled': False,
     'responsive_web_graphql_exclude_directive_enabled': True,
     'verified_phone_label_enabled': False,
-    'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False
+    'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
 }
 
 COMMUNITY_TWEETS_FEATURES = {
@@ -98,7 +91,7 @@ COMMUNITY_TWEETS_FEATURES = {
     'rweb_video_timestamps_enabled': True,
     'longform_notetweets_rich_text_read_enabled': True,
     'longform_notetweets_inline_media_enabled': True,
-    'responsive_web_enhance_cards_enabled': False
+    'responsive_web_enhance_cards_enabled': False,
 }
 
 JOIN_COMMUNITY_FEATURES = {
@@ -106,7 +99,7 @@ JOIN_COMMUNITY_FEATURES = {
     'responsive_web_graphql_exclude_directive_enabled': True,
     'verified_phone_label_enabled': False,
     'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
-    'responsive_web_graphql_timeline_navigation_enabled': True
+    'responsive_web_graphql_timeline_navigation_enabled': True,
 }
 
 NOTE_TWEET_FEATURES = {
@@ -133,7 +126,7 @@ NOTE_TWEET_FEATURES = {
     'tweet_with_visibility_results_prefer_gql_media_interstitial_enabled': True,
     'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
     'responsive_web_graphql_timeline_navigation_enabled': True,
-    'responsive_web_enhance_cards_enabled': False
+    'responsive_web_enhance_cards_enabled': False,
 }
 
 SIMILAR_POSTS_FEATURES = {
@@ -161,7 +154,7 @@ SIMILAR_POSTS_FEATURES = {
     'rweb_video_timestamps_enabled': True,
     'longform_notetweets_rich_text_read_enabled': True,
     'longform_notetweets_inline_media_enabled': True,
-    'responsive_web_enhance_cards_enabled': False
+    'responsive_web_enhance_cards_enabled': False,
 }
 
 BOOKMARK_FOLDER_TIMELINE_FEATURES = {
@@ -189,7 +182,7 @@ BOOKMARK_FOLDER_TIMELINE_FEATURES = {
     'rweb_video_timestamps_enabled': True,
     'longform_notetweets_rich_text_read_enabled': True,
     'longform_notetweets_inline_media_enabled': True,
-    'responsive_web_enhance_cards_enabled': False
+    'responsive_web_enhance_cards_enabled': False,
 }
 
 
@@ -197,6 +190,7 @@ class Endpoint:
     """
     A class containing Twitter API endpoints.
     """
+
     LOGIN_FLOW = 'https://api.twitter.com/1.1/onboarding/task.json'
     LOGOUT = 'https://api.twitter.com/1.1/account/logout.json'
     CREATE_TWEET = 'https://twitter.com/i/api/graphql/SiM_cAu83R0wnrpmKQQSEw/CreateTweet'
@@ -259,7 +253,9 @@ class Endpoint:
     MUTE_USER = 'https://twitter.com/i/api/1.1/mutes/users/create.json'
     UNMUTE_USER = 'https://twitter.com/i/api/1.1/mutes/users/destroy.json'
     MESSAGE_ADD_REACTION = 'https://twitter.com/i/api/graphql/VyDyV9pC2oZEj6g52hgnhA/useDMReactionMutationAddMutation'
-    MESSAGE_REMOVE_REACTION = 'https://twitter.com/i/api/graphql/bV_Nim3RYHsaJwMkTXJ6ew/useDMReactionMutationRemoveMutation'
+    MESSAGE_REMOVE_REACTION = (
+        'https://twitter.com/i/api/graphql/bV_Nim3RYHsaJwMkTXJ6ew/useDMReactionMutationRemoveMutation'
+    )
     FETCH_SCHEDULED_TWEETS = 'https://twitter.com/i/api/graphql/ITtjAzvlZni2wWXwf295Qg/FetchScheduledTweets'
     DELETE_SCHEDULED_TWEET = 'https://twitter.com/i/api/graphql/CTOVqej0JBXAZSwkp1US0g/DeleteScheduledTweet'
     SETTINGS = 'https://api.twitter.com/1.1/account/settings.json'
@@ -289,6 +285,7 @@ class Endpoint:
     BOOKMARK_FOLDER_TIMELINE = 'https://twitter.com/i/api/graphql/8HoabOvl7jl9IC1Aixj-vg/BookmarkFolderTimeline'
     BOOKMARK_TO_FOLDER = 'https://twitter.com/i/api/graphql/4KHZvvNbHNf07bsgnL9gWA/bookmarkTweetToFolder'
 
+
 T = TypeVar('T')
 
 
@@ -317,7 +314,7 @@ class Result(Generic[T]):
         fetch_next_result: Callable | None = None,
         next_cursor: str | None = None,
         fetch_previous_result: Callable | None = None,
-        previous_cursor: str | None = None
+        previous_cursor: str | None = None,
     ) -> None:
         self.__results = results
         self.next_cursor = next_cursor
@@ -342,15 +339,13 @@ class Result(Generic[T]):
         return self.__fetch_previous_result()
 
     @property
-    def cursor(self) -> str:
-        """Alias of `next_token`
-        """
+    def cursor(self) -> str | None:
+        """Alias of `next_token`"""
         return self.next_cursor
 
     @property
-    def token(self) -> str:
-        """Alias of `next_token`
-        """
+    def token(self) -> str | None:
+        """Alias of `next_token`"""
         return self.next_cursor
 
     def __iter__(self) -> Iterator[T]:
@@ -373,20 +368,15 @@ class Flow:
         self.headers = headers
         self.response = None
 
-    def execute_task(self, *subtask_inputs, **kwargs) -> None:
-        data = {}
+    def execute_task(self, *subtask_inputs: Any, **kwargs: Any) -> None:
+        data: dict[str, str | list[str]] = {}
 
         if self.token is not None:
             data['flow_token'] = self.token
         if subtask_inputs is not None:
             data['subtask_inputs'] = list(subtask_inputs)
 
-        response = self._client.http.post(
-            self.endpoint,
-            data=json.dumps(data),
-            headers=self.headers,
-            **kwargs
-        ).json()
+        response = self._client.http.post(self.endpoint, data=json.dumps(data), headers=self.headers, **kwargs).json()
         self.response = response
 
     @property
@@ -402,21 +392,18 @@ class Flow:
         return self.response['subtasks'][0]['subtask_id']
 
 
-def find_dict(
-    obj: list | dict, key: str | int, find_one: bool = False
-) -> list[Any]:
+def find_dict(obj: list | dict, key: str | int, *, find_one: bool = False) -> list[Any]:
     """
     Retrieves elements from a nested dictionary.
     """
     results = []
-    if isinstance(obj, dict):
-        if key in obj:
-            results.append(obj.get(key))
-            if find_one:
-                return results
-    if isinstance(obj, (list, dict)):
-        for elem in (obj if isinstance(obj, list) else obj.values()):
-            r = find_dict(elem, key, find_one)
+    if isinstance(obj, dict) and key in obj:
+        results.append(obj.get(key))
+        if find_one:
+            return results
+    if isinstance(obj, list | dict):
+        for elem in obj if isinstance(obj, list) else obj.values():
+            r = find_dict(elem, key, find_one=find_one)
             results += r
             if r and find_one:
                 return results
@@ -462,7 +449,6 @@ def build_tweet_data(raw_data: dict) -> dict:
             'is_quote_status': raw_data.get('is_quote_status'),
             'in_reply_to_status_id_str': raw_data.get('in_reply_to_status_id_str'),
             'retweeted_status_result': raw_data.get('retweeted_status_result'),
-            'is_quote_status': raw_data.get('is_quote_status'),
             'possibly_sensitive': raw_data.get('possibly_sensitive'),
             'possibly_sensitive_editable': raw_data.get('possibly_sensitive_editable'),
             'quote_count': raw_data.get('quote_count'),
@@ -470,8 +456,8 @@ def build_tweet_data(raw_data: dict) -> dict:
             'reply_count': raw_data.get('reply_count'),
             'favorite_count': raw_data.get('favorite_count'),
             'favorited': raw_data.get('favorited'),
-            'retweet_count': raw_data.get('retweet_count')
-        }
+            'retweet_count': raw_data.get('retweet_count'),
+        },
     }
 
 
@@ -509,34 +495,20 @@ def build_user_data(raw_data: dict) -> dict:
             'translator_type': raw_data.get('translator_type'),
             'withheld_in_countries': raw_data.get('withheld_in_countries'),
             'url': raw_data.get('url'),
-            'profile_banner_url': raw_data.get('profile_banner_url')
-        }
+            'profile_banner_url': raw_data.get('profile_banner_url'),
+        },
     }
 
 
 def flatten_params(params: dict) -> dict:
-    flattened_params = {}
-    for key, value in params.items():
-        if isinstance(value, (list, dict)):
-            value = json.dumps(value)
-        flattened_params[key] = value
-    return flattened_params
+    return {key: (json.dumps(value) if isinstance(value, (list | dict)) else value) for key, value in params.items()}
 
 
 def b64_to_str(b64: str) -> str:
     return base64.b64decode(b64).decode()
 
 
-FILTERS = Literal[
-    'media',
-    'retweets',
-    'native_video',
-    'periscope',
-    'vine',
-    'images',
-    'twimg',
-    'links'
-]
+FILTERS = Literal['media', 'retweets', 'native_video', 'periscope', 'vine', 'images', 'twimg', 'links']
 
 
 class SearchOptions(TypedDict):
@@ -613,48 +585,34 @@ def build_query(text: str, options: SearchOptions) -> str:
         The constructed Twitter search query.
     """
     if exact_phrases := options.get('exact_phrases'):
-        text += ' ' + ' '.join(
-            [f'"{i}"' for i in exact_phrases]
-        )
+        text += ' ' + ' '.join([f'"{i}"' for i in exact_phrases])
 
     if or_keywords := options.get('or_keywords'):
         text += ' ' + ' OR '.join(or_keywords)
 
     if exclude_keywords := options.get('exclude_keywords'):
-        text += ' ' + ' '.join(
-            [f'-"{i}"' for i in exclude_keywords]
-        )
+        text += ' ' + ' '.join([f'-"{i}"' for i in exclude_keywords])
 
     if hashtags := options.get('hashtags'):
-        text += ' ' + ' '.join(
-            [f'#{i}' for i in hashtags]
-        )
+        text += ' ' + ' '.join([f'#{i}' for i in hashtags])
 
     if from_user := options.get('from_user'):
-        text +=f' from:{from_user}'
+        text += f' from:{from_user}'
 
     if to_user := options.get('to_user'):
         text += f' to:{to_user}'
 
     if mentioned_users := options.get('mentioned_users'):
-        text += ' ' + ' '.join(
-            [f'@{i}' for i in mentioned_users]
-        )
+        text += ' ' + ' '.join([f'@{i}' for i in mentioned_users])
 
     if filters := options.get('filters'):
-        text += ' ' + ' '.join(
-            [f'filter:{i}' for i in filters]
-        )
+        text += ' ' + ' '.join([f'filter:{i}' for i in filters])
 
     if exclude_filters := options.get('exclude_filters'):
-        text += ' ' + ' '.join(
-            [f'-filter:{i}' for i in exclude_filters]
-        )
+        text += ' ' + ' '.join([f'-filter:{i}' for i in exclude_filters])
 
     if urls := options.get('urls'):
-        text += ' ' + ' '.join(
-            [f'url:{i}' for i in urls]
-        )
+        text += ' ' + ' '.join([f'url:{i}' for i in urls])
 
     if since := options.get('since'):
         text += f' since:{since}'
@@ -662,13 +620,13 @@ def build_query(text: str, options: SearchOptions) -> str:
     if until := options.get('until'):
         text += f' until:{until}'
 
-    if options.get('positive') == True:
-        text += f' :)'
+    if options.get('positive') is True:
+        text += ' :)'
 
-    if options.get('negative') == True:
-        text += f' :('
+    if options.get('negative') is True:
+        text += ' :('
 
-    if options.get('question') == True:
-        text += f' ?'
+    if options.get('question') is True:
+        text += ' ?'
 
     return text
