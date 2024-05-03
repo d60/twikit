@@ -1,10 +1,12 @@
 twikit package
 ==============
 
-Submodules
-----------
+.. automodule:: twikit
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-twikit.client module
+Client
 --------------------
 
 .. automodule:: twikit.client
@@ -13,16 +15,7 @@ twikit.client module
    :show-inheritance:
    :member-order: bysource
 
-.. twikit.http module
-.. ------------------
-
-.. .. automodule:: twikit.http
-..    :members:
-..    :undoc-members:
-..    :show-inheritance
-   :member-order: bysource
-
-twikit.tweet module
+Tweet
 -------------------
 
 .. automodule:: twikit.tweet
@@ -31,7 +24,7 @@ twikit.tweet module
    :show-inheritance:
    :member-order: bysource
 
-twikit.user module
+User
 ------------------
 
 .. automodule:: twikit.user
@@ -40,7 +33,7 @@ twikit.user module
    :show-inheritance:
    :member-order: bysource
 
-twikit.message module
+Message
 ---------------------
 
 .. automodule:: twikit.message
@@ -49,7 +42,51 @@ twikit.message module
    :show-inheritance:
    :member-order: bysource
 
-twikit.trend module
+Streaming
+---------------------
+
+With the streaming API, you can receive real-time events such as tweet engagements,
+DM updates, and DM typings. The basic procedure involves looping through the
+stream session obtained with :attr:`.Client.get_streaming_session` and, if necessary,
+updating the topics to be streamed using :attr:`.StreamingSession.update_subscriptions`.
+
+Example Code:
+
+.. code-block:: python
+
+   from twikit.streaming import Topic
+
+   topics = {
+       Topic.tweet_engagement('1739617652'), # Stream tweet engagement
+       Topic.dm_update('17544932482-174455537996'), # Stream DM update
+       Topic.dm_typing('17544932482-174455537996') # Stream DM typing
+   }
+   session = client.get_streaming_session(topics)
+
+   for topic, payload in session:
+       if payload.dm_update:
+           conversation_id = payload.dm_update.conversation_id
+           user_id = payload.dm_update.user_id
+           print(f'{conversation_id}: {user_id} sent a message')
+
+       if payload.dm_typing:
+           conversation_id = payload.dm_typing.conversation_id
+           user_id = payload.dm_typing.user_id
+           print(f'{conversation_id}: {user_id} is typing')
+
+       if payload.tweet_engagement:
+           like = payload.tweet_engagement.like_count
+           retweet = payload.tweet_engagement.retweet_count
+           view = payload.tweet_engagement.view_count
+           print(f'Tweet engagement updated likes: {like} retweets: {retweet} views: {view}')
+
+.. automodule:: twikit.streaming
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
+Trend
 -------------------
 
 .. automodule:: twikit.trend
@@ -58,7 +95,7 @@ twikit.trend module
    :show-inheritance:
    :member-order: bysource
 
-twikit.list module
+List
 -------------------
 
 .. automodule:: twikit.list
@@ -67,7 +104,7 @@ twikit.list module
    :show-inheritance:
    :member-order: bysource
 
-twikit.community module
+Community
 -------------------
 
 .. automodule:: twikit.community
@@ -76,7 +113,7 @@ twikit.community module
    :show-inheritance:
    :member-order: bysource
 
-twikit.notification module
+Notification
 -------------------
 
 .. automodule:: twikit.notification
@@ -86,7 +123,7 @@ twikit.notification module
    :member-order: bysource
 
 
-twikit.utils module
+Utils
 -------------------
 
 .. automodule:: twikit.utils
@@ -95,7 +132,7 @@ twikit.utils module
    :show-inheritance:
    :member-order: bysource
 
-twikit.errors module
+Errors
 --------------------
 
 .. automodule:: twikit.errors
@@ -103,11 +140,3 @@ twikit.errors module
    :undoc-members:
    :show-inheritance:
    :member-order: bysource
-
-Module contents
----------------
-
-.. automodule:: twikit
-   :members:
-   :undoc-members:
-   :show-inheritance:

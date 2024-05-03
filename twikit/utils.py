@@ -234,7 +234,7 @@ class Endpoint:
     SEND_DM = 'https://twitter.com/i/api/1.1/dm/new2.json'
     DELETE_DM = 'https://twitter.com/i/api/graphql/BJ6DtxA2llfjnRoRjaiIiw/DMMessageDeleteMutation'
     INBOX_INITIAL_STATE = 'https://twitter.com/i/api/1.1/dm/inbox_initial_state.json'
-    CONVERSASION = 'https://twitter.com/i/api/1.1/dm/conversation/{}.json'
+    CONVERSATION = 'https://twitter.com/i/api/1.1/dm/conversation/{}.json'
     CREATE_SCHEDULED_TWEET = 'https://twitter.com/i/api/graphql/LCVzRQGxOaGnOnYH01NQXg/CreateScheduledTweet'
     BOOKMARKS = 'https://twitter.com/i/api/graphql/qToeLeMs43Q8cr7tRYXmaQ/Bookmarks'
     BOOKMARKS_ALL_DELETE = 'https://twitter.com/i/api/graphql/skiACZKC1GDYli-M8RzEPQ/BookmarksAllDelete'
@@ -288,6 +288,9 @@ class Endpoint:
     CREATE_BOOKMARK_FOLDER = 'https://twitter.com/i/api/graphql/6Xxqpq8TM_CREYiuof_h5w/createBookmarkFolder'
     BOOKMARK_FOLDER_TIMELINE = 'https://twitter.com/i/api/graphql/8HoabOvl7jl9IC1Aixj-vg/BookmarkFolderTimeline'
     BOOKMARK_TO_FOLDER = 'https://twitter.com/i/api/graphql/4KHZvvNbHNf07bsgnL9gWA/bookmarkTweetToFolder'
+    PLACE_TRENDS = 'https://api.twitter.com/1.1/trends/place.json'
+    EVENTS = 'https://api.twitter.com/live_pipeline/events'
+    UPDATE_SUBSCRIPTIONS = 'https://api.twitter.com/1.1/live_pipeline/update_subscriptions'
 
 T = TypeVar('T')
 

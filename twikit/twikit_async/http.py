@@ -53,6 +53,10 @@ class HTTPClient:
     async def post(self, url, **kwargs) -> httpx.Response:
         return await self.request('POST', url, **kwargs)
 
+    def stream(self, *args, **kwargs):
+        response = self.client.stream(*args, **kwargs)
+        return response
+
     def _remove_duplicate_ct0_cookie(self) -> None:
         cookies = {}
         for cookie in self.client.cookies.jar:

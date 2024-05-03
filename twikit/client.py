@@ -5,7 +5,7 @@ import json
 import time
 import warnings
 from functools import partial
-from typing import Literal
+from typing import Generator, Literal
 
 import filetype
 from fake_useragent import UserAgent
@@ -16,7 +16,6 @@ from .community import Community, CommunityMember
 from .errors import (
     CouldNotTweet,
     InvalidMedia,
-    TweetNotAvailable,
     TwitterException,
     UserNotFound,
     UserUnavailable,
@@ -28,6 +27,7 @@ from .list import List
 from .message import Message
 from .notification import Notification
 from .trend import Trend
+from .streaming import Payload, StreamingSession, _payload_from_data
 from .tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
 from .user import User
 from .utils import (
@@ -2962,7 +2962,7 @@ class Client:
             params['max_id'] = max_id
 
         return self.http.get(
-            Endpoint.CONVERSASION.format(conversation_id),
+            Endpoint.CONVERSATION.format(conversation_id),
             params=params,
             headers=self._base_headers
         ).json()
@@ -3339,7 +3339,7 @@ class Client:
             'include_conversation_info': True,
         }
         response = self.http.get(
-            Endpoint.CONVERSASION.format(group_id),
+            Endpoint.CONVERSATION.format(group_id),
             params=params,
             headers=self._base_headers
         ).json()
@@ -4591,3 +4591,121 @@ class Client:
                     query, count, previous_cursor),
             previous_cursor,
         )
+
+    def _stream(self, topics: set[str]) -> Generator[tuple[str, Payload]]:
+        headers = self._base_headers
+        headers.pop('content-type')
+        params = {'topics': ','.join(topics)}
+
+        with self.http.stream(
+            'GET', Endpoint.EVENTS, params=params, timeout=None
+        ) as response:
+            self.http._remove_duplicate_ct0_cookie()
+            for line in response.iter_lines():
+                try:
+                    data = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                payload = _payload_from_data(data['payload'])
+                yield data.get('topic'), payload
+
+    def get_streaming_session(
+        self, topics: set[str], auto_reconnect: bool = True
+    ) -> StreamingSession:
+        """
+        Returns a session for interacting with the streaming API.
+
+        Parameters
+        ----------
+        topics : set[:class:`str`]
+            The set of topics to stream.
+            Topics can be generated using :class:`.Topic`.
+        auto_reconnect : :class:`bool`, default=True
+            Whether to automatically reconnect when disconnected.
+
+        Returns
+        -------
+        :class:`.StreamingSession`
+            A stream session instance.
+
+        Examples
+        --------
+        >>> from twikit.streaming import Topic
+        >>>
+        >>> topics = {
+        ...     Topic.tweet_engagement('1739617652'), # Stream tweet engagement
+        ...     Topic.dm_update('17544932482-174455537996'), # Stream DM update
+        ...     Topic.dm_typing('17544932482-174455537996') # Stream DM typing
+        ... }
+        >>> session = client.get_streaming_session(topics)
+        >>>
+        >>> for topic, payload in session:
+        ...     if payload.dm_update:
+        ...         conversation_id = payload.dm_update.conversation_id
+        ...         user_id = payload.dm_update.user_id
+        ...         print(f'{conversation_id}: {user_id} sent a message')
+        >>>
+        >>>     if payload.dm_typing:
+        ...         conversation_id = payload.dm_typing.conversation_id
+        ...         user_id = payload.dm_typing.user_id
+        ...         print(f'{conversation_id}: {user_id} is typing')
+        >>>
+        >>>     if payload.tweet_engagement:
+        ...         like = payload.tweet_engagement.like_count
+        ...         retweet = payload.tweet_engagement.retweet_count
+        ...         view = payload.tweet_engagement.view_count
+        ...         print('Tweet engagement updated:'
+        ...               f'likes: {like} retweets: {retweet} views: {view}')
+
+        Topics to stream can be added or deleted using
+        :attr:`.StreamingSession.update_subscriptions` method.
+
+        >>> subscribe_topics = {
+        ...     Topic.tweet_engagement('1749528513'),
+        ...     Topic.tweet_engagement('1765829534')
+        ... }
+        >>> unsubscribe_topics = {
+        ...     Topic.tweet_engagement('1739617652'),
+        ...     Topic.dm_update('17544932482-174455537996'),
+        ...     Topic.dm_update('17544932482-174455537996')
+        ... }
+        >>> session.update_subscriptions(subscribe_topics, unsubscribe_topics)
+
+        See Also
+        --------
+        .StreamingSession
+        .StreamingSession.update_subscriptions
+        .Payload
+        .Topic
+        """
+        stream = self._stream(topics)
+        session_id = next(stream)[1].config.session_id
+        return StreamingSession(
+            self, session_id, stream, topics, auto_reconnect
+        )
+
+    def _update_subscriptions(
+        self,
+        session: StreamingSession,
+        subscribe: set[str] | None = None,
+        unsubscribe: set[str] | None = None
+    ) -> Payload:
+        if subscribe is None:
+            subscribe = set()
+        if unsubscribe is None:
+            unsubscribe = set()
+
+        data = urlencode({
+            'sub_topics': ','.join(subscribe),
+            'unsub_topics': ','.join(unsubscribe)
+        })
+        headers = self._base_headers
+        headers['content-type'] = 'application/x-www-form-urlencoded'
+        headers['LivePipeline-Session'] = session.id
+        response = self.http.post(
+            Endpoint.UPDATE_SUBSCRIPTIONS, data=data, headers=headers
+        ).json()
+        session.topics |= subscribe
+        session.topics -= unsubscribe
+
+        return _payload_from_data(response)
