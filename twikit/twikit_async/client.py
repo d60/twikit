@@ -48,7 +48,7 @@ from .http import HTTPClient
 from .list import List
 from .message import Message
 from .notification import Notification
-from .trend import Trend
+from .trend import Location, PlaceTrend, PlaceTrends, Trend
 from .streaming import Payload, StreamingSession, _payload_from_data
 from .tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
 from .user import User
@@ -2758,6 +2758,36 @@ class Client:
             results.append(Trend(self, trend_info))
 
         return results
+
+    async def get_available_locations(self) -> list[Location]:
+        """
+        Retrieves locations where trends can be retrieved.
+
+        Returns
+        -------
+        list[:class:`.Location`]
+        """
+        response = (await self.http.get(
+            Endpoint.AVAILABLE_LOCATIONS,
+            headers=self._base_headers
+        )).json()
+        return [Location(self, data) for data in response]
+
+    async def get_place_trends(self, woeid: int) -> PlaceTrends:
+        """
+        Retrieves the top 50 trending topics for a specific id.
+        You can get available woeid using
+        :attr:`.Client.get_available_locations`.
+        """
+        response = (await self.http.get(
+            Endpoint.PLACE_TRENDS,
+            params={'id': woeid},
+            headers=self._base_headers
+        )).json()
+        trend_data = response[0]
+        trends = [PlaceTrend(self, data) for data in trend_data['trends']]
+        trend_data['trends'] = trends
+        return trend_data
 
     async def _get_user_friendship(
         self,

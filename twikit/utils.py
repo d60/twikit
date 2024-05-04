@@ -289,6 +289,7 @@ class Endpoint:
     BOOKMARK_FOLDER_TIMELINE = 'https://twitter.com/i/api/graphql/8HoabOvl7jl9IC1Aixj-vg/BookmarkFolderTimeline'
     BOOKMARK_TO_FOLDER = 'https://twitter.com/i/api/graphql/4KHZvvNbHNf07bsgnL9gWA/bookmarkTweetToFolder'
     PLACE_TRENDS = 'https://api.twitter.com/1.1/trends/place.json'
+    AVAILABLE_LOCATIONS = 'https://api.twitter.com/1.1/trends/available.json'
     EVENTS = 'https://api.twitter.com/live_pipeline/events'
     UPDATE_SUBSCRIPTIONS = 'https://api.twitter.com/1.1/live_pipeline/update_subscriptions'
 
