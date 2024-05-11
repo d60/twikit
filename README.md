@@ -14,7 +14,7 @@
 
 A Simple Twitter API Scraper
 
-You can log in to Twitter using your account username, email address and password and use most features on Twitter, such as posting and retrieving tweets, liking and following users.
+You can use functions such as posting or searching for tweets without using the API.
 
 - [Documentation (English)](https://twikit.readthedocs.io/en/latest/twikit.html)
 
