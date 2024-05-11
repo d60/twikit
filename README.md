@@ -14,7 +14,7 @@
 
 A Simple Twitter API Scraper
 
-You can use functions such as posting or searching for tweets without an API key.
+You can use functions such as posting or searching for tweets without an API key using this library.
 
 - [Documentation (English)](https://twikit.readthedocs.io/en/latest/twikit.html)
 
