@@ -111,7 +111,7 @@ for tweet in tweets:
     )
 ```
 
-**ユーザーのツイートを取得するs**
+**ユーザーのツイートを取得する**
 ```python
 tweets = client.get_user_tweets('123456', 'Tweet')
 
