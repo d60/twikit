@@ -18,7 +18,7 @@
 
 - [非同期ドキュメント](https://twikit.readthedocs.io/en/latest/twikit.twikit_async.html)
 
-[Discord](https://discord.gg/nCrByrr8cX).
+[Discord](https://discord.gg/nCrByrr8cX)
 
 
 
