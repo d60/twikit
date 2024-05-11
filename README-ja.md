@@ -12,52 +12,46 @@
 
 # Twikit <img height="35"  src="https://i.imgur.com/9HSdIl4.png"  valign="bottom">
 
-シンプルなTwitter APIスクレーパー
-
 このライブラリを使用することで、ユーザー名、メールアドレス、パスワードを使用してアカウントにログインし、ツイートの投稿やいいね、ユーザーのフォローなどの機能を使用することができます。
 
 - [ドキュメント](https://twikit.readthedocs.io/en/latest/twikit.html)
 
 - [非同期ドキュメント](https://twikit.readthedocs.io/en/latest/twikit.twikit_async.html)
 
-
-
 [Discord](https://discord.gg/nCrByrr8cX).
 
 
 
-## Features
+## 特徴
 
-### No API Key Required
+### APIキー不要
 
-This library uses the unofficial API, therefore does **not require an API key**.
+このライブラリは、ツイッターの非公式APIを使用しているため、APIキーは必要ありません。
 
-### Completely Free
+### 無料
 
-This library is completely free to use.
+このライブラリは、無料で使用することができます。
 
-### Both Synchronous and Asynchronous Support
+### 同期と非同期の両方に対応
 
-Whether you prefer **synchronous** or **asynchronous** programming,
-
-Twikit supports both, providing flexibility for different use cases.
+同期と非同期の両方に対応しています。
 
 
-## Functionality
+## 機能
 
-This library allows you to perform various Twitter-related actions, including:
+このライブラリを使用することで、
 
--  **Create tweets**
+-  ツイートの投稿
 
--  **Search tweets**
+-  ツイートの検索
 
--  **Retrieve trending topics**
+-  トレンドの取得
 
-- etc...
+などのさまざまな機能を使用することができます。
 
 
 
-## Installing
+## インストール
 
 ```bash
 
@@ -66,10 +60,9 @@ pip install twikit
 ```
 
 
+## 使用例
 
-## Quick Example
-
-**Define a client and log in to the account.**
+**クライアントを定義し、アカウントにログインする。**
 
 ```python
 from twikit import Client
@@ -81,7 +74,7 @@ PASSWORD = 'password0000'
 # Initialize client
 client = Client('en-US')
 
-# Login to the service with provided user credentials
+# アカウントにログイン
 client.login(
     auth_info_1=USERNAME ,
     auth_info_2=EMAIL,
@@ -89,16 +82,16 @@ client.login(
 )
 ```
 
-**Create a tweet with media attached.**
+**メディア付きツイートを作成する。**
 
 ```python
-# Upload media files and obtain media_ids
+# メディアをアップロードし、メディアIDを取得する。
 media_ids = [
     client.upload_media('media1.jpg'),
     client.upload_media('media2.jpg')
 ]
 
-# Create a tweet with the provided text and attached media
+# ツイートを投稿する
 client.create_tweet(
     text='Example Tweet',
     media_ids=media_ids
@@ -106,7 +99,7 @@ client.create_tweet(
 
 ```
 
-**Search the latest tweets based on a keywords**
+**ツイートを検索する**
 ```python
 tweets = client.search_tweet('python', 'Latest')
 
@@ -118,7 +111,7 @@ for tweet in tweets:
     )
 ```
 
-**Retrieve user tweets**
+**ユーザーのツイートを取得するs**
 ```python
 tweets = client.get_user_tweets('123456', 'Tweet')
 
@@ -126,14 +119,4 @@ for tweet in tweets:
     print(tweet.text)
 ```
 
-More Examples: [examples](https://github.com/d60/twikit/tree/main/examples) <br>
-
-## Contributing
-
-I would like to hear your thoughts and suggestions.
-
-If you have any features you'd like to see added or encounter any issues,
-
-please let me know in the [issues](https://github.com/d60/twikit/issues) section.
-
-Additionally, if you find this library useful, I would appreciate it if you would star this repository or share this library⭐! Thank you very much!
+[examples](https://github.com/d60/twikit/tree/main/examples)<br>
