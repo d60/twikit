@@ -12,7 +12,7 @@
 
 # Twikit <img height="35"  src="https://i.imgur.com/9HSdIl4.png"  valign="bottom">
 
-このライブラリを使用することで、ユーザー名、メールアドレス、パスワードを使用してアカウントにログインし、ツイートの投稿やいいね、ユーザーのフォローなどの機能を使用することができます。
+このライブラリを使用することで、APIキーなしで、ツイートの投稿や検索などの機能を使用することができます。
 
 - [ドキュメント](https://twikit.readthedocs.io/en/latest/twikit.html)
 
