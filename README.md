@@ -12,7 +12,7 @@
 
 # Twikit <img height="35"  src="https://i.imgur.com/9HSdIl4.png"  valign="bottom">
 
-Simple Twitter API Scraper
+A Simple Twitter API Scraper
 
 You can log in to Twitter using your account username, email address and password and use most features on Twitter, such as posting and retrieving tweets, liking and following users.
 
