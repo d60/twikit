@@ -21,8 +21,7 @@ You can log in to Twitter using your account username, email address and passwor
 - [Async Documentation](https://twikit.readthedocs.io/en/latest/twikit.twikit_async.html)
 
 
-
-If you have any questions, you can ask on [Discord](https://discord.gg/nCrByrr8cX).
+[Discord](https://discord.gg/nCrByrr8cX)
 
 
 
@@ -30,28 +29,26 @@ If you have any questions, you can ask on [Discord](https://discord.gg/nCrByrr8c
 
 ### No API Key Required
 
-This library uses the unofficial API, therefore does **not require an API key**.
+This library uses scraping and does not require an API key.
 
-### Completely Free
+### Free
 
-This library is completely free to use.
+This library is free to use.
 
 ### Both Synchronous and Asynchronous Support
 
-Whether you prefer **synchronous** or **asynchronous** programming,
-
-Twikit supports both, providing flexibility for different use cases.
+Twikit supports both synchronous and asynchronous use.
 
 
 ## Functionality
 
-This library allows you to perform various Twitter-related actions, including:
+By using Twikit, you can access functionalities such as the following:
 
--  **Create tweets**
+-  Create tweets
 
--  **Search tweets**
+-  Search tweets
 
--  **Retrieve trending topics**
+-  Retrieve trending topics
 
 - etc...
 
@@ -81,7 +78,6 @@ PASSWORD = 'password0000'
 # Initialize client
 client = Client('en-US')
 
-# Login to the service with provided user credentials
 client.login(
     auth_info_1=USERNAME ,
     auth_info_2=EMAIL,
@@ -130,10 +126,6 @@ More Examples: [examples](https://github.com/d60/twikit/tree/main/examples) <br>
 
 ## Contributing
 
-I would like to hear your thoughts and suggestions.
+If you encounter any bugs or issues, please report them on [issues](https://github.com/d60/twikit/issues).
 
-If you have any features you'd like to see added or encounter any issues,
-
-please let me know in the [issues](https://github.com/d60/twikit/issues) section.
-
-Additionally, if you find this library useful, I would appreciate it if you would star this repository or share this library⭐! Thank you very much!
+Additionally, if you find this library useful, I would appreciate it if you would star this repository or share this library.
