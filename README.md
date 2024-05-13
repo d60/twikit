@@ -39,7 +39,7 @@ This library is free to use.
 
 ### Both Synchronous and Asynchronous Support
 
-Twikit supports both synchronous and asynchronous use.
+Twikit supports both synchronous and asynchronous.
 
 
 ## Functionality
