@@ -2843,10 +2843,15 @@ class Client:
         )
 
     async def _get_user_friendship_2(
-        self, user_id: str, count: int, endpoint: str, cursor: str
+        self, user_id: str, screen_name: str,
+        count: int, endpoint: str, cursor: str
     ) -> Result[User]:
         params = {'count': count}
-        params['user_id'] = user_id
+        if user_id is not None:
+            params['user_id'] = user_id
+        elif user_id is not None:
+            params['screen_name'] = screen_name
+
         if cursor is not None:
             params['cursor'] = cursor
 
@@ -2900,7 +2905,8 @@ class Client:
         )
 
     async def get_latest_followers(
-        self, user_id: str, count: int = 200, cursor: str | None = None
+        self, user_id: str | None = None, screen_name: str | None = None,
+        count: int = 200, cursor: str | None = None
     ) -> Result[User]:
         """
         Retrieves the latest followers.
@@ -2908,13 +2914,15 @@ class Client:
         """
         return await self._get_user_friendship_2(
             user_id,
+            screen_name,
             count,
             Endpoint.FOLLOWERS2,
             cursor
         )
 
     async def get_latest_friends(
-        self, user_id: str, count: int = 200, cursor: str | None = None
+        self, user_id: str | None = None, screen_name: str | None = None,
+        count: int = 200, cursor: str | None = None
     ) -> Result[User]:
         """
         Retrieves the latest friends (following users).
@@ -2922,6 +2930,7 @@ class Client:
         """
         return await self._get_user_friendship_2(
             user_id,
+            screen_name,
             count,
             Endpoint.FOLLOWING2,
             cursor
