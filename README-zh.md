@@ -14,36 +14,36 @@
 
 # Twikit <img height="35"  src="https://i.imgur.com/9HSdIl4.png"  valign="bottom">
 
-简单的 Twitter API 抓取器
+一个简单的爬取 Twitter API 的客户端。
 
-你可以使用这个库进行发布或搜索推文等功能，而无需 API 密钥。
+本库提供的函数允许你进行对推特的操作，如发布或搜索推文，并且无需开发者 API 密钥。
 
-- [document](https://twikit.readthedocs.io/en/latest/twikit.html)
+- [文档（英文）](https://twikit.readthedocs.io/en/latest/twikit.html)
 
-- [async document](https://twikit.readthedocs.io/en/latest/twikit.twikit_async.html)
+- [异步文档（英文）](https://twikit.readthedocs.io/en/latest/twikit.twikit_async.html)
 
-[Discord](https://discord.gg/nCrByrr8cX).
+[Discord 服务器](https://discord.gg/nCrByrr8cX)
 
 
 
-## 特征
+## 特性
 
-### 不需要 API 密钥
+### 无需开发者 API 密钥
 
-该库使用刮擦技术，不需要 API 密钥。
+本库直接爬取推特的公共 API 进行请求，无需申请官方开发者密钥。
 
-### 免费的
+### 免费
 
-您可以免费使用
+本库无需付费。
 
-### 同时支持同步和异步 
+### 同步/异步支持
 
-Twikit 支持同步和异步使用。
+Twikit 同时提供同步和异步的实现。
 
 
 ## 功能
 
-使用 Twikit，您可以获得以下功能：
+使用 Twikit，你可以：
 
 -  创建推文
 
@@ -51,7 +51,7 @@ Twikit 支持同步和异步使用。
 
 -  检索热门话题
 
-等等...
+- 等等...
 
 
 
@@ -64,9 +64,9 @@ pip install twikit
 ```
 
 
-## 使用例
+## 使用样例
 
-**Define a client and log in to the account.**
+**定义一个客户端并登录**
 
 ```python
 from twikit import Client
@@ -85,7 +85,7 @@ client.login(
 )
 ```
 
-**创建一条附带媒体的推文。**
+**创建一条附带媒体的推文**
 
 ```python
 # Upload media files and obtain media_ids
@@ -122,4 +122,4 @@ for tweet in tweets:
     print(tweet.text)
 ```
 
-[examples](https://github.com/d60/twikit/tree/main/examples)<br>
+[更多样例...](https://github.com/d60/twikit/tree/main/examples)<br>
