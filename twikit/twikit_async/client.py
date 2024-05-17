@@ -2842,6 +2842,38 @@ class Client:
             next_cursor
         )
 
+    async def _get_user_friendship_2(
+        self, user_id: str, count: int, endpoint: str, cursor: str
+    ) -> Result[User]:
+        params = {'count': count}
+        params['user_id'] = user_id
+        if cursor is not None:
+            params['cursor'] = cursor
+
+        response = (await self.http.get(
+            endpoint,
+            params=params,
+            headers=self._base_headers
+        )).json()
+
+        users = response['users']
+        results = []
+        for user in users:
+            results.append(User(self, build_user_data(user)))
+
+        previous_cursor = response['previous_cursor']
+        next_cursor = response['next_cursor']
+
+        return Result(
+            results,
+            partial(self._get_user_friendship_2, user_id,
+                    count, endpoint, next_cursor),
+            next_cursor,
+            partial(self._get_user_friendship_2, user_id,
+                    count, endpoint, previous_cursor),
+            previous_cursor
+        )
+
     async def get_user_followers(
         self, user_id: str, count: int = 20, cursor: str | None = None
     ) -> Result[User]:
@@ -2864,6 +2896,34 @@ class Client:
             user_id,
             count,
             Endpoint.FOLLOWERS,
+            cursor
+        )
+
+    async def get_latest_followers(
+        self, user_id: str, count: int = 200, cursor: str | None = None
+    ) -> Result[User]:
+        """
+        Retrieves the latest followers.
+        Max count : 200
+        """
+        return await self._get_user_friendship_2(
+            user_id,
+            count,
+            Endpoint.FOLLOWERS2,
+            cursor
+        )
+
+    async def get_latest_friends(
+        self, user_id: str, count: int = 200, cursor: str | None = None
+    ) -> Result[User]:
+        """
+        Retrieves the latest friends (following users).
+        Max count : 200
+        """
+        return await self._get_user_friendship_2(
+            user_id,
+            count,
+            Endpoint.FOLLOWING2,
             cursor
         )
 
@@ -2964,6 +3024,105 @@ class Client:
             user_id,
             count,
             Endpoint.SUBSCRIPTIONS,
+            cursor
+        )
+
+    async def _get_friendship_ids(
+        self,
+        user_id: str | None,
+        screen_name: str | None,
+        count: int,
+        endpoint: str,
+        cursor: str | None
+    ) -> Result[int]:
+        params = {'count': count}
+        if user_id is not None:
+            params['user_id'] = user_id
+        elif user_id is not None:
+            params['screen_name'] = screen_name
+
+        if cursor is not None:
+            params['cursor'] = cursor
+
+        response = (await self.http.get(
+            endpoint,
+            params=params,
+            headers=self._base_headers
+        )).json()
+        previous_cursor = response['previous_cursor']
+        next_cursor = response['next_cursor']
+
+        return Result(
+            response['ids'],
+            partial(self._get_friendship_ids, user_id,
+                     screen_name, count, endpoint, next_cursor),
+            next_cursor,
+            partial(self._get_friendship_ids, user_id,
+                     screen_name, count, endpoint, previous_cursor),
+            previous_cursor
+        )
+
+    async def get_followers_ids(
+        self,
+        user_id: str | None = None,
+        screen_name: str | None = None,
+        count: int = 5000,
+        cursor: str | None = None
+    ) -> Result[int]:
+        """
+        Fetches the IDs of the followers of a specified user.
+
+        Parameters
+        ----------
+        user_id : :class:`str` | None, default=None
+            The ID of the user for whom to return results.
+        screen_name : :class:`str` | None, default=None
+            The screen name of the user for whom to return results.
+        count : :class:`int`, default=5000
+            The maximum number of IDs to retrieve.
+
+        Returns
+        -------
+        :class:`Result`[:class:`int`]
+            A Result object containing the IDs of the followers.
+        """
+        return await self._get_friendship_ids(
+            user_id,
+            screen_name,
+            count,
+            Endpoint.FOLLOWERS_IDS,
+            cursor
+        )
+
+    async def get_friends_ids(
+        self,
+        user_id: str | None = None,
+        screen_name: str | None = None,
+        count: int = 5000,
+        cursor: str | None = None
+    ) -> Result[int]:
+        """
+        Fetches the IDs of the friends (following users) of a specified user.
+
+        Parameters
+        ----------
+        user_id : :class:`str` | None, default=None
+            The ID of the user for whom to return results.
+        screen_name : :class:`str` | None, default=None
+            The screen name of the user for whom to return results.
+        count : :class:`int`, default=5000
+            The maximum number of IDs to retrieve.
+
+        Returns
+        -------
+        :class:`Result`[:class:`int`]
+            A Result object containing the IDs of the friends.
+        """
+        return await self._get_friendship_ids(
+            user_id,
+            screen_name,
+            count,
+            Endpoint.FRIENDS_IDS,
             cursor
         )
 
