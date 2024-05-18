@@ -297,6 +297,9 @@ class Endpoint:
     AVAILABLE_LOCATIONS = 'https://api.twitter.com/1.1/trends/available.json'
     EVENTS = 'https://api.twitter.com/live_pipeline/events'
     UPDATE_SUBSCRIPTIONS = 'https://api.twitter.com/1.1/live_pipeline/update_subscriptions'
+    REVERSE_GEOCODE = 'https://api.twitter.com/1.1/geo/reverse_geocode.json'
+    SEARCH_GEO = 'https://api.twitter.com/1.1/geo/search.json'
+    PLACE_BY_ID = 'https://api.twitter.com/1.1/geo/id/{}.json'
 
 T = TypeVar('T')
 

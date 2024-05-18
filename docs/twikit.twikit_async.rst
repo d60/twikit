@@ -122,6 +122,15 @@ Notification
    :show-inheritance:
    :member-order: bysource
 
+Geo
+-------------------
+
+.. automodule:: twikit.geo
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
 Utils
 ---------------------------------
 

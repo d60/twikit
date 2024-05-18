@@ -16,11 +16,13 @@ from .community import Community, CommunityMember
 from .errors import (
     CouldNotTweet,
     InvalidMedia,
+    TweetNotAvailable,
     TwitterException,
     UserNotFound,
     UserUnavailable,
     raise_exceptions_from_response
 )
+from .geo import Place, _places_from_response
 from .group import Group, GroupMessage
 from .http import HTTPClient
 from .list import List
@@ -1307,6 +1309,117 @@ class Client:
             raise UserUnavailable(user_data.get('message'))
         return User(self, user_data)
 
+    def reverse_geocode(
+        self, lat: float, long: float, accuracy: str | float | None = None,
+        granularity: str | None = None, max_results: int | None = None
+    ) -> list[Place]:
+        """
+        Given a latitude and a longitude, searches for up to 20 places that
+
+        Parameters
+        ----------
+        lat : :class:`float`
+            The latitude to search around.
+        long : :class:`float`
+            The longitude to search around.
+        accuracy : :class:`str` | :class:`float` None, default=None
+            A hint on the "region" in which to search.
+        granularity : :class:`str` | None, default=None
+            This is the minimal granularity of place types to return and must
+            be one of: `neighborhood`, `city`, `admin` or `country`.
+        max_results : :class:`int` | None, default=None
+            A hint as to the number of results to return.
+
+        Returns
+        -------
+        list[:class:`.Place`]
+        """
+        params = {
+            'lat': lat,
+            'long': long,
+            'accuracy': accuracy,
+            'granularity': granularity,
+            'max_results': max_results
+        }
+        for k, v in tuple(params.items()):
+            if v is None:
+                params.pop(k)
+
+        response = self.http.get(
+            Endpoint.REVERSE_GEOCODE,
+            params=params,
+            headers=self._base_headers
+        ).json()
+        return _places_from_response(self, response)
+
+    def search_geo(
+        self, lat: float | None = None, long: float | None = None,
+        query: str | None = None, ip: str | None = None,
+        granularity: str | None = None, max_results: int | None = None
+    ) -> list[Place]:
+        """
+        Search for places that can be attached to a Tweet via POST
+        statuses/update.
+
+        Parameters
+        ----------
+        lat : :class:`float` | None
+            The latitude to search around.
+        long : :class:`float` | None
+            	The longitude to search around.
+        query : :class:`str` | None
+            Free-form text to match against while executing a geo-based query,
+            best suited for finding nearby locations by name.
+            Remember to URL encode the query.
+        ip : :class:`str` | None
+            An IP address. Used when attempting to
+            fix geolocation based off of the user's IP address.
+        granularity : :class:`str` | None
+            This is the minimal granularity of place types to return and must
+            be one of: `neighborhood`, `city`, `admin` or `country`.
+        max_results : :class:`int` | None
+            A hint as to the number of results to return.
+
+        Returns
+        -------
+        list[:class:`.Place`]
+        """
+        params = {
+            'lat': lat,
+            'long': long,
+            'query': query,
+            'ip': ip,
+            'granularity': granularity,
+            'max_results': max_results
+        }
+        for k, v in tuple(params.items()):
+            if v is None:
+                params.pop(k)
+
+        response = self.http.get(
+            Endpoint.SEARCH_GEO,
+            params=params,
+            headers=self._base_headers
+        ).json()
+        return _places_from_response(self, response)
+
+    def get_place(self, id: str) -> Place:
+        """
+        Parameters
+        ----------
+        id : :class:`str`
+            The ID of the place.
+
+        Returns
+        -------
+        :class:`.Place`
+        """
+        response = self.http.get(
+            Endpoint.PLACE_BY_ID.format(id),
+            headers=self._base_headers
+        ).json()
+        return Place(self, response)
+
     def _get_tweet_detail(self, tweet_id: str, cursor: str | None):
         variables = {
             'focalTweetId': tweet_id,
@@ -1394,6 +1507,9 @@ class Client:
         <Tweet id="...">
         """
         response = self._get_tweet_detail(tweet_id, cursor)
+
+        if 'errors' in response:
+            raise TweetNotAvailable(response['errors'][0]['message'])
 
         entries = find_dict(response, 'entries')[0]
         reply_to = []

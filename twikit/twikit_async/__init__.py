@@ -10,6 +10,7 @@ from ..utils import build_query
 from .client import Client
 from .community import (Community, CommunityCreator, CommunityMember,
                         CommunityRule)
+from .geo import Place
 from .group import Group, GroupMessage
 from .list import List
 from .message import Message

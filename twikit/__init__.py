@@ -7,13 +7,14 @@ https://github.com/d60/twikit
 A Python library for interacting with the Twitter API.
 """
 
-__version__ = '1.6.3'
+__version__ = '1.6.4'
 
 from .bookmark import BookmarkFolder
 from .client import Client
 from .community import (Community, CommunityCreator, CommunityMember,
                         CommunityRule)
 from .errors import *
+from .geo import Place
 from .group import Group, GroupMessage
 from .list import List
 from .message import Message
