@@ -1,359 +1,74 @@
-Rate Limits
--
+# Rate Limits
 
 **The rate limits reset every 15 minutes.**
 
-
-<table>
-    <thead>
-        <tr>
-            <th>Functions</th>
-            <th>Limit</th>
-            <th>Endpoint</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>add_members_to_group</td>
-            <td>-</td>
-            <td>AddParticipantsMutation</td>
-        </tr>
-        <tr>
-            <td>block_user</td>
-            <td>187</td>
-            <td>blocks/create.json</td>
-        </tr>
-        <tr>
-            <td>get_user_verified_followers</td>
-            <td>500</td>
-            <td>BlueVerifiedFollowers</td>
-        </tr>
-        <tr>
-            <td>get_bookmarks</td>
-            <td>500</td>
-            <td>Bookmarks</td>
-        </tr>
-        <tr>
-            <td>delete_all_bookmarks</td>
-            <td>-</td>
-            <td>BookmarksAllDelete</td>
-        </tr>
-        <tr>
-            <td>change_group_name</td>
-            <td>900</td>
-            <td>{GroupID}/update_name.json</td>
-        </tr>
-        <tr>
-            <td>get_group_dm_history, get_dm_history</td>
-            <td>900</td>
-            <td>conversation/{ConversationID}.json</td>
-        </tr>
-        <tr>
-            <td>bookmark_tweet</td>
-            <td>-</td>
-            <td>CreateBookmark</td>
-        </tr>
-        <tr>
-            <td>create_poll</td>
-            <td>-</td>
-            <td>cards/create.json</td>
-        </tr>
-        <tr>
-            <td>follow_user</td>
-            <td>15</td>
-            <td>friendships/create.json</td>
-        </tr>
-        <tr>
-            <td>create_list</td>
-            <td>-</td>
-            <td>CreateList</td>
-        </tr>
-        <tr>
-            <td>retweet</td>
-            <td>-</td>
-            <td>CreateRetweet</td>
-        </tr>
-        <tr>
-            <td>create_scheduled_tweet</td>
-            <td>-</td>
-            <td>CreateScheduledTweet</td>
-        </tr>
-        <tr>
-            <td>create_tweet</td>
-            <td>-</td>
-            <td>CreateTweet</td>
-        </tr>
-        <tr>
-            <td>delete_bookmark</td>
-            <td>-</td>
-            <td>DeleteBookmark</td>
-        </tr>
-        <tr>
-            <td>delete_dm</td>
-            <td>-</td>
-            <td>DMMessageDeleteMutation</td>
-        </tr>
-        <tr>
-            <td>delete_list_banner</td>
-            <td>-</td>
-            <td>DeleteListBanner</td>
-        </tr>
-        <tr>
-            <td>delete_retweet</td>
-            <td>-</td>
-            <td>DeleteRetweet</td>
-        </tr>
-        <tr>
-            <td>delete_scheduled_tweet</td>
-            <td>-</td>
-            <td>DeleteScheduledTweet</td>
-        </tr>
-        <tr>
-            <td>delete_tweet</td>
-            <td>-</td>
-            <td>DeleteTweet</td>
-        </tr>
-        <tr>
-            <td>unfollow_user</td>
-            <td>187</td>
-            <td>friendships/destroy.json</td>
-        </tr>
-        <tr>
-            <td>edit_list_banner</td>
-            <td>-</td>
-            <td>EditListBanner</td>
-        </tr>
-        <tr>
-            <td>get_favoriters</td>
-            <td>500</td>
-            <td>Favoriters</td>
-        </tr>
-        <tr>
-            <td>favorite_tweet</td>
-            <td>-</td>
-            <td>FavoriteTweet</td>
-        </tr>
-        <tr>
-            <td>get_scheduled_tweets</td>
-            <td>500</td>
-            <td>FetchScheduledTweets</td>
-        </tr>
-        <tr>
-            <td>get_user_followers</td>
-            <td>50</td>
-            <td>Followers</td>
-        </tr>
-        <tr>
-            <td>get_user_followers_you_know</td>
-            <td>500</td>
-            <td>FollowersYouKnow</td>
-        </tr>
-        <tr>
-            <td>get_user_following</td>
-            <td>500</td>
-            <td>Following</td>
-        </tr>
-        <tr>
-            <td>get_guest_token</td>
-            <td>-</td>
-            <td>guest/activate.json</td>
-        </tr>
-        <tr>
-            <td>get_latest_timeline</td>
-            <td>500</td>
-            <td>HomeLatestTimeline</td>
-        </tr>
-        <tr>
-            <td>get_timeline</td>
-            <td>500</td>
-            <td>HomeTimeline</td>
-        </tr>
-        <tr>
-            <td>-</td>
-            <td>450</td>
-            <td>dm/inbox_initial_state.json</td>
-        </tr>
-        <tr>
-            <td>add_list_member</td>
-            <td>-</td>
-            <td>ListAddMember</td>
-        </tr>
-        <tr>
-            <td>get_list</td>
-            <td>500</td>
-            <td>ListByRestId</td>
-        </tr>
-        <tr>
-            <td>get_list_tweets</td>
-            <td>500</td>
-            <td>ListLatestTweetsTimeline</td>
-        </tr>
-        <tr>
-            <td>get_lists</td>
-            <td>500</td>
-            <td>ListsManagementPageTimeline</td>
-        </tr>
-        <tr>
-            <td>get_list_members</td>
-            <td>500</td>
-            <td>ListMembers</td>
-        </tr>
-        <tr>
-            <td>remove_list_member</td>
-            <td>-</td>
-            <td>ListRemoveMember</td>
-        </tr>
-        <tr>
-            <td>get_list_subscribers</td>
-            <td>500</td>
-            <td>ListSubscribers</td>
-        </tr>
-        <tr>
-            <td>logout</td>
-            <td>187</td>
-            <td>account/logout.json</td>
-        </tr>
-        <tr>
-            <td>add_reaction_to_message</td>
-            <td>-</td>
-            <td>/useDMReactionMutationAddMutation</td>
-        </tr>
-        <tr>
-            <td>remove_reaction_from_message</td>
-            <td>-</td>
-            <td>useDMReactionMutationRemoveMutation</td>
-        </tr>
-        <tr>
-            <td>-</td>
-            <td>-</td>
-            <td>MuteList</td>
-        </tr>
-        <tr>
-            <td>mute_user</td>
-            <td>187</td>
-            <td>mutes/users/create.json</td>
-        </tr>
-        <tr>
-            <td>get_notifications[type="All"]</td>
-            <td>180</td>
-            <td>notifications/all.json</td>
-        </tr>
-        <tr>
-            <td>get_notifications[type="Mentions"]</td>
-            <td>180</td>
-            <td>notifications/mentions.json</td>
-        </tr>
-        <tr>
-            <td>get_notifications[type="Verified"]</td>
-            <td>180</td>
-            <td>notifications/verified.json</td>
-        </tr>
-        <tr>
-            <td>get_retweeters</td>
-            <td>500</td>
-            <td>Retweeters</td>
-        </tr>
-        <tr>
-            <td>search_tweet, search_user</td>
-            <td>50</td>
-            <td>SearchTimeline</td>
-        </tr>
-        <tr>
-            <td>send_dm</td>
-            <td>187</td>
-            <td>dm/new2.json</td>
-        </tr>
-        <tr>
-            <td>user_id</td>
-            <td>-</td>
-            <td>account/settings.json</td>
-        </tr>
-        <tr>
-            <td>get_user_subscriptions</td>
-            <td>500</td>
-            <td>UserCreatorSubscriptions</td>
-        </tr>
-        <tr>
-            <td>login</td>
-            <td>187</td>
-            <td>onboarding/task.json</td>
-        </tr>
-        <tr>
-            <td>get_trends</td>
-            <td>20000</td>
-            <td>guide.json</td>
-        </tr>
-        <tr>
-            <td>get_tweet_by_id</td>
-            <td>150</td>
-            <td>TweetDetail</td>
-        </tr>
-        <tr>
-            <td>unblock_user</td>
-            <td>187</td>
-            <td>blocks/destroy.json</td>
-        </tr>
-        <tr>
-            <td>unfavorite_tweet</td>
-            <td>-</td>
-            <td>UnfavoriteTweet</td>
-        </tr>
-        <tr>
-            <td>-</td>
-            <td>-</td>
-            <td>UnmuteList</td>
-        </tr>
-        <tr>
-            <td>unmute_user</td>
-            <td>187</td>
-            <td>mutes/users/destroy.json</td>
-        </tr>
-        <tr>
-            <td>edit_list</td>
-            <td>-</td>
-            <td>UpdateList</td>
-        </tr>
-        <tr>
-            <td>upload_media</td>
-            <td>-</td>
-            <td>media/upload.json</td>
-        </tr>
-        <tr>
-            <td>get_user_by_id</td>
-            <td>500</td>
-            <td>UserByRestId</td>
-        </tr>
-        <tr>
-            <td>get_user_by_screen_name</td>
-            <td>95</td>
-            <td>UserByScreenName</td>
-        </tr>
-        <tr>
-            <td>get_user_tweets[tweet_type="Likes"]</td>
-            <td>500</td>
-            <td>Likes</td>
-        </tr>
-        <tr>
-            <td>get_user_tweets[tweet_type="Media"]</td>
-            <td>500</td>
-            <td>UserMedia</td>
-        </tr>
-        <tr>
-            <td>get_user_tweets[tweet_type="Tweets"]</td>
-            <td>50</td>
-            <td>UserTweets</td>
-        </tr>
-        <tr>
-            <td>get_user_tweets[tweet_type="Replies"]</td>
-            <td>50</td>
-            <td>UserTweetsAndReplies</td>
-        </tr>
-        <tr>
-            <td>vote</td>
-            <td>-</td>
-            <td>capi/passthrough/1</td>
-        </tr>
-    </tbody>
-</table>
-
-**\-** : Unknown
+| Functions                             | Limit | Endpoint                            |
+|---------------------------------------|-------|-------------------------------------|
+| add_members_to_group                  | -     | AddParticipantsMutation             |
+| block_user                            | 187   | blocks/create.json                  |
+| get_user_verified_followers           | 500   | BlueVerifiedFollowers               |
+| get_bookmarks                         | 500   | Bookmarks                           |
+| delete_all_bookmarks                  | -     | BookmarksAllDelete                  |
+| change_group_name                     | 900   | {GroupID}/update_name.json          |
+| get_group_dm_history, get_dm_history  | 900   | conversation/{ConversationID}.json  |
+| bookmark_tweet                        | -     | CreateBookmark                      |
+| create_poll                           | -     | cards/create.json                   |
+| follow_user                           | 15    | friendships/create.json             |
+| create_list                           | -     | CreateList                          |
+| retweet                               | -     | CreateRetweet                       |
+| create_scheduled_tweet                | -     | CreateScheduledTweet                |
+| create_tweet                          | -     | CreateTweet                         |
+| delete_bookmark                       | -     | DeleteBookmark                      |
+| delete_dm                             | -     | DMMessageDeleteMutation             |
+| delete_list_banner                    | -     | DeleteListBanner                    |
+| delete_retweet                        | -     | DeleteRetweet                       |
+| delete_scheduled_tweet                | -     | DeleteScheduledTweet                |
+| delete_tweet                          | -     | DeleteTweet                         |
+| unfollow_user                         | 187   | friendships/destroy.json            |
+| edit_list_banner                      | -     | EditListBanner                      |
+| get_favoriters                        | 500   | Favoriters                          |
+| favorite_tweet                        | -     | FavoriteTweet                       |
+| get_scheduled_tweets                  | 500   | FetchScheduledTweets                |
+| get_user_followers                    | 50    | Followers                           |
+| get_user_followers_you_know           | 500   | FollowersYouKnow                    |
+| get_user_following                    | 500   | Following                           |
+| get_guest_token                       | -     | guest/activate.json                 |
+| get_latest_timeline                   | 500   | HomeLatestTimeline                  |
+| get_timeline                          | 500   | HomeTimeline                        |
+| -                                     | 450   | dm/inbox_initial_state.json         |
+| add_list_member                       | -     | ListAddMember                       |
+| get_list                              | 500   | ListByRestId                        |
+| get_list_tweets                       | 500   | ListLatestTweetsTimeline            |
+| get_lists                             | 500   | ListsManagementPageTimeline         |
+| get_list_members                      | 500   | ListMembers                         |
+| remove_list_member                    | -     | ListRemoveMember                    |
+| get_list_subscribers                  | 500   | ListSubscribers                     |
+| logout                                | 187   | account/logout.json                 |
+| add_reaction_to_message               | -     | /useDMReactionMutationAddMutation   |
+| remove_reaction_from_message          | -     | useDMReactionMutationRemoveMutation |
+| -                                     | -     | MuteList                            |
+| mute_user                             | 187   | mutes/users/create.json             |
+| get_notifications[type="All"]         | 180   | notifications/all.json              |
+| get_notifications[type="Mentions"]    | 180   | notifications/mentions.json         |
+| get_notifications[type="Verified"]    | 180   | notifications/verified.json         |
+| get_retweeters                        | 500   | Retweeters                          |
+| search_tweet, search_user             | 50    | SearchTimeline                      |
+| send_dm                               | 187   | dm/new2.json                        |
+| user_id                               | -     | account/settings.json               |
+| get_user_subscriptions                | 500   | UserCreatorSubscriptions            |
+| login                                 | 187   | onboarding/task.json                |
+| get_trends                            | 20000 | guide.json                          |
+| get_tweet_by_id                       | 150   | TweetDetail                         |
+| unblock_user                          | 187   | blocks/destroy.json                 |
+| unfavorite_tweet                      | -     | UnfavoriteTweet                     |
+| -                                     | -     | UnmuteList                          |
+| unmute_user                           | 187   | mutes/users/destroy.json            |
+| edit_list                             | -     | UpdateList                          |
+| upload_media                          | -     | media/upload.json                   |
+| get_user_by_id                        | 500   | UserByRestId                        |
+| get_user_by_screen_name               | 95    | UserByScreenName                    |
+| get_user_tweets[tweet_type="Likes"]   | 500   | Likes                               |
+| get_user_tweets[tweet_type="Media"]   | 500   | UserMedia                           |
+| get_user_tweets[tweet_type="Tweets"]  | 50    | UserTweets                          |
+| get_user_tweets[tweet_type="Replies"] | 50    | UserTweetsAndReplies                |
+| vote                                  | -     | capi/passthrough/1                  |
