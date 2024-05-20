@@ -35,10 +35,10 @@ class Tweet:
         The tweet ID this tweet is in reply to, if any
     is_quote_status : :class:`bool`
         Indicates if the tweet is a quote status.
-    quote : :class:`Tweet`
+    quote : :class:`Tweet` | None
         The Tweet being quoted (if any)
-    retweeted_tweet : :class:`bool`
-        Whether the tweet is a retweet
+    retweeted_tweet : :class:`Tweet` | None
+        The Tweet being retweeted (if any)
     possibly_sensitive : :class:`bool`
         Indicates if the tweet content may be sensitive.
     possibly_sensitive_editable : :class:`bool`
