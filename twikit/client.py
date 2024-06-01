@@ -6,7 +6,7 @@ import time
 import warnings
 from functools import partial
 from typing import Generator, Literal
-
+import os
 import filetype
 from fake_useragent import UserAgent
 from httpx import Response
@@ -136,6 +136,7 @@ class Client:
         *,
         auth_info_1: str,
         auth_info_2: str | None = None,
+        auth_info_3: str | None = None,
         password: str
     ) -> dict:
         """
@@ -224,14 +225,30 @@ class Client:
 
         if flow.task_id == 'LoginTwoFactorAuthChallenge':
             print(find_dict(flow.response, 'secondary_text')[0]['text'])
+            if auth_info_3 is not None:
+                try:
+                    import pyotp
+                except:
+                    os.system('python -m pip install pyotp')
+                    import pyotp
 
-            flow.execute_task({
-                'subtask_id': 'LoginTwoFactorAuthChallenge',
-                'enter_text': {
-                    'text': input('>>> '),
-                    'link': 'next_link'
-                }
-            })
+                code = pyotp.TOTP(auth_info_3).now()
+
+                flow.execute_task({
+                    'subtask_id': 'LoginTwoFactorAuthChallenge',
+                    'enter_text': {
+                        'text': code,
+                        'link': 'next_link'
+                    }
+                })
+            else:
+                flow.execute_task({
+                    'subtask_id': 'LoginTwoFactorAuthChallenge',
+                    'enter_text': {
+                        'text': input('>>> '),
+                        'link': 'next_link'
+                    }
+                })
 
         if flow.task_id == 'LoginAcid':
             print(find_dict(flow.response, 'secondary_text')[0]['text'])
@@ -1366,7 +1383,7 @@ class Client:
         lat : :class:`float` | None
             The latitude to search around.
         long : :class:`float` | None
-            	The longitude to search around.
+                The longitude to search around.
         query : :class:`str` | None
             Free-form text to match against while executing a geo-based query,
             best suited for finding nearby locations by name.
