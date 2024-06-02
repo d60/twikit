@@ -84,6 +84,11 @@ class UserUnavailable(TwitterException):
     Exception raised when a user is unavailable.
     """
 
+class AccountSuspended(TwitterException):
+    """
+    Exception raised when the account is suspended.
+    """
+
 ERROR_CODE_TO_EXCEPTION: dict[int, TwitterException] = {
     187: DuplicateTweet,
     324: InvalidMedia

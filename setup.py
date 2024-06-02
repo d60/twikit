@@ -13,8 +13,8 @@ setup(
     version=version,
     install_requires=[
         'httpx',
-        'fake_useragent',
-        'filetype'
+        'filetype',
+        'beautifulsoup4'
     ],
     python_requires='>=3.10',
     description='Twitter API wrapper for python with **no API key required**.',

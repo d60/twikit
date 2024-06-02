@@ -131,6 +131,15 @@ Geo
    :show-inheritance:
    :member-order: bysource
 
+Capsolver
+-------------------
+
+.. automodule:: twikit._captcha.capsolver
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
 Utils
 -------------------
 

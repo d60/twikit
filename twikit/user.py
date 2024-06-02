@@ -379,6 +379,28 @@ class User:
         """
         return self._client.get_user_subscriptions(self.id, count)
 
+    def get_latest_followers(
+        self, count: int | None = None, cursor: str | None = None
+    ) -> Result[User]:
+        """
+        Retrieves the latest followers.
+        Max count : 200
+        """
+        return self._client.get_latest_followers(
+            self.id, count=count, cursor=cursor
+        )
+
+    def get_latest_friends(
+        self, count: int | None = None, cursor: str | None = None
+    ) -> Result[User]:
+        """
+        Retrieves the latest friends (following users).
+        Max count : 200
+        """
+        return self._client.get_latest_friends(
+            self.id, count=count, cursor=cursor
+        )
+
     def send_dm(
         self, text: str, media_id: str = None, reply_to = None
     ) -> Message:

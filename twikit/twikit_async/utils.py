@@ -98,12 +98,12 @@ class Flow:
         if subtask_inputs is not None:
             data['subtask_inputs'] = list(subtask_inputs)
 
-        response = (await self._client.http.post(
+        response, _ = await self._client.post(
             self.endpoint,
             data=json.dumps(data),
             headers=self.headers,
             **kwargs
-        )).json()
+        )
         self.response = response
 
     @property

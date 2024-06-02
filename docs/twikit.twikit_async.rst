@@ -125,7 +125,16 @@ Notification
 Geo
 -------------------
 
-.. automodule:: twikit.geo
+.. automodule:: twikit.twikit_async.geo
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource
+
+Capsolver
+-------------------
+
+.. automodule:: twikit.twikit_async._captcha.capsolver
    :members:
    :undoc-members:
    :show-inheritance:

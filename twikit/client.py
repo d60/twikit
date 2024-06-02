@@ -5,26 +5,34 @@ import json
 import time
 import warnings
 from functools import partial
-from typing import Generator, Literal
+from typing import Any, Generator, Literal
 
 import filetype
-from fake_useragent import UserAgent
+import httpx
 from httpx import Response
 
 from .bookmark import BookmarkFolder
+from ._captcha import Capsolver
 from .community import Community, CommunityMember
 from .errors import (
+    AccountSuspended,
+    BadRequest,
     CouldNotTweet,
+    Forbidden,
     InvalidMedia,
+    NotFound,
+    RequestTimeout,
+    ServerError,
     TweetNotAvailable,
     TwitterException,
+    TooManyRequests,
+    Unauthorized,
     UserNotFound,
     UserUnavailable,
     raise_exceptions_from_response
 )
 from .geo import Place, _places_from_response
 from .group import Group, GroupMessage
-from .http import HTTPClient
 from .list import List
 from .message import Message
 from .notification import Notification
@@ -55,9 +63,133 @@ from .utils import (
 )
 
 
-class Client:
+class BaseClient:
+    """:meta private:"""
+
+    def __init__(
+        self,
+        language: str | None = None,
+        proxy: str | None = None,
+        captcha_solver: Capsolver | None = None,
+        **kwargs
+    ) -> None:
+        if 'proxies' in kwargs:
+            message = (
+                "The 'proxies' argument is now deprecated. Use 'proxy' "
+                "instead. https://github.com/encode/httpx/pull/2879"
+            )
+            warnings.warn(message)
+
+        self.http = httpx.Client(proxy=proxy, **kwargs)
+        self.language = language
+        self.proxy = proxy
+        self.captcha_solver = captcha_solver
+        if captcha_solver is not None:
+            captcha_solver.client = self
+
+        self._token = TOKEN
+        self._user_id = None
+        self._user_agent = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                            'AppleWebKit/537.36 (KHTML, like Gecko) '
+                            'Chrome/122.0.0.0 Safari/537.36')
+        self._act_as = None
+
+    def request(
+        self,
+        method: str,
+        url: str,
+        auto_unlock: bool = True,
+        raise_exception: bool = True,
+        **kwargs
+    ) -> tuple[dict | Any, httpx.Response]:
+        cookies_backup = self.get_cookies().copy()
+        response = self.http.request(method, url, **kwargs)
+        self._remove_duplicate_ct0_cookie()
+
+        try:
+            response_data = response.json()
+        except json.decoder.JSONDecodeError:
+            response_data = response.text
+
+        if isinstance(response_data, dict) and 'errors' in response_data:
+            error_code = response_data['errors'][0]['code']
+            error_message = response_data['errors'][0].get('message')
+            if error_code == 37:
+                # Account suspended
+                raise AccountSuspended(error_message)
+
+            if error_code == 326:
+                # Account unlocking
+                if self.captcha_solver is None:
+                    raise TwitterException(
+                        'Your account is locked. Visit '
+                        'https://twitter.com/account/access to unlock it.'
+                    )
+                if auto_unlock:
+                    self.unlock()
+                    self.set_cookies(cookies_backup, clear_cookies=True)
+                    response = self.http.request(method, url, **kwargs)
+                    self._remove_duplicate_ct0_cookie()
+                    try:
+                        response_data = response.json()
+                    except json.decoder.JSONDecodeError:
+                        response_data = response.text
+
+        status_code = response.status_code
+
+        if status_code >= 400 and raise_exception:
+            message = f'status: {status_code}, message: "{response.text}"'
+            if status_code == 400:
+                raise BadRequest(message, headers=response.headers)
+            elif status_code == 401:
+                raise Unauthorized(message, headers=response.headers)
+            elif status_code == 403:
+                raise Forbidden(message, headers=response.headers)
+            elif status_code == 404:
+                raise NotFound(message, headers=response.headers)
+            elif status_code == 408:
+                raise RequestTimeout(message, headers=response.headers)
+            elif status_code == 429:
+                raise TooManyRequests(message, headers=response.headers)
+            elif 500 <= status_code < 600:
+                raise ServerError(message, headers=response.headers)
+            else:
+                raise TwitterException(message, headers=response.headers)
+
+        return response_data, response
+
+    def get(self, url, **kwargs) -> tuple[dict | Any, httpx.Response]:
+        return self.request('GET', url, **kwargs)
+
+    def post(self, url, **kwargs) -> tuple[dict | Any, httpx.Response]:
+        return self.request('POST', url, **kwargs)
+
+    def stream(self, *args, **kwargs):
+        response = self.http.stream(*args, **kwargs)
+        return response
+
+    def _remove_duplicate_ct0_cookie(self) -> None:
+        cookies = {}
+        for cookie in self.http.cookies.jar:
+            if 'ct0' in cookies and cookie.name == 'ct0':
+                continue
+            cookies[cookie.name] = cookie.value
+        self.http.cookies = list(cookies.items())
+
+
+class Client(BaseClient):
     """
     A client for interacting with the Twitter API.
+
+    Parameters
+    ----------
+    language : :class:`str` | None, default=None
+        The language code to use in API requests.
+    proxy : :class:`str` | None, default=None
+        The proxy server URL to use for request
+        (e.g., 'http://0.0.0.0:0000').
+    captcha_solver : :class:`.Capsolver` | None, default=None
+        See :class:`.Capsolver`.
 
     Examples
     --------
@@ -69,27 +201,15 @@ class Client:
     ...     password='00000000'
     ... )
     """
-
-    def __init__(
-        self, language: str | None = None,
-        proxies: dict | None = None, **kwargs
-    ) -> None:
-        self._token = TOKEN
-        self.language = language
-        self.http = HTTPClient(proxies=proxies, **kwargs)
-        self._user_id = None
-        self._user_agent = UserAgent().random.strip()
-        self._act_as = None
-
     def _get_guest_token(self) -> str:
         headers = self._base_headers
         headers.pop('X-Twitter-Active-User')
         headers.pop('X-Twitter-Auth-Type')
-        response = self.http.post(
+        response, _ = self.post(
             Endpoint.GUEST_TOKEN,
             headers=headers,
             data={}
-        ).json()
+        )
         guest_token = response['guest_token']
         return guest_token
 
@@ -111,7 +231,7 @@ class Client:
             headers['Accept-Language'] = self.language
             headers['X-Twitter-Client-Language'] = self.language
 
-        csrf_token = self._get_csrf_token()
+        csrf_token = self.http.cookies.get('ct0')
         if csrf_token is not None:
             headers['X-Csrf-Token'] = csrf_token
         if self._act_as is not None:
@@ -119,17 +239,59 @@ class Client:
             headers['X-Contributor-Version'] = '1'
         return headers
 
-    def _get_csrf_token(self) -> str:
-        """
-        Retrieves the Cross-Site Request Forgery (CSRF) token from the
-        current session's cookies.
+    def unlock(self) -> None:
+        if self.captcha_solver is None:
+            raise ValueError('Captcha solver is not provided.')
 
-        Returns
-        -------
-        str
-            The CSRF token as a string.
-        """
-        return self.http.client.cookies.get('ct0')
+        response, html = self.captcha_solver.get_unlock_html()
+
+        if html.delete_button:
+            response, html = self.captcha_solver.confirm_unlock(
+                html.authenticity_token,
+                html.assignment_token,
+                ui_metrics=True
+            )
+
+        if html.start_button or html.finish_button:
+            response, html = self.captcha_solver.confirm_unlock(
+                html.authenticity_token,
+                html.assignment_token,
+                ui_metrics=True
+            )
+
+        cookies_backup = self.get_cookies().copy()
+        max_unlock_attempts = self.captcha_solver.max_attempts
+        attempt = 0
+        while attempt < max_unlock_attempts:
+            attempt += 1
+
+            if html.authenticity_token is None:
+                response, html = self.captcha_solver.get_unlock_html()
+
+            result = self.captcha_solver.solve_funcaptcha(html.blob)
+            if result['errorId'] == 1:
+                continue
+
+            self.set_cookies(cookies_backup, clear_cookies=True)
+            response, html = self.captcha_solver.confirm_unlock(
+                html.authenticity_token,
+                html.assignment_token,
+                result['solution']['token'],
+            )
+
+            if html.finish_button:
+                response, html = self.captcha_solver.confirm_unlock(
+                    html.authenticity_token,
+                    html.assignment_token,
+                    ui_metrics=True
+                )
+            finished = (
+                response.next_request is not None and
+                response.next_request.url.path == '/'
+            )
+            if finished:
+                return
+        raise Exception('could not unlock the account.')
 
     def login(
         self,
@@ -166,7 +328,7 @@ class Client:
         ...     password='00000000'
         ... )
         """
-        self.http.client.cookies.clear()
+        self.http.cookies.clear()
         guest_token = self._get_guest_token()
         headers = self._base_headers | {
             'x-guest-token': guest_token
@@ -250,7 +412,7 @@ class Client:
         """
         Logs out of the currently logged-in account.
         """
-        response = self.http.post(
+        _, response = self.http.post(
             Endpoint.LOGOUT,
             headers=self._base_headers
         )
@@ -262,10 +424,10 @@ class Client:
         """
         if self._user_id is not None:
             return self._user_id
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.SETTINGS,
             headers=self._base_headers
-        ).json()
+        )
         screen_name = response['screen_name']
         self._user_id = self.get_user_by_screen_name(screen_name).id
         return self._user_id
@@ -292,7 +454,7 @@ class Client:
         .load_cookies
         .save_cookies
         """
-        return dict(self.http.client.cookies)
+        return dict(self.http.cookies)
 
     def save_cookies(self, path: str) -> None:
         """
@@ -340,8 +502,8 @@ class Client:
         .save_cookies
         """
         if clear_cookies:
-            self.http.client.cookies.clear()
-        self.http.client.cookies.update(cookies)
+            self.http.cookies.clear()
+        self.http.cookies.update(cookies)
 
     def load_cookies(self, path: str) -> None:
         """
@@ -400,11 +562,11 @@ class Client:
             'variables': variables,
             'features': FEATURES
         })
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.SEARCH_TIMELINE,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         return response
 
@@ -591,11 +753,11 @@ class Client:
             'variables': {'tweet_id': tweet_id},
             'features': SIMILAR_POSTS_FEATURES
         })
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.SIMILAR_POSTS,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         items_ = find_dict(response, 'entries')
         results = []
         if not items_:
@@ -710,11 +872,11 @@ class Client:
         }
         if media_category is not None:
             params['media_category'] = media_category
-        response = self.http.post(
+        response, _ = self.post(
             endpoint,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         media_id = response['media_id']
         # =========== APPEND ============
         segment_index = 0
@@ -738,7 +900,7 @@ class Client:
                     'application/octet-stream',
                 )
             }
-            self.http.post(
+            self.post(
                 endpoint,
                 params=params,
                 headers=headers,
@@ -754,7 +916,7 @@ class Client:
             'command': 'FINALIZE',
             'media_id': media_id,
         }
-        self.http.post(
+        self.post(
             endpoint,
             params=params,
             headers=self._base_headers,
@@ -797,11 +959,11 @@ class Client:
             endpoint = Endpoint.UPLOAD_MEDIA_2
         else:
             endpoint = Endpoint.UPLOAD_MEDIA
-        response = self.http.get(
+        response, _ = self.get(
             endpoint,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         return response
 
     def create_media_metadata(
@@ -843,21 +1005,12 @@ class Client:
             data['alt_text'] = {'text': alt_text}
         if sensitive_warning is not None:
             data['sensitive_media_warning'] = sensitive_warning
-        return self.http.post(
+        _, response = self.post(
             Endpoint.CREATE_MEDIA_METADATA,
             json=data,
             headers=self._base_headers
         )
-
-    def get_media(self, url: str) -> bytes:
-        """Retrieves media bytes.
-
-        Parameters
-        ----------
-        url : str
-            Media URL
-        """
-        return self.http.get(url, headers=self._base_headers).content
+        return response
 
     def create_poll(
         self,
@@ -904,11 +1057,11 @@ class Client:
         headers = self._base_headers | {
             'content-type': 'application/x-www-form-urlencoded'
         }
-        response = self.http.post(
+        response, _ = self.post(
             Endpoint.CREATE_CARD,
             data=data,
             headers=headers,
-        ).json()
+        )
 
         return response['card_uri']
 
@@ -948,11 +1101,11 @@ class Client:
         headers = self._base_headers | {
             'content-type': 'application/x-www-form-urlencoded'
         }
-        response = self.http.post(
+        response, _ = self.post(
             Endpoint.VOTE,
             data=data,
             headers=headers
-        ).json()
+        )
 
         card_data = {
             'rest_id': response['card']['url'],
@@ -1112,11 +1265,11 @@ class Client:
             'queryId': get_query_id(Endpoint.CREATE_TWEET),
             'features': features,
         }
-        response = self.http.post(
+        response, _ = self.post(
             endpoint,
             json=data,
             headers=self._base_headers,
-        ).json()
+        )
 
         _result = find_dict(response, 'result')
         if not _result:
@@ -1183,11 +1336,11 @@ class Client:
             'variables': variables,
             'queryId': get_query_id(Endpoint.CREATE_SCHEDULED_TWEET),
         }
-        response = self.http.post(
+        response, _ = self.post(
             Endpoint.CREATE_SCHEDULED_TWEET,
             json=data,
             headers=self._base_headers,
-        ).json()
+        )
         return response['data']['tweet']['rest_id']
 
     def delete_tweet(self, tweet_id: str) -> Response:
@@ -1215,7 +1368,7 @@ class Client:
             },
             'queryId': get_query_id(Endpoint.DELETE_TWEET)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.DELETE_TWEET,
             json=data,
             headers=self._base_headers
@@ -1253,11 +1406,11 @@ class Client:
             'features': USER_FEATURES,
             'fieldToggles': {'withAuxiliaryUserLabels': False}
         })
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.USER_BY_SCREEN_NAME,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         if 'user' not in response['data']:
             raise UserNotFound('The user does not exist.')
@@ -1297,11 +1450,11 @@ class Client:
             'variables': variables,
             'features': USER_FEATURES
         })
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.USER_BY_REST_ID,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         if 'result' not in response['data']['user']:
             raise TwitterException(f'Invalid user id: {user_id}')
         user_data = response['data']['user']['result']
@@ -1345,11 +1498,11 @@ class Client:
             if v is None:
                 params.pop(k)
 
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.REVERSE_GEOCODE,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         return _places_from_response(self, response)
 
     def search_geo(
@@ -1396,11 +1549,11 @@ class Client:
             if v is None:
                 params.pop(k)
 
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.SEARCH_GEO,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         return _places_from_response(self, response)
 
     def get_place(self, id: str) -> Place:
@@ -1414,10 +1567,10 @@ class Client:
         -------
         :class:`.Place`
         """
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.PLACE_BY_ID.format(id),
             headers=self._base_headers
-        ).json()
+        )
         return Place(self, response)
 
     def _get_tweet_detail(self, tweet_id: str, cursor: str | None):
@@ -1438,11 +1591,11 @@ class Client:
             'features': FEATURES,
             'fieldToggles': {'withAuxiliaryUserLabels': False}
         })
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.TWEET_DETAIL,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         return response
 
     def _get_more_replies(self, tweet_id: str, cursor: str) -> Result[Tweet]:
@@ -1595,11 +1748,11 @@ class Client:
         params = flatten_params({
             'variables': {'ascending': True}
         })
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.FETCH_SCHEDULED_TWEETS,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         tweets = find_dict(response, 'scheduled_tweet_list')[0]
         return [ScheduledTweet(self, tweet) for tweet in tweets]
 
@@ -1623,7 +1776,7 @@ class Client:
             },
             'queryId': get_query_id(Endpoint.DELETE_SCHEDULED_TWEET)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.DELETE_SCHEDULED_TWEET,
             json=data,
             headers=self._base_headers
@@ -1647,11 +1800,11 @@ class Client:
             'variables': variables,
             'features': FEATURES
         })
-        response = self.http.get(
+        response, _ = self.get(
             endpoint,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         items_ = find_dict(response, 'entries')
         if not items_:
             return Result([])
@@ -1779,11 +1932,11 @@ class Client:
             'variables': {'note_id': note_id},
             'features': COMMUNITY_NOTE_FEATURES
         })
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.FETCH_COMMUNITY_NOTE,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         note_data = response['data']['birdwatch_note_by_rest_id']
         if 'data_v1' not in note_data:
             raise TwitterException(f'Invalid note id: {note_id}')
@@ -1874,11 +2027,11 @@ class Client:
             'Likes': Endpoint.USER_LIKES,
         }[tweet_type]
 
-        response = self.http.get(
+        response, _ = self.get(
             endpoint,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         instructions_ = find_dict(response, 'instructions')
         if not instructions_:
@@ -1989,11 +2142,11 @@ class Client:
             'queryId': get_query_id(Endpoint.HOME_TIMELINE),
             'features': FEATURES,
         }
-        response = self.http.post(
+        response, _ = self.post(
             Endpoint.HOME_TIMELINE,
             json=data,
             headers=self._base_headers
-        ).json()
+        )
 
         items = find_dict(response, 'entries')[0]
         next_cursor = items[-1]['content']['value']
@@ -2070,11 +2223,11 @@ class Client:
             'queryId': get_query_id(Endpoint.HOME_LATEST_TIMELINE),
             'features': FEATURES,
         }
-        response = self.http.post(
+        response, _ = self.post(
             Endpoint.HOME_LATEST_TIMELINE,
             json=data,
             headers=self._base_headers
-        ).json()
+        )
 
         items = find_dict(response, 'entries')[0]
         next_cursor = items[-1]['content']['value']
@@ -2122,7 +2275,7 @@ class Client:
             'variables': {'tweet_id': tweet_id},
             'queryId': get_query_id(Endpoint.FAVORITE_TWEET)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.FAVORITE_TWEET,
             json=data,
             headers=self._base_headers
@@ -2156,7 +2309,7 @@ class Client:
             'variables': {'tweet_id': tweet_id},
             'queryId': get_query_id(Endpoint.UNFAVORITE_TWEET)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.UNFAVORITE_TWEET,
             json=data,
             headers=self._base_headers
@@ -2190,7 +2343,7 @@ class Client:
             'variables': {'tweet_id': tweet_id, 'dark_request': False},
             'queryId': get_query_id(Endpoint.CREATE_RETWEET)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.CREATE_RETWEET,
             json=data,
             headers=self._base_headers
@@ -2224,7 +2377,7 @@ class Client:
             'variables': {'source_tweet_id': tweet_id,'dark_request': False},
             'queryId': get_query_id(Endpoint.DELETE_RETWEET)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.DELETE_RETWEET,
             json=data,
             headers=self._base_headers
@@ -2265,7 +2418,7 @@ class Client:
             'variables': variables,
             'queryId': get_query_id(Endpoint.CREATE_BOOKMARK)
         }
-        response = self.http.post(
+        _, response = self.post(
             endpoint,
             json=data,
             headers=self._base_headers
@@ -2299,7 +2452,7 @@ class Client:
             'variables': {'tweet_id': tweet_id},
             'queryId': get_query_id(Endpoint.DELETE_BOOKMARK)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.DELETE_BOOKMARK,
             json=data,
             headers=self._base_headers
@@ -2360,11 +2513,11 @@ class Client:
             'variables': variables,
             'features': features
         })
-        response = self.http.get(
+        response, _ = self.get(
             endpoint,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         items_ = find_dict(response, 'entries')
         if not items_:
@@ -2413,7 +2566,7 @@ class Client:
             'variables': {},
             'queryId': get_query_id(Endpoint.BOOKMARKS_ALL_DELETE)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.BOOKMARKS_ALL_DELETE,
             json=data,
             headers=self._base_headers
@@ -2442,11 +2595,11 @@ class Client:
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({'variables': variables})
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.BOOKMARK_FOLDERS,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         slice = find_dict(response, 'bookmark_collections_slice')[0]
         results = []
@@ -2496,11 +2649,11 @@ class Client:
             'variables': variables,
             'queryId': get_query_id(Endpoint.EDIT_BOOKMARK_FOLDER)
         }
-        response = self.http.post(
+        response, _ = self.post(
             Endpoint.EDIT_BOOKMARK_FOLDER,
             json=data,
             headers=self._base_headers
-        ).json()
+        )
         return BookmarkFolder(
             self, response['data']['bookmark_collection_update']
         )
@@ -2526,7 +2679,7 @@ class Client:
             'variables': variables,
             'queryId': get_query_id(Endpoint.DELETE_BOOKMARK_FOLDER)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.DELETE_BOOKMARK_FOLDER,
             json=data,
             headers=self._base_headers
@@ -2553,11 +2706,11 @@ class Client:
             'variables': variables,
             'queryId': get_query_id(Endpoint.CREATE_BOOKMARK_FOLDER)
         }
-        response = self.http.post(
+        response, _ = self.post(
             Endpoint.CREATE_BOOKMARK_FOLDER,
             json=data,
             headers=self._base_headers
-        ).json()
+        )
         return BookmarkFolder(
             self, response['data']['bookmark_collection_create']
         )
@@ -2603,7 +2756,7 @@ class Client:
         headers = self._base_headers | {
             'content-type': 'application/x-www-form-urlencoded'
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.CREATE_FRIENDSHIPS,
             data=data,
             headers=headers
@@ -2651,7 +2804,7 @@ class Client:
         headers = self._base_headers | {
             'content-type': 'application/x-www-form-urlencoded'
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.DESTROY_FRIENDSHIPS,
             data=data,
             headers=headers
@@ -2679,7 +2832,7 @@ class Client:
         data = urlencode({'user_id': user_id})
         headers = self._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.BLOCK_USER,
             data=data,
             headers=headers
@@ -2707,7 +2860,7 @@ class Client:
         data = urlencode({'user_id': user_id})
         headers = self._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.UNBLOCK_USER,
             data=data,
             headers=headers
@@ -2735,7 +2888,7 @@ class Client:
         data = urlencode({'user_id': user_id})
         headers = self._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.MUTE_USER,
             data=data,
             headers=headers
@@ -2763,7 +2916,7 @@ class Client:
         data = urlencode({'user_id': user_id})
         headers = self._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.UNMUTE_USER,
             data=data,
             headers=headers
@@ -2825,11 +2978,11 @@ class Client:
         }
         if additional_request_params is not None:
             params |= additional_request_params
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.TREND,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         entry_id_prefix = 'trends' if category == 'trending' else 'Guide'
         entries = [
@@ -2863,10 +3016,10 @@ class Client:
         -------
         list[:class:`.Location`]
         """
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.AVAILABLE_LOCATIONS,
             headers=self._base_headers
-        ).json()
+        )
         return [Location(self, data) for data in response]
 
     def get_place_trends(self, woeid: int) -> PlaceTrends:
@@ -2875,11 +3028,11 @@ class Client:
         You can get available woeid using
         :attr:`.Client.get_available_locations`.
         """
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.PLACE_TRENDS,
             params={'id': woeid},
             headers=self._base_headers
-        ).json()
+        )
         trend_data = response[0]
         trends = [PlaceTrend(self, data) for data in trend_data['trends']]
         trend_data['trends'] = trends
@@ -2906,11 +3059,11 @@ class Client:
             'variables': variables,
             'features': FEATURES
         })
-        response = self.http.get(
+        response, _ = self.get(
             endpoint,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         items = find_dict(response, 'entries')[0]
         results = []
@@ -2951,11 +3104,11 @@ class Client:
         if cursor is not None:
             params['cursor'] = cursor
 
-        response = self.http.get(
+        response, _ = self.get(
             endpoint,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         users = response['users']
         results = []
@@ -3150,11 +3303,11 @@ class Client:
         if cursor is not None:
             params['cursor'] = cursor
 
-        response = self.http.get(
+        response, _ = self.get(
             endpoint,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         previous_cursor = response['previous_cursor']
         next_cursor = response['next_cursor']
 
@@ -3256,11 +3409,12 @@ class Client:
         if reply_to is not None:
             data['reply_to_dm_id'] = reply_to
 
-        return self.http.post(
+        response, _ = self.post(
             Endpoint.SEND_DM,
             json=data,
             headers=self._base_headers
-        ).json()
+        )
+        return response
 
     def _get_dm_history(
         self,
@@ -3276,11 +3430,12 @@ class Client:
         if max_id is not None:
             params['max_id'] = max_id
 
-        return self.http.get(
+        response, _ = self.get(
             Endpoint.CONVERSATION.format(conversation_id),
             params=params,
             headers=self._base_headers
-        ).json()
+        )
+        return response
 
     def send_dm(
         self,
@@ -3376,7 +3531,7 @@ class Client:
             'variables': variables,
             'queryId': get_query_id(Endpoint.MESSAGE_ADD_REACTION)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.MESSAGE_ADD_REACTION,
             json=data,
             headers=self._base_headers
@@ -3422,7 +3577,7 @@ class Client:
             'variables': variables,
             'queryId': get_query_id(Endpoint.MESSAGE_REMOVE_REACTION)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.MESSAGE_REMOVE_REACTION,
             json=data,
             headers=self._base_headers
@@ -3454,7 +3609,7 @@ class Client:
             },
             'queryId': get_query_id(Endpoint.DELETE_DM)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.DELETE_DM,
             json=data,
             headers=self._base_headers
@@ -3653,11 +3808,11 @@ class Client:
             'context': 'FETCH_DM_CONVERSATION_HISTORY',
             'include_conversation_info': True,
         }
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.CONVERSATION.format(group_id),
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         return Group(self, group_id, response)
 
     def add_members_to_group(
@@ -3690,7 +3845,7 @@ class Client:
             },
             'queryId': get_query_id(Endpoint.ADD_MEMBER_TO_GROUP)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.ADD_MEMBER_TO_GROUP,
             json=data,
             headers=self._base_headers
@@ -3717,7 +3872,7 @@ class Client:
         })
         headers = self._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.CHANGE_GROUP_NAME.format(group_id),
             data=data,
             headers=headers
@@ -3764,11 +3919,11 @@ class Client:
             'features': LIST_FEATURES,
             'queryId': get_query_id(Endpoint.CREATE_LIST)
         }
-        response = self.http.post(
+        response, _ = self.post(
             Endpoint.CREATE_LIST,
             json=data,
             headers=self._base_headers
-        ).json()
+        )
         list_info = find_dict(response, 'list')[0]
         return List(self, list_info)
 
@@ -3803,7 +3958,7 @@ class Client:
             'features': LIST_FEATURES,
             'queryId': get_query_id(Endpoint.EDIT_LIST_BANNER)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.EDIT_LIST_BANNER,
             json=data,
             headers=self._base_headers
@@ -3830,7 +3985,7 @@ class Client:
             'features': LIST_FEATURES,
             'queryId': get_query_id(Endpoint.DELETE_LIST_BANNER)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.DELETE_LIST_BANNER,
             json=data,
             headers=self._base_headers
@@ -3884,11 +4039,11 @@ class Client:
             'features': LIST_FEATURES,
             'queryId': get_query_id(Endpoint.UPDATE_LIST)
         }
-        response = self.http.post(
+        response, _ = self.post(
             Endpoint.UPDATE_LIST,
             json=data,
             headers=self._base_headers
-        ).json()
+        )
         list_info = find_dict(response, 'list')[0]
         return List(self, list_info)
 
@@ -3921,7 +4076,7 @@ class Client:
             'features': LIST_FEATURES,
             'queryId': get_query_id(Endpoint.LIST_ADD_MEMBER)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.LIST_ADD_MEMBER,
             json=data,
             headers=self._base_headers
@@ -3957,7 +4112,7 @@ class Client:
             'features': LIST_FEATURES,
             'queryId': get_query_id(Endpoint.LIST_REMOVE_MEMBER)
         }
-        response = self.http.post(
+        _, response = self.post(
             Endpoint.LIST_REMOVE_MEMBER,
             json=data,
             headers=self._base_headers
@@ -4000,11 +4155,11 @@ class Client:
             'variables': variables,
             'features': FEATURES
         })
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.LIST_MANAGEMENT,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         entries = find_dict(response, 'entries')[0]
         items = find_dict(entries, 'items')
@@ -4044,11 +4199,11 @@ class Client:
             'variables': {'listId': list_id},
             'features': LIST_FEATURES
         })
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.LIST_BY_REST_ID,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         list_info = find_dict(response, 'list')[0]
         return List(self, list_info)
 
@@ -4100,11 +4255,11 @@ class Client:
             'variables': variables,
             'features': FEATURES
         })
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.LIST_LATEST_TWEETS,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         items = find_dict(response, 'entries')[0]
         next_cursor = items[-1]['content']['value']
@@ -4140,11 +4295,11 @@ class Client:
             'variables': variables,
             'features': FEATURES
         })
-        response = self.http.get(
+        response, _ = self.get(
             endpoint,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         items = find_dict(response, 'entries')[0]
         results = []
@@ -4334,11 +4489,11 @@ class Client:
         if cursor is not None:
             params['cursor'] = cursor
 
-        response = self.http.get(
+        response, _ = self.get(
             endpoint,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         global_objects = response['globalObjects']
         users = {
@@ -4424,11 +4579,11 @@ class Client:
         params = flatten_params({
             'variables': variables
         })
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.SEARCH_COMMUNITY,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         items = find_dict(response, 'items_results')[0]
         communities = []
@@ -4468,11 +4623,11 @@ class Client:
                 'c9s_superc9s_indication_enabled':False
             }
         })
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.GET_COMMUNITY,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         community_data = find_dict(response, 'result')[0]
         return Community(self, community_data)
 
@@ -4535,11 +4690,11 @@ class Client:
             'variables': variables,
             'features': COMMUNITY_TWEETS_FEATURES
         })
-        response = self.http.get(
+        response, _ = self.get(
             endpoint,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         entries = find_dict(response, 'entries')[0]
         if tweet_type == 'Media':
@@ -4611,11 +4766,11 @@ class Client:
             'variables': variables,
             'features': COMMUNITY_TWEETS_FEATURES
         })
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.COMMUNITIES_TIMELINE,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
         items = find_dict(response, 'entries')[0]
         tweets = []
         for item in items:
@@ -4667,11 +4822,11 @@ class Client:
             'features': JOIN_COMMUNITY_FEATURES,
             'queryId': get_query_id(Endpoint.JOIN_COMMUNITY)
         }
-        response = self.http.post(
+        response, _ = self.post(
             Endpoint.JOIN_COMMUNITY,
             json=data,
             headers=self._base_headers
-        ).json()
+        )
         community_data = response['data']['community_join']
         community_data['rest_id'] = community_data['id_str']
         return Community(self, community_data)
@@ -4697,11 +4852,11 @@ class Client:
             'features': JOIN_COMMUNITY_FEATURES,
             'queryId': get_query_id(Endpoint.LEAVE_COMMUNITY)
         }
-        response = self.http.post(
+        response, _ = self.post(
             Endpoint.LEAVE_COMMUNITY,
             json=data,
             headers=self._base_headers
-        ).json()
+        )
         community_data = response['data']['community_leave']
         community_data['rest_id'] = community_data['id_str']
         return Community(self, community_data)
@@ -4732,11 +4887,11 @@ class Client:
             'features': JOIN_COMMUNITY_FEATURES,
             'queryId': get_query_id(Endpoint.REQUEST_TO_JOIN_COMMUNITY)
         }
-        response = self.http.post(
+        response, _ = self.post(
             Endpoint.REQUEST_TO_JOIN_COMMUNITY,
             json=data,
             headers=self._base_headers
-        ).json()
+        )
         community_data = find_dict(response, 'result')[0]
         community_data['rest_id'] = community_data['id_str']
         return Community(self, community_data)
@@ -4759,11 +4914,11 @@ class Client:
                 'responsive_web_graphql_timeline_navigation_enabled': True
             }
         })
-        response =  self.http.get(
+        response, _ = self.get(
             endpoint,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         items = find_dict(response, 'items_results')[0]
         users = []
@@ -4878,11 +5033,11 @@ class Client:
             'variables': variables,
             'features': COMMUNITY_TWEETS_FEATURES
         })
-        response = self.http.get(
+        response, _ = self.get(
             Endpoint.SEARCH_COMMUNITY_TWEET,
             params=params,
             headers=self._base_headers
-        ).json()
+        )
 
         items = find_dict(response, 'entries')[0]
         tweets = []
@@ -4912,10 +5067,10 @@ class Client:
         headers.pop('content-type')
         params = {'topics': ','.join(topics)}
 
-        with self.http.stream(
+        with self.stream(
             'GET', Endpoint.EVENTS, params=params, timeout=None
         ) as response:
-            self.http._remove_duplicate_ct0_cookie()
+            self._remove_duplicate_ct0_cookie()
             for line in response.iter_lines():
                 try:
                     data = json.loads(line)
@@ -5017,9 +5172,9 @@ class Client:
         headers = self._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
         headers['LivePipeline-Session'] = session.id
-        response = self.http.post(
+        response, _ = self.post(
             Endpoint.UPDATE_SUBSCRIPTIONS, data=data, headers=headers
-        ).json()
+        )
         session.topics |= subscribe
         session.topics -= unsubscribe
 
