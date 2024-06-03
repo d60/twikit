@@ -75,7 +75,7 @@ USERNAME = 'example_user'
 EMAIL = 'email@example.com'
 PASSWORD = 'password0000'
 
-# Initialize client
+# 初始化客户端
 client = Client('en-US')
 
 client.login(
@@ -88,13 +88,13 @@ client.login(
 **创建一条附带媒体的推文**
 
 ```python
-# Upload media files and obtain media_ids
+# 上传媒体文件并获取媒体ID
 media_ids = [
     client.upload_media('media1.jpg'),
     client.upload_media('media2.jpg')
 ]
 
-# Create a tweet with the provided text and attached media
+# 创建一条带有提供的文本和附加媒体的推文
 client.create_tweet(
     text='Example Tweet',
     media_ids=media_ids
