@@ -9,6 +9,7 @@ from typing import Any, Generator, Literal
 
 import filetype
 import httpx
+import pyotp
 from httpx import Response
 
 from .bookmark import BookmarkFolder
@@ -114,7 +115,7 @@ class BaseClient:
         if isinstance(response_data, dict) and 'errors' in response_data:
             error_code = response_data['errors'][0]['code']
             error_message = response_data['errors'][0].get('message')
-            if error_code == 37:
+            if error_code in (37, 64):
                 # Account suspended
                 raise AccountSuspended(error_message)
 
@@ -298,7 +299,8 @@ class Client(BaseClient):
         *,
         auth_info_1: str,
         auth_info_2: str | None = None,
-        password: str
+        password: str,
+        totp_secret: str | None = None
     ) -> dict:
         """
         Logs into the account using the specified login information.
@@ -319,6 +321,9 @@ class Client(BaseClient):
             It can be a username, email address, or phone number.
         password : :class:`str`
             The password associated with the account.
+        totp_secret : :class:`str`
+            The TOTP (Time-Based One-Time Password) secret key used for
+            two-factor authentication (2FA).
 
         Examples
         --------
@@ -385,12 +390,16 @@ class Client(BaseClient):
         self._user_id = find_dict(flow.response, 'id_str')[0]
 
         if flow.task_id == 'LoginTwoFactorAuthChallenge':
-            print(find_dict(flow.response, 'secondary_text')[0]['text'])
+            if totp_secret is None:
+                print(find_dict(flow.response, 'secondary_text')[0]['text'])
+                totp_code = input('>>>')
+            else:
+                totp_code = pyotp.TOTP(totp_secret).now()
 
             flow.execute_task({
                 'subtask_id': 'LoginTwoFactorAuthChallenge',
                 'enter_text': {
-                    'text': input('>>> '),
+                    'text': totp_code,
                     'link': 'next_link'
                 }
             })
