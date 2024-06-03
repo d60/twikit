@@ -75,7 +75,7 @@ USERNAME = 'example_user'
 EMAIL = 'email@example.com'
 PASSWORD = 'password0000'
 
-# Initialize client
+# 初始化客户端
 client = Client('en-US')
 
 client.login(
