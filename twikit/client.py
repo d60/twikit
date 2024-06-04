@@ -152,6 +152,8 @@ class BaseClient:
             elif status_code == 408:
                 raise RequestTimeout(message, headers=response.headers)
             elif status_code == 429:
+                if self._get_user_state() == 'suspended':
+                    raise AccountSuspended(message, headers=response.headers)
                 raise TooManyRequests(message, headers=response.headers)
             elif 500 <= status_code < 600:
                 raise ServerError(message, headers=response.headers)
@@ -5189,3 +5191,10 @@ class Client(BaseClient):
         session.topics -= unsubscribe
 
         return _payload_from_data(response)
+
+    def _get_user_state(self) -> Literal['normal', 'bounced', 'suspended']:
+        response, _ = self.get(
+            Endpoint.USER_STATE,
+            headers=self._base_headers
+        )
+        return response['userState']

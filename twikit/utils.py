@@ -300,6 +300,7 @@ class Endpoint:
     REVERSE_GEOCODE = 'https://api.twitter.com/1.1/geo/reverse_geocode.json'
     SEARCH_GEO = 'https://api.twitter.com/1.1/geo/search.json'
     PLACE_BY_ID = 'https://api.twitter.com/1.1/geo/id/{}.json'
+    USER_STATE = 'https://api.twitter.com/help-center/forms/api/prod/user_state.json'
 
 T = TypeVar('T')
 
