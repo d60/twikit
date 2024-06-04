@@ -13,6 +13,7 @@ import pyotp
 from httpx import Response
 
 from ..errors import (
+    AccountLocked,
     AccountSuspended,
     BadRequest,
     CouldNotTweet,
@@ -124,7 +125,7 @@ class BaseClient:
             if error_code == 326:
                 # Account unlocking
                 if self.captcha_solver is None:
-                    raise TwitterException(
+                    raise AccountLocked(
                         'Your account is locked. Visit '
                         'https://twitter.com/account/access to unlock it.'
                     )
