@@ -475,7 +475,6 @@ def build_tweet_data(raw_data: dict) -> dict:
             'is_quote_status': raw_data.get('is_quote_status'),
             'in_reply_to_status_id_str': raw_data.get('in_reply_to_status_id_str'),
             'retweeted_status_result': raw_data.get('retweeted_status_result'),
-            'is_quote_status': raw_data.get('is_quote_status'),
             'possibly_sensitive': raw_data.get('possibly_sensitive'),
             'possibly_sensitive_editable': raw_data.get('possibly_sensitive_editable'),
             'quote_count': raw_data.get('quote_count'),
@@ -675,13 +674,13 @@ def build_query(text: str, options: SearchOptions) -> str:
     if until := options.get('until'):
         text += f' until:{until}'
 
-    if options.get('positive') == True:
-        text += f' :)'
+    if options.get('positive') is True:
+        text += ' :)'
 
-    if options.get('negative') == True:
-        text += f' :('
+    if options.get('negative') is True:
+        text += ' :('
 
-    if options.get('question') == True:
-        text += f' ?'
+    if options.get('question') is True:
+        text += ' ?'
 
     return text

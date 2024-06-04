@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from httpx import Response
 
     from .client import Client
-    from .community import Community
     from .utils import Result
 
 

@@ -4974,7 +4974,7 @@ class Client(BaseClient):
         items = find_dict(response, 'items_results')[0]
         users = []
         for item in items:
-            if not 'result' in item:
+            if 'result' not in item:
                 continue
             if item['result'].get('__typename') != 'User':
                 continue
