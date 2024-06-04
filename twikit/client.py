@@ -3666,6 +3666,8 @@ class Client(BaseClient):
         ...
         """
         response = self._get_dm_history(f'{user_id}-{self.user_id()}', max_id)
+        if 'entries' not in response['conversation_timeline']:
+            return Result([])
 
         items = response['conversation_timeline']['entries']
         messages = []
@@ -3780,6 +3782,8 @@ class Client(BaseClient):
         ...
         """
         response = self._get_dm_history(group_id, max_id)
+        if 'entries' not in response['conversation_timeline']:
+            return Result([])
 
         items = response['conversation_timeline']['entries']
         messages = []

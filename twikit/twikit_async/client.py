@@ -3701,6 +3701,9 @@ class Client(BaseClient):
         )
 
         items = response['conversation_timeline']['entries']
+        if 'entries' not in response['conversation_timeline']:
+            return Result([])
+
         messages = []
         for item in items:
             message_info = item['message']['message_data']
@@ -3814,6 +3817,8 @@ class Client(BaseClient):
         ...
         """
         response = await self._get_dm_history(group_id, max_id)
+        if 'entries' not in response['conversation_timeline']:
+            return Result([])
 
         items = response['conversation_timeline']['entries']
         messages = []
