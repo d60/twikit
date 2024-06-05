@@ -7,7 +7,7 @@ https://github.com/d60/twikit
 A Python library for interacting with the Twitter API.
 """
 
-__version__ = '1.7.2'
+__version__ = '1.7.3'
 
 from ._captcha import Capsolver
 from .bookmark import BookmarkFolder

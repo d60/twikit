@@ -424,7 +424,7 @@ class Client(BaseClient):
         """
         Logs out of the currently logged-in account.
         """
-        _, response = self.http.post(
+        _, response = self.post(
             Endpoint.LOGOUT,
             headers=self._base_headers
         )

@@ -5240,7 +5240,9 @@ class Client(BaseClient):
 
         return _payload_from_data(response)
 
-    async def _get_user_state(self) -> Literal['normal', 'bounced', 'suspended']:
+    async def _get_user_state(
+        self
+    ) -> Literal['normal', 'bounced', 'suspended']:
         response, _ = await self.get(
             Endpoint.USER_STATE,
             headers=self._base_headers
