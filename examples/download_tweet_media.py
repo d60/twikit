@@ -1,6 +1,3 @@
-import asyncio
-import time
-
 from twikit.twikit_async import Client
 
 AUTH_INFO_1 = '...'

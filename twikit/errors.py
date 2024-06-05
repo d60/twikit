@@ -89,6 +89,11 @@ class AccountSuspended(TwitterException):
     Exception raised when the account is suspended.
     """
 
+class AccountLocked(TwitterException):
+    """
+    Exception raised when the account is locked (very likey is Arkose challenge).
+    """
+
 ERROR_CODE_TO_EXCEPTION: dict[int, TwitterException] = {
     187: DuplicateTweet,
     324: InvalidMedia

@@ -13,6 +13,7 @@ import pyotp
 from httpx import Response
 
 from ..errors import (
+    AccountLocked,
     AccountSuspended,
     BadRequest,
     CouldNotTweet,
@@ -124,7 +125,7 @@ class BaseClient:
             if error_code == 326:
                 # Account unlocking
                 if self.captcha_solver is None:
-                    raise TwitterException(
+                    raise AccountLocked(
                         'Your account is locked. Visit '
                         'https://twitter.com/account/access to unlock it.'
                     )
@@ -153,6 +154,8 @@ class BaseClient:
             elif status_code == 408:
                 raise RequestTimeout(message, headers=response.headers)
             elif status_code == 429:
+                if await self._get_user_state() == 'suspended':
+                    raise AccountSuspended(message, headers=response.headers)
                 raise TooManyRequests(message, headers=response.headers)
             elif 500 <= status_code < 600:
                 raise ServerError(message, headers=response.headers)
@@ -4976,7 +4979,7 @@ class Client(BaseClient):
         items = find_dict(response, 'items_results')[0]
         users = []
         for item in items:
-            if not 'result' in item:
+            if 'result' not in item:
                 continue
             if item['result'].get('__typename') != 'User':
                 continue
@@ -5236,3 +5239,10 @@ class Client(BaseClient):
         session.topics -= unsubscribe
 
         return _payload_from_data(response)
+
+    async def _get_user_state(self) -> Literal['normal', 'bounced', 'suspended']:
+        response, _ = await self.get(
+            Endpoint.USER_STATE,
+            headers=self._base_headers
+        )
+        return response['userState']
