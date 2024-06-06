@@ -10,7 +10,8 @@ from typing import Any, Generator, Literal
 import filetype
 import httpx
 import pyotp
-from httpx import Response
+from httpx import Response, HTTPTransport
+from httpx._utils import URLPattern
 
 from .bookmark import BookmarkFolder
 from ._captcha import Capsolver
@@ -179,6 +180,28 @@ class BaseClient:
                 continue
             cookies[cookie.name] = cookie.value
         self.http.cookies = list(cookies.items())
+
+    @property
+    def proxy(self) -> str:
+        transport: HTTPTransport = self.http._mounts.get(URLPattern('all://'))
+        if transport is None:
+            return None
+
+        url = transport._pool._proxy_url
+        scheme = url.scheme.decode()
+        host = url.host.decode()
+        port = url.port
+
+        url_str = f'{scheme}://{host}'
+        if port is not None:
+            url_str += f':{port}'
+        return url_str
+
+    @proxy.setter
+    def proxy(self, url: str) -> None:
+        self.http._mounts = {
+            URLPattern('all://'): HTTPTransport(proxy=url)
+        }
 
 
 class Client(BaseClient):
