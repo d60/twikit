@@ -130,4 +130,5 @@ More Examples: [examples](https://github.com/d60/twikit/tree/main/examples) <br>
 
 If you encounter any bugs or issues, please report them on [issues](https://github.com/d60/twikit/issues).
 
-Additionally, if you find this library useful, I would appreciate it if you would star this repository or share this library.
+
+If you find this library useful, consider starring this repository⭐️
