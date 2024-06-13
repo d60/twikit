@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 # This token is common to all accounts and does not need to be changed.
 TOKEN = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'
+TOKEN2 = 'AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF'
 
 FEATURES = {
     'creator_subscriptions_tweet_preview_api_enabled': True,
@@ -214,6 +215,7 @@ class Endpoint:
     USER_TWEETS_AND_REPLIES = 'https://twitter.com/i/api/graphql/vMkJyzx1wdmvOeeNG0n6Wg/UserTweetsAndReplies'
     USER_MEDIA = 'https://twitter.com/i/api/graphql/2tLOJWwGuCTytDrGBg8VwQ/UserMedia'
     USER_LIKES = 'https://twitter.com/i/api/graphql/IohM3gxQHfvWePH5E3KuNA/Likes'
+    USER_LIKES_2 = 'https://api.x.com/1.1/favorites/list.json'
     TWEET_DETAIL = 'https://twitter.com/i/api/graphql/U0HTv-bAWTBYylwEMT7x5A/TweetDetail'
     TREND = 'https://twitter.com/i/api/2/guide.json'
     FAVORITE_TWEET = 'https://twitter.com/i/api/graphql/lI07N6Otwv1PhnEgXILM7A/FavoriteTweet'
@@ -470,7 +472,7 @@ def build_tweet_data(raw_data: dict) -> dict:
         'edit_control': {},
         'legacy': {
             'created_at': raw_data.get('created_at'),
-            'full_text': raw_data.get('full_text'),
+            'full_text': raw_data.get('full_text') or raw_data.get('text'),
             'lang': raw_data.get('lang'),
             'is_quote_status': raw_data.get('is_quote_status'),
             'in_reply_to_status_id_str': raw_data.get('in_reply_to_status_id_str'),

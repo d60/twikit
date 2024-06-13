@@ -169,6 +169,9 @@ class User:
         """
         return self._client.get_user_tweets(self.id, tweet_type, count)
 
+    def get_likes(self, count: int = 40, cursor: str | None = None) -> Result[Tweet]:
+        return self._client.get_user_likes(self.id, count=count, cursor=cursor)
+
     def follow(self) -> Response:
         """
         Follows the user.

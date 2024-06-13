@@ -51,6 +51,7 @@ from .utils import (
     LIST_FEATURES,
     FEATURES,
     TOKEN,
+    TOKEN2,
     USER_FEATURES,
     NOTE_TWEET_FEATURES,
     SIMILAR_POSTS_FEATURES,
@@ -91,6 +92,7 @@ class BaseClient:
             captcha_solver.client = self
 
         self._token = TOKEN
+        self._token2 = TOKEN2
         self._user_id = None
         self._user_agent = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                             'AppleWebKit/537.36 (KHTML, like Gecko) '
@@ -413,11 +415,12 @@ class Client(BaseClient):
         if not flow.response['subtasks']:
             return
 
-        self._user_id = find_dict(flow.response, 'id_str')[0]
+        self._user_id = find_dict(flow.response, 'id_str', find_one=True)[0]
 
         if flow.task_id == 'LoginTwoFactorAuthChallenge':
             if totp_secret is None:
-                print(find_dict(flow.response, 'secondary_text')[0]['text'])
+                print(find_dict(
+                    flow.response, 'secondary_text', find_one=True)[0]['text'])
                 totp_code = input('>>>')
             else:
                 totp_code = pyotp.TOTP(totp_secret).now()
@@ -431,7 +434,8 @@ class Client(BaseClient):
             })
 
         if flow.task_id == 'LoginAcid':
-            print(find_dict(flow.response, 'secondary_text')[0]['text'])
+            print(find_dict(
+                flow.response, 'secondary_text', find_one=True)[0]['text'])
 
             flow.execute_task({
                 'subtask_id': 'LoginAcid',
@@ -656,15 +660,15 @@ class Client(BaseClient):
         product = product.capitalize()
 
         response = self._search(query, product, count, cursor)
-        instructions = find_dict(response, 'instructions')
+        instructions = find_dict(response, 'instructions', find_one=True)
         if not instructions:
             return Result([])
         instructions = instructions[0]
 
         if product == 'Media' and cursor is not None:
-            items = find_dict(instructions, 'moduleItems')[0]
+            items = find_dict(instructions, 'moduleItems', find_one=True)[0]
         else:
-            items_ = find_dict(instructions, 'entries')
+            items_ = find_dict(instructions, 'entries', find_one=True)
             if items_:
                 items = items_[0]
             else:
@@ -694,7 +698,7 @@ class Client(BaseClient):
         if next_cursor is None:
             if product == 'Media':
                 entries = find_dict(
-                    instructions, 'entries'
+                    instructions, 'entries', find_one=True
                 )[0]
                 next_cursor = entries[-1]['content']['value']
                 previous_cursor = entries[-2]['content']['value']
@@ -753,14 +757,14 @@ class Client(BaseClient):
         ...
         """
         response = self._search(query, 'People', count, cursor)
-        items = find_dict(response, 'entries')[0]
+        items = find_dict(response, 'entries', find_one=True)[0]
         next_cursor = items[-1]['content']['value']
 
         results = []
         for item in items:
             if 'itemContent' not in item['content']:
                 continue
-            user_info = find_dict(item, 'result')[0]
+            user_info = find_dict(item, 'result', find_one=True)[0]
             results.append(User(self, user_info))
 
         return Result(
@@ -793,7 +797,7 @@ class Client(BaseClient):
             params=params,
             headers=self._base_headers
         )
-        items_ = find_dict(response, 'entries')
+        items_ = find_dict(response, 'entries', find_one=True)
         results = []
         if not items_:
             return results
@@ -1306,7 +1310,7 @@ class Client(BaseClient):
             headers=self._base_headers,
         )
 
-        _result = find_dict(response, 'result')
+        _result = find_dict(response, 'result', find_one=True)
         if not _result:
             raise_exceptions_from_response(response['errors'])
             raise CouldNotTweet(
@@ -1635,7 +1639,7 @@ class Client(BaseClient):
 
     def _get_more_replies(self, tweet_id: str, cursor: str) -> Result[Tweet]:
         response = self._get_tweet_detail(tweet_id, cursor)
-        entries = find_dict(response, 'entries')[0]
+        entries = find_dict(response, 'entries', find_one=True)[0]
 
         results = []
         for entry in entries:
@@ -1661,7 +1665,7 @@ class Client(BaseClient):
 
     def _show_more_replies(self, tweet_id: str, cursor: str) -> Result[Tweet]:
         response = self._get_tweet_detail(tweet_id, cursor)
-        items = find_dict(response, 'moduleItems')[0]
+        items = find_dict(response, 'moduleItems', find_one=True)[0]
         results = []
         for item in items:
             if 'tweet' not in item['entryId']:
@@ -1699,7 +1703,7 @@ class Client(BaseClient):
         if 'errors' in response:
             raise TweetNotAvailable(response['errors'][0]['message'])
 
-        entries = find_dict(response, 'entries')[0]
+        entries = find_dict(response, 'entries', find_one=True)[0]
         reply_to = []
         replies_list = []
         related_tweets = []
@@ -1788,7 +1792,7 @@ class Client(BaseClient):
             params=params,
             headers=self._base_headers
         )
-        tweets = find_dict(response, 'scheduled_tweet_list')[0]
+        tweets = find_dict(response, 'scheduled_tweet_list', find_one=True)[0]
         return [ScheduledTweet(self, tweet) for tweet in tweets]
 
     def delete_scheduled_tweet(self, tweet_id: str) -> Response:
@@ -1840,7 +1844,7 @@ class Client(BaseClient):
             params=params,
             headers=self._base_headers
         )
-        items_ = find_dict(response, 'entries')
+        items_ = find_dict(response, 'entries', find_one=True)
         if not items_:
             return Result([])
         items = items_[0]
@@ -1851,7 +1855,7 @@ class Client(BaseClient):
         for item in items:
             if not item['entryId'].startswith('user'):
                 continue
-            user_info_ = find_dict(item, 'result')
+            user_info_ = find_dict(item, 'result', find_one=True)
             if not user_info_:
                 continue
             user_info = user_info_[0]
@@ -2068,7 +2072,7 @@ class Client(BaseClient):
             headers=self._base_headers
         )
 
-        instructions_ = find_dict(response, 'instructions')
+        instructions_ = find_dict(response, 'instructions', find_one=True)
         if not instructions_:
             return Result([])
         instructions = instructions_[0]
@@ -2118,6 +2122,56 @@ class Client(BaseClient):
             partial(self.get_user_tweets,
                     user_id, tweet_type, count, previous_cursor),
             previous_cursor
+        )
+
+    def get_user_likes(
+        self, user_id: str | None = None, screen_name: str | None = None,
+        count: int = 40, cursor: str | None = None
+    ) -> Result[Tweet]:
+        """
+        Retrieves a list of tweets liked by a specified user.
+
+        Parameters
+        ----------
+        user_id : :class:`str` | None, default=None
+            The user ID of the target user. Either user_id or screen_name must be provided.
+        screen_name : :class:`str` | None, default=None
+            The screen name of the target user. Either user_id or screen_name must be provided.
+        count : :class:`int`, default=40
+            The maximum number of liked tweets to retrieve.
+
+        Returns
+        -------
+        Result[:class:`Tweet`]
+            A Result object containing a list of :class:`Tweet` objects.
+        """
+        params = {'count': count}
+        if user_id is not None:
+            params['user_id'] = user_id
+        elif screen_name is not None:
+            params['screen_name'] = screen_name
+
+        if cursor is not None:
+            params['max_id'] = cursor
+
+        headers = self._base_headers
+        headers['authorization'] = f'Bearer {self._token2}'
+
+        response, _ = self.get(
+            Endpoint.USER_LIKES_2,
+            params=params,
+            headers=headers
+        )
+        tweets = []
+        for tweet in response:
+            user = User(self, build_user_data(tweet['user']))
+            tweets.append(Tweet(self, build_tweet_data(tweet), user))
+        next_cursor = tweets[-1].id
+
+        return Result(
+            tweets,
+            partial(self.get_user_likes, user_id, screen_name, count, next_cursor),
+            next_cursor
         )
 
     def get_timeline(
@@ -2183,7 +2237,7 @@ class Client(BaseClient):
             headers=self._base_headers
         )
 
-        items = find_dict(response, 'entries')[0]
+        items = find_dict(response, 'entries', find_one=True)[0]
         next_cursor = items[-1]['content']['value']
         results = []
 
@@ -2264,7 +2318,7 @@ class Client(BaseClient):
             headers=self._base_headers
         )
 
-        items = find_dict(response, 'entries')[0]
+        items = find_dict(response, 'entries', find_one=True)[0]
         next_cursor = items[-1]['content']['value']
         results = []
 
@@ -2554,7 +2608,7 @@ class Client(BaseClient):
             headers=self._base_headers
         )
 
-        items_ = find_dict(response, 'entries')
+        items_ = find_dict(response, 'entries', find_one=True)
         if not items_:
             return Result([])
         items = items_[0]
@@ -2636,7 +2690,8 @@ class Client(BaseClient):
             headers=self._base_headers
         )
 
-        slice = find_dict(response, 'bookmark_collections_slice')[0]
+        slice = find_dict(
+            response, 'bookmark_collections_slice', find_one=True)[0]
         results = []
         for item in slice['items']:
             results.append(BookmarkFolder(self, item))
@@ -3021,7 +3076,7 @@ class Client(BaseClient):
 
         entry_id_prefix = 'trends' if category == 'trending' else 'Guide'
         entries = [
-            i for i in find_dict(response, 'entries')[0]
+            i for i in find_dict(response, 'entries', find_one=True)[0]
             if i['entryId'].startswith(entry_id_prefix)
         ]
 
@@ -3100,12 +3155,12 @@ class Client(BaseClient):
             headers=self._base_headers
         )
 
-        items = find_dict(response, 'entries')[0]
+        items = find_dict(response, 'entries', find_one=True)[0]
         results = []
         for item in items:
             entry_id = item['entryId']
             if entry_id.startswith('user'):
-                user_info = find_dict(item, 'result')
+                user_info = find_dict(item, 'result', find_one=True)
                 if not user_info:
                     warnings.warn(
                         'Some followers are excluded because '
@@ -3518,7 +3573,7 @@ class Client(BaseClient):
             f'{user_id}-{self.user_id()}', text, media_id, reply_to
         )
 
-        message_data = find_dict(response, 'message_data')[0]
+        message_data = find_dict(response, 'message_data', find_one=True)[0]
         users = list(response['users'].values())
         return Message(
             self,
@@ -3758,7 +3813,7 @@ class Client(BaseClient):
             group_id, text, media_id, reply_to
         )
 
-        message_data = find_dict(response, 'message_data')[0]
+        message_data = find_dict(response, 'message_data', find_one=True)[0]
         users = list(response['users'].values())
         return GroupMessage(
             self,
@@ -3963,7 +4018,7 @@ class Client(BaseClient):
             json=data,
             headers=self._base_headers
         )
-        list_info = find_dict(response, 'list')[0]
+        list_info = find_dict(response, 'list', find_one=True)[0]
         return List(self, list_info)
 
     def edit_list_banner(self, list_id: str, media_id: str) -> Response:
@@ -4083,7 +4138,7 @@ class Client(BaseClient):
             json=data,
             headers=self._base_headers
         )
-        list_info = find_dict(response, 'list')[0]
+        list_info = find_dict(response, 'list', find_one=True)[0]
         return List(self, list_info)
 
     def add_list_member(self, list_id: str, user_id: str) -> Response:
@@ -4200,8 +4255,8 @@ class Client(BaseClient):
             headers=self._base_headers
         )
 
-        entries = find_dict(response, 'entries')[0]
-        items = find_dict(entries, 'items')
+        entries = find_dict(response, 'entries', find_one=True)[0]
+        items = find_dict(entries, 'items', find_one=True)
 
         if len(items) < 2:
             return Result([])
@@ -4243,7 +4298,7 @@ class Client(BaseClient):
             params=params,
             headers=self._base_headers
         )
-        list_info = find_dict(response, 'list')[0]
+        list_info = find_dict(response, 'list', find_one=True)[0]
         return List(self, list_info)
 
     def get_list_tweets(
@@ -4300,7 +4355,7 @@ class Client(BaseClient):
             headers=self._base_headers
         )
 
-        items = find_dict(response, 'entries')[0]
+        items = find_dict(response, 'entries', find_one=True)[0]
         next_cursor = items[-1]['content']['value']
 
         results = []
@@ -4340,12 +4395,12 @@ class Client(BaseClient):
             headers=self._base_headers
         )
 
-        items = find_dict(response, 'entries')[0]
+        items = find_dict(response, 'entries', find_one=True)[0]
         results = []
         for item in items:
             entry_id = item['entryId']
             if entry_id.startswith('user'):
-                user_info = find_dict(item, 'result')[0]
+                user_info = find_dict(item, 'result', find_one=True)[0]
                 results.append(User(self, user_info))
             elif entry_id.startswith('cursor-bottom'):
                 next_cursor = item['content']['value']
@@ -4459,12 +4514,12 @@ class Client(BaseClient):
         >>> more_lists = lists.next()  # Retrieve more lists
         """
         response = self._search(query, 'Lists', count, cursor)
-        entries = find_dict(response, 'entries')[0]
+        entries = find_dict(response, 'entries', find_one=True)[0]
 
         if cursor is None:
             items = entries[0]['content']['items']
         else:
-            items = find_dict(response, 'moduleItems')[0]
+            items = find_dict(response, 'moduleItems', find_one=True)[0]
 
         lists = []
         for item in items:
@@ -4567,13 +4622,14 @@ class Client(BaseClient):
 
             notifications.append(Notification(self, notification, tweet, user))
 
-        entries = find_dict(response, 'entries')[0]
+        entries = find_dict(response, 'entries', find_one=True)[0]
         cursor_bottom_entry = [
             i for i in entries
             if i['entryId'].startswith('cursor-bottom')
         ]
         if cursor_bottom_entry:
-            next_cursor = find_dict(cursor_bottom_entry[0], 'value')[0]
+            next_cursor = find_dict(
+                cursor_bottom_entry[0], 'value', find_one=True)[0]
         else:
             next_cursor = None
 
@@ -4624,11 +4680,11 @@ class Client(BaseClient):
             headers=self._base_headers
         )
 
-        items = find_dict(response, 'items_results')[0]
+        items = find_dict(response, 'items_results', find_one=True)[0]
         communities = []
         for item in items:
             communities.append(Community(self, item['result']))
-        next_cursor_ = find_dict(response, 'next_cursor')
+        next_cursor_ = find_dict(response, 'next_cursor', find_one=True)
         next_cursor = next_cursor_[0] if next_cursor_ else None
         if next_cursor is None:
             fetch_next_result = None
@@ -4667,7 +4723,7 @@ class Client(BaseClient):
             params=params,
             headers=self._base_headers
         )
-        community_data = find_dict(response, 'result')[0]
+        community_data = find_dict(response, 'result', find_one=True)[0]
         return Community(self, community_data)
 
     def get_community_tweets(
@@ -4735,14 +4791,14 @@ class Client(BaseClient):
             headers=self._base_headers
         )
 
-        entries = find_dict(response, 'entries')[0]
+        entries = find_dict(response, 'entries', find_one=True)[0]
         if tweet_type == 'Media':
             if cursor is None:
                 items = entries[0]['content']['items']
                 next_cursor = entries[-1]['content']['value']
                 previous_cursor = entries[-2]['content']['value']
             else:
-                items = find_dict(response, 'moduleItems')[0]
+                items = find_dict(response, 'moduleItems', find_one=True)[0]
                 next_cursor = entries[-1]['content']['value']
                 previous_cursor = entries[-2]['content']['value']
         else:
@@ -4810,13 +4866,13 @@ class Client(BaseClient):
             params=params,
             headers=self._base_headers
         )
-        items = find_dict(response, 'entries')[0]
+        items = find_dict(response, 'entries', find_one=True)[0]
         tweets = []
         for item in items:
             if not item['entryId'].startswith('tweet'):
                 continue
             tweet = tweet_from_data(self, item)
-            tweet_data = find_dict(item, 'result')[0]
+            tweet_data = find_dict(item, 'result', find_one=True)[0]
             if 'tweet' in tweet_data:
                 tweet_data = tweet_data['tweet']
             user_data = tweet_data['core']['user_results']['result']
@@ -4931,7 +4987,7 @@ class Client(BaseClient):
             json=data,
             headers=self._base_headers
         )
-        community_data = find_dict(response, 'result')[0]
+        community_data = find_dict(response, 'result', find_one=True)[0]
         community_data['rest_id'] = community_data['id_str']
         return Community(self, community_data)
 
@@ -4959,7 +5015,7 @@ class Client(BaseClient):
             headers=self._base_headers
         )
 
-        items = find_dict(response, 'items_results')[0]
+        items = find_dict(response, 'items_results', find_one=True)[0]
         users = []
         for item in items:
             if 'result' not in item:
@@ -4968,7 +5024,7 @@ class Client(BaseClient):
                 continue
             users.append(CommunityMember(self, item['result']))
 
-        next_cursor_ = find_dict(response, 'next_cursor')
+        next_cursor_ = find_dict(response, 'next_cursor', find_one=True)
         next_cursor = next_cursor_[0] if next_cursor_ else None
 
         if next_cursor is None:
@@ -5078,7 +5134,7 @@ class Client(BaseClient):
             headers=self._base_headers
         )
 
-        items = find_dict(response, 'entries')[0]
+        items = find_dict(response, 'entries', find_one=True)[0]
         tweets = []
         for item in items:
             if not item['entryId'].startswith('tweet'):
