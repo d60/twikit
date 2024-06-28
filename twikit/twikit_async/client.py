@@ -435,8 +435,7 @@ class Client(BaseClient):
 
         if flow.task_id == 'LoginTwoFactorAuthChallenge':
             if totp_secret is None:
-                print(find_dict(
-                    flow.response, 'secondary_text', find_one=True)[0]['text'])
+                print(find_dict(flow.response, 'secondary_text', find_one=True)[0]['text'])
                 totp_code = input('>>>')
             else:
                 totp_code = pyotp.TOTP(totp_secret).now()
@@ -450,8 +449,7 @@ class Client(BaseClient):
             })
 
         if flow.task_id == 'LoginAcid':
-            print(find_dict(
-                flow.response, 'secondary_text', find_one=True)[0]['text'])
+            print(find_dict(flow.response, 'secondary_text', find_one=True)[0]['text'])
 
             await flow.execute_task({
                 'subtask_id': 'LoginAcid',
@@ -714,9 +712,7 @@ class Client(BaseClient):
 
         if next_cursor is None:
             if product == 'Media':
-                entries = find_dict(
-                    instructions, 'entries', find_one=True
-                )[0]
+                entries = find_dict(instructions, 'entries', find_one=True)[0]
                 next_cursor = entries[-1]['content']['value']
                 previous_cursor = entries[-2]['content']['value']
             else:
@@ -786,8 +782,7 @@ class Client(BaseClient):
 
         return Result(
             results,
-            partial(self.search_user,
-                    query, count, next_cursor),
+            partial(self.search_user, query, count, next_cursor),
             next_cursor
         )
 
@@ -960,12 +955,8 @@ class Client(BaseClient):
                 )
             }
 
-            coro = self.post(
-                endpoint,
-                params=params,
-                headers=headers,
-                files=files
-            )
+            coro = self.post(endpoint, params=params,
+                             headers=headers, files=files)
             tasks.append(asyncio.create_task(coro))
             chunk_streams.append(chunk_stream)
 
@@ -1119,12 +1110,8 @@ class Client(BaseClient):
         for i, choice in enumerate(choices, 1):
             card_data[f'twitter:string:choice{i}_label'] = choice
 
-        data = urlencode(
-            {'card_data': card_data}
-        )
-        headers = self._base_headers | {
-            'content-type': 'application/x-www-form-urlencoded'
-        }
+        data = urlencode({'card_data': card_data})
+        headers = self._base_headers | {'content-type': 'application/x-www-form-urlencoded'}
         response, _ = await self.post(
             Endpoint.CREATE_CARD,
             data=data,
@@ -1185,8 +1172,7 @@ class Client(BaseClient):
         media_ids: list[str] | None = None,
         poll_uri: str | None = None,
         reply_to: str | None = None,
-        conversation_control: Literal[
-            'followers', 'verified', 'mentioned'] | None = None,
+        conversation_control: Literal['followers', 'verified', 'mentioned'] | None = None,
         attachment_url: str | None = None,
         community_id: str | None = None,
         share_with_followers: bool = False,
@@ -1340,9 +1326,7 @@ class Client(BaseClient):
         if not _result:
             raise_exceptions_from_response(response['errors'])
             raise CouldNotTweet(
-                response['errors'][0]
-                if response['errors']
-                else 'Failed to post a tweet.'
+                response['errors'][0] if response['errors'] else 'Failed to post a tweet.'
             )
 
         tweet_info = _result[0]
@@ -1679,8 +1663,7 @@ class Client(BaseClient):
 
         if entries[-1]['entryId'].startswith('cursor'):
             next_cursor = entries[-1]['content']['itemContent']['value']
-            _fetch_next_result = partial(self._get_more_replies,
-                                         tweet_id, next_cursor)
+            _fetch_next_result = partial(self._get_more_replies, tweet_id, next_cursor)
         else:
             next_cursor = None
             _fetch_next_result = None
@@ -1815,9 +1798,7 @@ class Client(BaseClient):
             List of ScheduledTweet objects representing the scheduled tweets.
         """
 
-        params = flatten_params({
-            'variables': {'ascending': True}
-        })
+        params = flatten_params({'variables': {'ascending': True}})
         response, _ = await self.get(
             Endpoint.FETCH_SCHEDULED_TWEETS,
             params=params,
@@ -1841,9 +1822,7 @@ class Client(BaseClient):
             Response returned from twitter api.
         """
         data = {
-            'variables': {
-                'scheduled_tweet_id': tweet_id
-            },
+            'variables': {'scheduled_tweet_id': tweet_id},
             'queryId': get_query_id(Endpoint.DELETE_SCHEDULED_TWEET)
         }
         _, response = await self.post(
@@ -1894,11 +1873,9 @@ class Client(BaseClient):
 
         return Result(
             results,
-            partial(self._get_tweet_engagements,
-                    tweet_id, count, next_cursor, endpoint),
+            partial(self._get_tweet_engagements, tweet_id, count, next_cursor, endpoint),
             next_cursor,
-            partial(self._get_tweet_engagements,
-                    tweet_id, count, previous_cursor, endpoint),
+            partial(self._get_tweet_engagements, tweet_id, count, previous_cursor, endpoint),
             previous_cursor
         )
 
@@ -2012,9 +1989,7 @@ class Client(BaseClient):
         note_data = response['data']['birdwatch_note_by_rest_id']
         if 'data_v1' not in note_data:
             raise TwitterException(f'Invalid user id: {note_id}')
-        return CommunityNote(
-            self, note_data
-        )
+        return CommunityNote(self, note_data)
 
     async def get_user_tweets(
         self,
@@ -2125,9 +2100,7 @@ class Client(BaseClient):
         for item in items:
             entry_id = item['entryId']
 
-            if not entry_id.startswith(
-                ('tweet', 'profile-conversation', 'profile-grid')
-            ):
+            if not entry_id.startswith(('tweet', 'profile-conversation', 'profile-grid')):
                 continue
 
             if entry_id.startswith('profile-conversation'):
@@ -2150,11 +2123,9 @@ class Client(BaseClient):
 
         return Result(
             results,
-            partial(self.get_user_tweets,
-                    user_id, tweet_type, count, next_cursor),
+            partial(self.get_user_tweets, user_id, tweet_type, count, next_cursor),
             next_cursor,
-            partial(self.get_user_tweets,
-                    user_id, tweet_type, count, previous_cursor),
+            partial(self.get_user_tweets, user_id, tweet_type, count, previous_cursor),
             previous_cursor
         )
 
@@ -2366,8 +2337,7 @@ class Client(BaseClient):
 
         return Result(
             results,
-            partial(self.get_latest_timeline,
-                    count, seen_tweet_ids, next_cursor),
+            partial(self.get_latest_timeline, count, seen_tweet_ids, next_cursor),
             next_cursor
         )
 
@@ -2650,8 +2620,7 @@ class Client(BaseClient):
         next_cursor = items[-1]['content']['value']
         if folder_id is None:
             previous_cursor = items[-2]['content']['value']
-            fetch_previous_result = partial(self.get_bookmarks, count,
-                                            previous_cursor, folder_id)
+            fetch_previous_result = partial(self.get_bookmarks, count, previous_cursor, folder_id)
         else:
             previous_cursor = None
             fetch_previous_result = None
@@ -2723,9 +2692,7 @@ class Client(BaseClient):
             headers=self._base_headers
         )
 
-        slice = find_dict(
-            response, 'bookmark_collections_slice', find_one=True
-        )[0]
+        slice = find_dict(response, 'bookmark_collections_slice', find_one=True)[0]
         results = []
         for item in slice['items']:
             results.append(BookmarkFolder(self, item))
@@ -2778,9 +2745,7 @@ class Client(BaseClient):
             json=data,
             headers=self._base_headers
         )
-        return BookmarkFolder(
-            self, response['data']['bookmark_collection_update']
-        )
+        return BookmarkFolder(self, response['data']['bookmark_collection_update'])
 
     async def delete_bookmark_folder(self, folder_id: str) -> Response:
         """
@@ -2796,9 +2761,7 @@ class Client(BaseClient):
         :class:`httpx.Response`
             Response returned from twitter api.
         """
-        variables = {
-            'bookmark_collection_id': folder_id
-        }
+        variables = {'bookmark_collection_id': folder_id}
         data = {
             'variables': variables,
             'queryId': get_query_id(Endpoint.DELETE_BOOKMARK_FOLDER)
@@ -2823,9 +2786,7 @@ class Client(BaseClient):
         :class:`BookmarkFolder`
             Newly created bookmark folder.
         """
-        variables = {
-            'name': name
-        }
+        variables = {'name': name}
         data = {
             'variables': variables,
             'queryId': get_query_id(Endpoint.CREATE_BOOKMARK_FOLDER)
@@ -2835,9 +2796,7 @@ class Client(BaseClient):
             json=data,
             headers=self._base_headers
         )
-        return BookmarkFolder(
-            self, response['data']['bookmark_collection_create']
-        )
+        return BookmarkFolder(self, response['data']['bookmark_collection_create'])
 
     async def follow_user(self, user_id: str) -> Response:
         """
@@ -3049,9 +3008,7 @@ class Client(BaseClient):
 
     async def get_trends(
         self,
-        category: Literal[
-            'trending', 'for-you', 'news', 'sports', 'entertainment'
-        ],
+        category: Literal['trending', 'for-you', 'news', 'sports', 'entertainment'],
         count: int = 20,
         retry: bool = True,
         additional_request_params: dict | None = None
@@ -3119,9 +3076,7 @@ class Client(BaseClient):
                 return []
             # Recall the method again, as the trend information
             # may not be returned due to a Twitter error.
-            return await self.get_trends(
-                category, count, retry, additional_request_params
-            )
+            return await self.get_trends(category, count, retry, additional_request_params)
 
         items = entries[-1]['content']['timelineModule']['items']
 
@@ -3244,11 +3199,9 @@ class Client(BaseClient):
 
         return Result(
             results,
-            partial(self._get_user_friendship_2, user_id,
-                    count, endpoint, next_cursor),
+            partial(self._get_user_friendship_2, user_id, count, endpoint, next_cursor),
             next_cursor,
-            partial(self._get_user_friendship_2, user_id,
-                    count, endpoint, previous_cursor),
+            partial(self._get_user_friendship_2, user_id, count, endpoint, previous_cursor),
             previous_cursor
         )
 
@@ -3271,10 +3224,7 @@ class Client(BaseClient):
             A list of User objects representing the followers.
         """
         return await self._get_user_friendship(
-            user_id,
-            count,
-            Endpoint.FOLLOWERS,
-            cursor
+            user_id, count, Endpoint.FOLLOWERS, cursor
         )
 
     async def get_latest_followers(
@@ -3286,11 +3236,7 @@ class Client(BaseClient):
         Max count : 200
         """
         return await self._get_user_friendship_2(
-            user_id,
-            screen_name,
-            count,
-            Endpoint.FOLLOWERS2,
-            cursor
+            user_id, screen_name, count, Endpoint.FOLLOWERS2, cursor
         )
 
     async def get_latest_friends(
@@ -3302,11 +3248,7 @@ class Client(BaseClient):
         Max count : 200
         """
         return await self._get_user_friendship_2(
-            user_id,
-            screen_name,
-            count,
-            Endpoint.FOLLOWING2,
-            cursor
+            user_id, screen_name, count, Endpoint.FOLLOWING2, cursor
         )
 
     async def get_user_verified_followers(
@@ -3328,10 +3270,7 @@ class Client(BaseClient):
             A list of User objects representing the verified followers.
         """
         return await self._get_user_friendship(
-            user_id,
-            count,
-            Endpoint.BLUE_VERIFIED_FOLLOWERS,
-            cursor
+            user_id, count, Endpoint.BLUE_VERIFIED_FOLLOWERS, cursor
         )
 
     async def get_user_followers_you_know(
@@ -3353,10 +3292,7 @@ class Client(BaseClient):
             A list of User objects representing the followers you might know.
         """
         return await self._get_user_friendship(
-            user_id,
-            count,
-            Endpoint.FOLLOWERS_YOU_KNOW,
-            cursor
+            user_id, count, Endpoint.FOLLOWERS_YOU_KNOW, cursor
         )
 
     async def get_user_following(
@@ -3378,10 +3314,7 @@ class Client(BaseClient):
             A list of User objects representing the users being followed.
         """
         return await self._get_user_friendship(
-            user_id,
-            count,
-            Endpoint.FOLLOWING,
-            cursor
+            user_id, count, Endpoint.FOLLOWING, cursor
         )
 
     async def get_user_subscriptions(
@@ -3403,10 +3336,7 @@ class Client(BaseClient):
             A list of User objects representing the subscribed users.
         """
         return await self._get_user_friendship(
-            user_id,
-            count,
-            Endpoint.SUBSCRIPTIONS,
-            cursor
+            user_id, count, Endpoint.SUBSCRIPTIONS, cursor
         )
 
     async def _get_friendship_ids(
@@ -3436,11 +3366,9 @@ class Client(BaseClient):
 
         return Result(
             response['ids'],
-            partial(self._get_friendship_ids, user_id,
-                     screen_name, count, endpoint, next_cursor),
+            partial(self._get_friendship_ids, user_id, screen_name, count, endpoint, next_cursor),
             next_cursor,
-            partial(self._get_friendship_ids, user_id,
-                     screen_name, count, endpoint, previous_cursor),
+            partial(self._get_friendship_ids, user_id, screen_name, count, endpoint, previous_cursor),
             previous_cursor
         )
 
@@ -3469,11 +3397,7 @@ class Client(BaseClient):
             A Result object containing the IDs of the followers.
         """
         return await self._get_friendship_ids(
-            user_id,
-            screen_name,
-            count,
-            Endpoint.FOLLOWERS_IDS,
-            cursor
+            user_id, screen_name, count, Endpoint.FOLLOWERS_IDS, cursor
         )
 
     async def get_friends_ids(
@@ -3501,11 +3425,7 @@ class Client(BaseClient):
             A Result object containing the IDs of the friends.
         """
         return await self._get_friendship_ids(
-            user_id,
-            screen_name,
-            count,
-            Endpoint.FRIENDS_IDS,
-            cursor
+            user_id, screen_name, count, Endpoint.FRIENDS_IDS, cursor
         )
 
     async def _send_dm(
@@ -3547,9 +3467,7 @@ class Client(BaseClient):
         """
         Base function to get dm history.
         """
-        params = {
-            'context': 'FETCH_DM_CONVERSATION_HISTORY'
-        }
+        params = {'context': 'FETCH_DM_CONVERSATION_HISTORY'}
         if max_id is not None:
             params['max_id'] = max_id
 
@@ -3846,9 +3764,7 @@ class Client(BaseClient):
         .upload_media
         .delete_dm
         """
-        response = await self._send_dm(
-            group_id, text, media_id, reply_to
-        )
+        response = await self._send_dm(group_id, text, media_id, reply_to)
 
         message_data = find_dict(response, 'message_data', find_one=True)[0]
         users = list(response['users'].values())
@@ -4157,9 +4073,7 @@ class Client(BaseClient):
         ...     'new name', 'new description', True
         ... )
         """
-        variables = {
-            'listId': list_id
-        }
+        variables = {'listId': list_id}
         if name is not None:
             variables['name'] = name
         if description is not None:
@@ -4278,9 +4192,7 @@ class Client(BaseClient):
         ...
         >>> more_lists = lists.next()  # Retrieve more lists
         """
-        variables = {
-            'count': count
-        }
+        variables = {'count': count}
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({
@@ -4301,9 +4213,7 @@ class Client(BaseClient):
 
         lists = []
         for list in items[1]:
-            lists.append(
-                List(self, list['item']['itemContent']['list'])
-            )
+            lists.append(List(self, list['item']['itemContent']['list']))
 
         next_cursor = entries[-1]['content']['value']
 
@@ -4377,10 +4287,7 @@ class Client(BaseClient):
         ...
         ...
         """
-        variables = {
-            'listId': list_id,
-            'count': count
-        }
+        variables = {'listId': list_id, 'count': count}
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({
@@ -4417,10 +4324,7 @@ class Client(BaseClient):
         """
         Base function to retrieve the users associated with a list.
         """
-        variables = {
-            'listId': list_id,
-            'count': count,
-        }
+        variables = {'listId': list_id, 'count': count}
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({
@@ -4444,14 +4348,9 @@ class Client(BaseClient):
                 next_cursor = item['content']['value']
                 break
 
-        async def _get_more_users():
-            return await self._get_list_users(
-                endpoint, list_id, count, next_cursor
-            )
-
         return Result(
             results,
-            _get_more_users,
+            partial(self._get_list_users, endpoint, list_id, count, next_cursor),
             next_cursor
         )
 
@@ -4484,10 +4383,7 @@ class Client(BaseClient):
         >>> more_members = members.next()  # Retrieve more members
         """
         return await self._get_list_users(
-            Endpoint.LIST_MEMBERS,
-            list_id,
-            count,
-            cursor
+            Endpoint.LIST_MEMBERS, list_id, count, cursor
         )
 
     async def get_list_subscribers(
@@ -4519,10 +4415,7 @@ class Client(BaseClient):
         >>> more_subscribers = members.next()  # Retrieve more subscribers
         """
         return await self._get_list_users(
-            Endpoint.LIST_SUBSCRIBERS,
-            list_id,
-            count,
-            cursor
+            Endpoint.LIST_SUBSCRIBERS, list_id, count, cursor
         )
 
     async def search_list(
@@ -4619,9 +4512,7 @@ class Client(BaseClient):
             'Mentions': Endpoint.NOTIFICATIONS_MENTIONES
         }[type]
 
-        params = {
-            'count': count
-        }
+        params = {'count': count}
         if cursor is not None:
             params['cursor'] = cursor
 
@@ -4670,9 +4561,7 @@ class Client(BaseClient):
             if i['entryId'].startswith('cursor-bottom')
         ]
         if cursor_bottom_entry:
-            next_cursor = find_dict(
-                cursor_bottom_entry[0], 'value', find_one=True
-            )[0]
+            next_cursor = find_dict(cursor_bottom_entry[0], 'value', find_one=True)[0]
         else:
             next_cursor = None
 
@@ -4733,8 +4622,7 @@ class Client(BaseClient):
         if next_cursor is None:
             fetch_next_result = None
         else:
-            fetch_next_result = partial(self.search_community,
-                                        query, next_cursor)
+            fetch_next_result = partial(self.search_community, query, next_cursor)
         return Result(
             communities,
             fetch_next_result,
@@ -4861,11 +4749,9 @@ class Client(BaseClient):
 
         return Result(
             tweets,
-            partial(self.get_community_tweets, community_id,
-                    tweet_type, count, next_cursor),
+            partial(self.get_community_tweets, community_id, tweet_type, count, next_cursor),
             next_cursor,
-            partial(self.get_community_tweets, community_id,
-                    tweet_type, count, previous_cursor),
+            partial(self.get_community_tweets, community_id, tweet_type, count, previous_cursor),
             previous_cursor
         )
 
@@ -4922,9 +4808,7 @@ class Client(BaseClient):
             community_data = tweet_data['community_results']['result']
             community_data['rest_id'] = community_data['id_str']
             community = Community(self, community_data)
-            tweet = Tweet(
-                self, tweet_data, User(self, user_data)
-            )
+            tweet = Tweet(self, tweet_data, User(self, user_data))
             tweet.community = community
             tweets.append(tweet)
 
@@ -5100,10 +4984,7 @@ class Client(BaseClient):
             List of retrieved members.
         """
         return await self._get_community_users(
-            Endpoint.COMMUNITY_MEMBERS,
-            community_id,
-            count,
-            cursor
+            Endpoint.COMMUNITY_MEMBERS, community_id, count, cursor
         )
 
     async def get_community_moderators(
@@ -5125,10 +5006,7 @@ class Client(BaseClient):
             List of retrieved moderators.
         """
         return await self._get_community_users(
-            Endpoint.COMMUNITY_MODERATORS,
-            community_id,
-            count,
-            cursor
+            Endpoint.COMMUNITY_MODERATORS, community_id, count, cursor
         )
 
     async def search_community_tweet(
@@ -5192,11 +5070,9 @@ class Client(BaseClient):
 
         return Result(
             tweets,
-            partial(self.search_community_tweet, community_id,
-                    query, count, next_cursor),
+            partial(self.search_community_tweet, community_id, query, count, next_cursor),
             next_cursor,
-            partial(self.search_community_tweet, community_id,
-                    query, count, previous_cursor),
+            partial(self.search_community_tweet, community_id, query, count, previous_cursor),
             previous_cursor,
         )
 
@@ -5207,9 +5083,7 @@ class Client(BaseClient):
         headers.pop('content-type')
         params = {'topics': ','.join(topics)}
 
-        async with self.stream(
-            'GET', Endpoint.EVENTS, params=params, timeout=None
-        ) as response:
+        async with self.stream('GET', Endpoint.EVENTS, params=params, timeout=None) as response:
             self._remove_duplicate_ct0_cookie()
             async for line in response.aiter_lines():
                 try:
@@ -5292,9 +5166,7 @@ class Client(BaseClient):
         """
         stream = self._stream(topics)
         session_id = (await anext(stream))[1].config.session_id
-        return StreamingSession(
-            self, session_id, stream, topics, auto_reconnect
-        )
+        return StreamingSession(self, session_id, stream, topics, auto_reconnect)
 
     async def _update_subscriptions(
         self,

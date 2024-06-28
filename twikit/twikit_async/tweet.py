@@ -54,6 +54,8 @@ class Tweet:
         Indicates if the tweet is favorited.
     view_count: :class:`int` | None
         The count of views.
+    view_count_state : :class:`str` | None
+        The state of the tweet views.
     retweet_count : :class:`int`
         The count of retweets for the tweet.
     editable_until_msecs : :class:`int`
@@ -64,8 +66,6 @@ class Tweet:
         Indicates if the tweet is eligible for editing.
     edits_remaining : :class:`int`
         The remaining number of edits allowed for the tweet.
-    state : :class:`str` | None
-        The state of the tweet views.
     replies: Result[:class:`Tweet`] | None
         Replies to the tweet.
     reply_to: list[:class:`Tweet`] | None
@@ -97,25 +97,35 @@ class Tweet:
         self.thread: list[Tweet] | None = None
 
         self.id: str = data['rest_id']
-
         legacy = data['legacy']
         self.created_at: str = legacy['created_at']
         self.text: str = legacy['full_text']
-
         self.lang: str = legacy['lang']
         self.is_quote_status: bool = legacy['is_quote_status']
-        self.in_reply_to: str | None = self._data['legacy'].get(
-            'in_reply_to_status_id_str'
-        )
+        self.in_reply_to: str | None = self._data['legacy'].get('in_reply_to_status_id_str')
+        self.is_quote_status: bool = legacy['is_quote_status']
+        self.possibly_sensitive: bool = legacy.get('possibly_sensitive')
+        self.possibly_sensitive_editable: bool = legacy.get('possibly_sensitive_editable')
+        self.quote_count: int = legacy['quote_count']
+        self.media: list = legacy['entities'].get('media')
+        self.reply_count: int = legacy['reply_count']
+        self.favorite_count: int = legacy['favorite_count']
+        self.favorited: bool = legacy['favorited']
+        self.retweet_count: int = legacy['retweet_count']
+        self.editable_until_msecs: int = data['edit_control'].get('editable_until_msecs')
+        self.is_translatable: bool = data.get('is_translatable')
+        self.is_edit_eligible: bool = data['edit_control'].get('is_edit_eligible')
+        self.edits_remaining: int = data['edit_control'].get('edits_remaining')
+        self.view_count: str = data['views'].get('count') if 'views' in data else None
+        self.view_count_state: str = data['views'].get('state') if 'views' in data else None
+        self.has_community_notes: bool = data.get('has_birdwatch_notes')
 
         if data.get('quoted_status_result'):
             quoted_tweet = data.pop('quoted_status_result')['result']
             if 'tweet' in quoted_tweet:
                 quoted_tweet = quoted_tweet['tweet']
             if quoted_tweet.get('__typename') != 'TweetTombstone':
-                quoted_user = User(
-                    client, quoted_tweet['core']['user_results']['result']
-                )
+                quoted_user = User(client, quoted_tweet['core']['user_results']['result'])
                 self.quote: Tweet = Tweet(client, quoted_tweet, quoted_user)
         else:
             self.quote = None
@@ -133,9 +143,7 @@ class Tweet:
         else:
             self.retweeted_tweet = None
 
-        note_tweet_results = find_dict(
-            data, 'note_tweet_results', find_one=True
-        )
+        note_tweet_results = find_dict(data, 'note_tweet_results', find_one=True)
         self.full_text: str = self.text
         if note_tweet_results:
             text_list = find_dict(note_tweet_results, 'text', find_one=True)
@@ -152,28 +160,6 @@ class Tweet:
         self.hashtags: list[str] = [
             i['text'] for i in hashtags
         ]
-
-        self.is_quote_status: bool = legacy['is_quote_status']
-        self.possibly_sensitive: bool = legacy.get('possibly_sensitive')
-        self.possibly_sensitive_editable: bool = legacy.get(
-            'possibly_sensitive_editable')
-        self.quote_count: int = legacy['quote_count']
-        self.media: list = legacy['entities'].get('media')
-        self.reply_count: int = legacy['reply_count']
-        self.favorite_count: int = legacy['favorite_count']
-        self.favorited: bool = legacy['favorited']
-        self.view_count: int = (data['views'].get('count')
-                                if 'views' in data else None)
-        self.retweet_count: int = legacy['retweet_count']
-        self.editable_until_msecs: int = data['edit_control'].get(
-            'editable_until_msecs')
-        self.is_translatable: bool = data.get('is_translatable')
-        self.is_edit_eligible: bool = data['edit_control'].get(
-            'is_edit_eligible')
-        self.edits_remaining: int = data['edit_control'].get('edits_remaining')
-        self.state: str = (data['views'].get('state')
-                           if 'views' in data else None)
-        self.has_community_notes: bool = data.get('has_birdwatch_notes')
 
         self.community_note = None
         if 'birdwatch_pivot' in data:
@@ -210,10 +196,7 @@ class Tweet:
                     for i in card_data
                 }
 
-            if (
-                'title' in binding_values and
-                'string_value' in binding_values['title']
-            ):
+            if 'title' in binding_values and 'string_value' in binding_values['title']:
                 self.thumbnail_title = binding_values['title']['string_value']
 
             if (
@@ -590,20 +573,15 @@ class Poll:
 
         self.choices = choices
 
-        duration_minutes = binding_values['duration_minutes']['string_value']
-        self.duration_minutes = int(duration_minutes)
-
-        end = binding_values['end_datetime_utc']['string_value']
+        self.duration_minutes = int(binding_values['duration_minutes']['string_value'])
+        self.end_datetime_utc: str = binding_values['end_datetime_utc']['string_value']
         updated = binding_values['last_updated_datetime_utc']['string_value']
-        self.end_datetime_utc: str = end
         self.last_updated_datetime_utc: str = updated
 
-        counts_are_final = binding_values['counts_are_final']['boolean_value']
-        self.counts_are_final: bool = counts_are_final
+        self.counts_are_final: bool = binding_values['counts_are_final']['boolean_value']
 
         if 'selected_choice' in binding_values:
-            selected_choice = binding_values['selected_choice']['string_value']
-            self.selected_choice: str = selected_choice
+            self.selected_choice: str = binding_values['selected_choice']['string_value']
         else:
             self.selected_choice = None
 
