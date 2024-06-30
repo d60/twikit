@@ -373,7 +373,7 @@ class Client(BaseClient):
 
         flow.execute_task(params={'flow_name': 'login'})
         flow.execute_task()
-        print(f'LoginEnterUserIdentifierSSO')
+
         flow.execute_task({
             'subtask_id': 'LoginEnterUserIdentifierSSO',
             'settings_list': {
@@ -388,7 +388,7 @@ class Client(BaseClient):
                 'link': 'next_link'
             }
         })
-        print(f'flow.task_id')
+
         if flow.task_id == 'LoginEnterAlternateIdentifierSubtask':
             flow.execute_task({
                 'subtask_id': 'LoginEnterAlternateIdentifierSubtask',
@@ -397,7 +397,7 @@ class Client(BaseClient):
                     'link': 'next_link'
                 }
             })
-        print(f'execute_task_1')
+
         flow.execute_task({
             'subtask_id': 'LoginEnterPassword',
             'enter_password': {
@@ -405,7 +405,7 @@ class Client(BaseClient):
                 'link': 'next_link'
             }
         })
-        print(f'execute_task_2')
+
         flow.execute_task({
             'subtask_id': 'AccountDuplicationCheck',
             'check_logged_in_account': {
@@ -417,7 +417,7 @@ class Client(BaseClient):
             return
 
         self._user_id = find_dict(flow.response, 'id_str', find_one=True)[0]
-        print(f'LoginTwoFactorAuthChallenge')
+
         if flow.task_id == 'LoginTwoFactorAuthChallenge':
             if totp_secret is None:
                 print(find_dict(flow.response, 'secondary_text', find_one=True)[0]['text'])
@@ -432,7 +432,7 @@ class Client(BaseClient):
                     'link': 'next_link'
                 }
             })
-        print(f'LoginAcid')
+
         if flow.task_id == 'LoginAcid':
             print(find_dict(flow.response, 'secondary_text', find_one=True)[0]['text'])
 
@@ -443,7 +443,7 @@ class Client(BaseClient):
                     'link': 'next_link'
                 }
             })
-        print(f'flow.response')
+
         return flow.response
 
     def logout(self) -> Response:
