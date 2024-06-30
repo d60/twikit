@@ -373,6 +373,7 @@ class Client(BaseClient):
 
         flow.execute_task(params={'flow_name': 'login'})
         flow.execute_task()
+
         flow.execute_task({
             'subtask_id': 'LoginEnterUserIdentifierSSO',
             'settings_list': {
@@ -438,7 +439,7 @@ class Client(BaseClient):
             flow.execute_task({
                 'subtask_id': 'LoginAcid',
                 'enter_text': {
-                    'text': input('>>> '),
+                    'text': auth_info_2,
                     'link': 'next_link'
                 }
             })
