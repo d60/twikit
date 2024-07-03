@@ -6,6 +6,7 @@ import time
 import warnings
 from functools import partial
 from typing import Any, Generator, Literal
+from datetime import datetime
 
 import filetype
 import httpx
@@ -4440,6 +4441,7 @@ class Client(BaseClient):
         self,
         type: Literal['All', 'Verified', 'Mentions'],
         count: int = 40,
+        retreive_inbox: bool = False,
         cursor: str | None = None
     ) -> Result[Notification]:
         """
@@ -4492,12 +4494,13 @@ class Client(BaseClient):
         )
 
         global_objects = response['globalObjects']
+
         users = {
             id: User(self, build_user_data(data))
             for id, data in global_objects.get('users', {}).items()
         }
-        tweets = {}
 
+        tweets = {}
         for id, tweet_data in global_objects.get('tweets', {}).items():
             user_id = tweet_data['user_id_str']
             user = users[user_id]
@@ -4506,23 +4509,35 @@ class Client(BaseClient):
 
         notifications = []
 
-        for notification in global_objects.get('notifications', {}).values():
-            user_actions = notification['template']['aggregateUserActionsV1']
-            target_objects = user_actions['targetObjects']
-            if target_objects and 'tweet' in target_objects[0]:
-                tweet_id = target_objects[0]['tweet']['id']
-                tweet = tweets[tweet_id]
-            else:
-                tweet = None
+        if retreive_inbox:
+            for idTweet in tweets:
+                tweet = tweets[idTweet]
+                notifications.append(Notification(self, {
+                    'id': tweet.id,
+                    'timestampMs': datetime.strptime(tweet.created_at, '%a %b %d %H:%M:%S %z %Y').timestamp(),
+                    'icon': None,
+                    'message': {
+						'text': tweet.text
+					}
+				}, tweet, tweet.user))
+        else:
+            for notification in global_objects.get('notifications', {}).values():
+                user_actions = notification['template']['aggregateUserActionsV1']
+                target_objects = user_actions['targetObjects']
+                if target_objects and 'tweet' in target_objects[0]:
+                    tweet_id = target_objects[0]['tweet']['id']
+                    tweet = tweets[tweet_id]
+                else:
+                    tweet = None
 
-            from_users  = user_actions['fromUsers']
-            if from_users and 'user' in from_users[0]:
-                user_id = from_users[0]['user']['id']
-                user = users[user_id]
-            else:
-                user = None
+                from_users  = user_actions['fromUsers']
+                if from_users and 'user' in from_users[0]:
+                    user_id = from_users[0]['user']['id']
+                    user = users[user_id]
+                else:
+                    user = None
 
-            notifications.append(Notification(self, notification, tweet, user))
+                notifications.append(Notification(self, notification, tweet, user))
 
         entries = find_dict(response, 'entries', find_one=True)[0]
         cursor_bottom_entry = [
