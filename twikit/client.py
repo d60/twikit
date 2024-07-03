@@ -4456,6 +4456,8 @@ class Client(BaseClient):
             Mentions: Notifications with mentions
         count : :class:`int`, default=40
             Number of notifications to retrieve.
+        retreive_inbox : :class:`bool`, default=False,
+            Receive the entire Notification inbox
 
         Returns
         -------
