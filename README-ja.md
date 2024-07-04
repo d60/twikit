@@ -115,7 +115,7 @@ for tweet in tweets:
 
 **ユーザーのツイートを取得する**
 ```python
-tweets = client.get_user_tweets('123456', 'Tweet')
+tweets = client.get_user_tweets('123456', 'Tweets')
 
 for tweet in tweets:
     print(tweet.text)
