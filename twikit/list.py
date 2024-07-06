@@ -74,7 +74,7 @@ class List:
     def created_at_datetime(self) -> datetime:
         return timestamp_to_datetime(self.created_at)
 
-    def edit_banner(self, media_id: str) -> Response:
+    async def edit_banner(self, media_id: str) -> Response:
         """
         Edit the banner image of the list.
 
@@ -90,18 +90,18 @@ class List:
 
         Examples
         --------
-        >>> media_id = client.upload_media('image.png')
-        >>> media.edit_banner(media_id)
+        >>> media_id = await client.upload_media('image.png')
+        >>> await media.edit_banner(media_id)
         """
-        return self._client.edit_list_banner(self.id, media_id)
+        return await self._client.edit_list_banner(self.id, media_id)
 
-    def delete_banner(self) -> Response:
+    async def delete_banner(self) -> Response:
         """
         Deletes the list banner.
         """
-        return self._client.delete_list_banner(self.id)
+        return await self._client.delete_list_banner(self.id)
 
-    def edit(
+    async def edit(
         self,
         name: str | None = None,
         description: str | None = None,
@@ -127,25 +127,27 @@ class List:
 
         Examples
         --------
-        >>> list.edit(
+        >>> await list.edit(
         ...     'new name', 'new description', True
         ... )
         """
-        return self._client.edit_list(self.id, name, description, is_private)
+        return await self._client.edit_list(
+            self.id, name, description, is_private
+        )
 
-    def add_member(self, user_id: str) -> Response:
+    async def add_member(self, user_id: str) -> Response:
         """
         Adds a member to the list.
         """
-        return self._client.add_list_member(self.id, user_id)
+        return await self._client.add_list_member(self.id, user_id)
 
-    def remove_member(self, user_id: str) -> Response:
+    async def remove_member(self, user_id: str) -> Response:
         """
         Removes a member from the list.
         """
-        return self._client.remove_list_member(self.id, user_id)
+        return await self._client.remove_list_member(self.id, user_id)
 
-    def get_tweets(
+    async def get_tweets(
         self, count: int = 20, cursor: str | None = None
     ) -> Result[Tweet]:
         """
@@ -165,7 +167,7 @@ class List:
 
         Examples
         --------
-        >>> tweets = list.get_tweets()
+        >>> tweets = await list.get_tweets()
         >>> for tweet in tweets:
         ...    print(tweet)
         <Tweet id="...">
@@ -173,7 +175,7 @@ class List:
         ...
         ...
 
-        >>> more_tweets = tweets.next()  # Retrieve more tweets
+        >>> more_tweets = await tweets.next()  # Retrieve more tweets
         >>> for tweet in more_tweets:
         ...     print(tweet)
         <Tweet id="...">
@@ -181,9 +183,9 @@ class List:
         ...
         ...
         """
-        return self._client.get_list_tweets(self.id, count, cursor)
+        return await self._client.get_list_tweets(self.id, count, cursor)
 
-    def get_members(
+    async def get_members(
         self, count: int = 20, cursor: str | None = None
     ) -> Result[User]:
         """Retrieves members of the list.
@@ -209,9 +211,9 @@ class List:
         ...
         >>> more_members = members.next()  # Retrieve more members
         """
-        return self._client.get_list_members(self.id, count, cursor)
+        return await self._client.get_list_members(self.id, count, cursor)
 
-    def get_subscribers(
+    async def get_subscribers(
         self, count: int = 20, cursor: str | None = None
     ) -> Result[User]:
         """Retrieves subscribers of the list.
@@ -237,10 +239,10 @@ class List:
         ...
         >>> more_subscribers = subscribers.next()  # Retrieve more subscribers
         """
-        return self._client.get_list_subscribers(self.id, count, cursor)
+        return await self._client.get_list_subscribers(self.id, count, cursor)
 
-    def update(self) -> None:
-        new = self._client.get_list(self.id)
+    async def update(self) -> None:
+        new = await self._client.get_list(self.id)
         self.__dict__.update(new.__dict__)
 
     def __eq__(self, __value: object) -> bool:

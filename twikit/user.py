@@ -128,7 +128,7 @@ class User:
     def created_at_datetime(self) -> datetime:
         return timestamp_to_datetime(self.created_at)
 
-    def get_tweets(
+    async def get_tweets(
         self,
         tweet_type: Literal['Tweets', 'Replies', 'Media', 'Likes'],
         count: int = 40,
@@ -150,8 +150,8 @@ class User:
 
         Examples
         --------
-        >>> user = client.get_user_by_screen_name('example_user')
-        >>> tweets = user.get_tweets('Tweets', count=20)
+        >>> user = await client.get_user_by_screen_name('example_user')
+        >>> tweets = await user.get_tweets('Tweets', count=20)
         >>> for tweet in tweets:
         ...    print(tweet)
         <Tweet id="...">
@@ -159,7 +159,7 @@ class User:
         ...
         ...
 
-        >>> more_tweets = tweets.next()  # Retrieve more tweets
+        >>> more_tweets = await tweets.next()  # Retrieve more tweets
         >>> for tweet in more_tweets:
         ...     print(tweet)
         <Tweet id="...">
@@ -167,12 +167,12 @@ class User:
         ...
         ...
         """
-        return self._client.get_user_tweets(self.id, tweet_type, count)
+        return await self._client.get_user_tweets(self.id, tweet_type, count)
 
-    def get_likes(self, count: int = 40, cursor: str | None = None) -> Result[Tweet]:
-        return self._client.get_user_likes(self.id, count=count, cursor=cursor)
+    async def get_likes(self, count: int = 40, cursor: str | None = None) -> Result[Tweet]:
+        return await self._client.get_user_likes(self.id, count=count, cursor=cursor)
 
-    def follow(self) -> Response:
+    async def follow(self) -> Response:
         """
         Follows the user.
 
@@ -185,9 +185,9 @@ class User:
         --------
         Client.follow_user
         """
-        return self._client.follow_user(self.id)
+        return await self._client.follow_user(self.id)
 
-    def unfollow(self) -> Response:
+    async def unfollow(self) -> Response:
         """
         Unfollows the user.
 
@@ -200,9 +200,9 @@ class User:
         --------
         Client.unfollow_user
         """
-        return self._client.unfollow_user(self.id)
+        return await self._client.unfollow_user(self.id)
 
-    def block(self) -> Response:
+    async def block(self) -> Response:
         """
         Blocks a user.
 
@@ -220,9 +220,9 @@ class User:
         --------
         .unblock
         """
-        return self._client.block_user(self.id)
+        return await self._client.block_user(self.id)
 
-    def unblock(self) -> Response:
+    async def unblock(self) -> Response:
         """
         Unblocks a user.
 
@@ -240,9 +240,9 @@ class User:
         --------
         .block
         """
-        return self._client.unblock_user(self.id)
+        return await self._client.unblock_user(self.id)
 
-    def mute(self) -> Response:
+    async def mute(self) -> Response:
         """
         Mutes a user.
 
@@ -260,9 +260,9 @@ class User:
         --------
         .unmute
         """
-        return self._client.mute_user(self.id)
+        return await self._client.mute_user(self.id)
 
-    def unmute(self) -> Response:
+    async def unmute(self) -> Response:
         """
         Unmutes a user.
 
@@ -280,9 +280,9 @@ class User:
         --------
         .mute
         """
-        return self._client.unmute_user(self.id)
+        return await self._client.unmute_user(self.id)
 
-    def get_followers(self, count: int = 20) -> Result[User]:
+    async def get_followers(self, count: int = 20) -> Result[User]:
         """
         Retrieves a list of followers for the user.
 
@@ -300,9 +300,9 @@ class User:
         --------
         Client.get_user_followers
         """
-        return self._client.get_user_followers(self.id, count)
+        return await self._client.get_user_followers(self.id, count)
 
-    def get_verified_followers(self, count: int = 20) -> Result[User]:
+    async def get_verified_followers(self, count: int = 20) -> Result[User]:
         """
         Retrieves a list of verified followers for the user.
 
@@ -320,9 +320,9 @@ class User:
         --------
         Client.get_user_verified_followers
         """
-        return self._client.get_user_verified_followers(self.id, count)
+        return await self._client.get_user_verified_followers(self.id, count)
 
-    def get_followers_you_know(self, count: int = 20) -> Result[User]:
+    async def get_followers_you_know(self, count: int = 20) -> Result[User]:
         """
         Retrieves a list of followers whom the user might know.
 
@@ -340,9 +340,9 @@ class User:
         --------
         Client.get_user_followers_you_know
         """
-        return self._client.get_user_followers_you_know(self.id, count)
+        return await self._client.get_user_followers_you_know(self.id, count)
 
-    def get_following(self, count: int = 20) -> Result[User]:
+    async def get_following(self, count: int = 20) -> Result[User]:
         """
         Retrieves a list of users whom the user is following.
 
@@ -360,9 +360,9 @@ class User:
         --------
         Client.get_user_following
         """
-        return self._client.get_user_following(self.id, count)
+        return await self._client.get_user_following(self.id, count)
 
-    def get_subscriptions(self, count: int = 20) -> Result[User]:
+    async def get_subscriptions(self, count: int = 20) -> Result[User]:
         """
         Retrieves a list of users whom the user is subscribed to.
 
@@ -380,31 +380,31 @@ class User:
         --------
         Client.get_user_subscriptions
         """
-        return self._client.get_user_subscriptions(self.id, count)
+        return await self._client.get_user_subscriptions(self.id, count)
 
-    def get_latest_followers(
+    async def get_latest_followers(
         self, count: int | None = None, cursor: str | None = None
     ) -> Result[User]:
         """
         Retrieves the latest followers.
         Max count : 200
         """
-        return self._client.get_latest_followers(
+        return await self._client.get_latest_followers(
             self.id, count=count, cursor=cursor
         )
 
-    def get_latest_friends(
+    async def get_latest_friends(
         self, count: int | None = None, cursor: str | None = None
     ) -> Result[User]:
         """
         Retrieves the latest friends (following users).
         Max count : 200
         """
-        return self._client.get_latest_friends(
+        return await self._client.get_latest_friends(
             self.id, count=count, cursor=cursor
         )
 
-    def send_dm(
+    async def send_dm(
         self, text: str, media_id: str = None, reply_to = None
     ) -> Message:
         """
@@ -429,19 +429,19 @@ class User:
         Examples
         --------
         >>> # send DM with media
-        >>> media_id = client.upload_media('image.png')
-        >>> message = user.send_dm('text', media_id)
+        >>> media_id = await client.upload_media('image.png')
+        >>> message = await user.send_dm('text', media_id)
         >>> print(message)
-        <Message id='...'>
+        <Message id="...">
 
         See Also
         --------
         Client.upload_media
         Client.send_dm
         """
-        return self._client.send_dm(self.id, text, media_id, reply_to)
+        return await self._client.send_dm(self.id, text, media_id, reply_to)
 
-    def get_dm_history(self, max_id: str = None) -> Result[Message]:
+    async def get_dm_history(self, max_id: str = None) -> Result[Message]:
         """
         Retrieves the DM conversation history with the user.
 
@@ -458,7 +458,7 @@ class User:
 
         Examples
         --------
-        >>> messages = user.get_dm_history()
+        >>> messages = await user.get_dm_history()
         >>> for message in messages:
         >>>     print(message)
         <Message id="...">
@@ -466,7 +466,7 @@ class User:
         ...
         ...
 
-        >>> more_messages = messages.next()  # Retrieve more messages
+        >>> more_messages = await messages.next()  # Retrieve more messages
         >>> for message in more_messages:
         >>>     print(message)
         <Message id="...">
@@ -474,10 +474,10 @@ class User:
         ...
         ...
         """
-        return self._client.get_dm_history(self.id, max_id)
+        return await self._client.get_dm_history(self.id, max_id)
 
-    def update(self) -> None:
-        new = self._client.get_user_by_id(self.id)
+    async def update(self) -> None:
+        new = await self._client.get_user_by_id(self.id)
         self.__dict__.update(new.__dict__)
 
     def __repr__(self) -> str:

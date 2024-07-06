@@ -16,7 +16,7 @@ class Trend:
         The count of tweets associated with the trend.
     domain_context : :class:`str`
         The context or domain associated with the trend.
-    grouped_trends : list[:class:`str`]
+    grouped_trends : :class:`list`[:class:`str`]
         A list of trend names grouped under the main trend.
     """
 
@@ -80,8 +80,8 @@ class Location:
         self.placeType: dict = data['placeType']
         self.url: str = data['url']
 
-    def get_trends(self) -> PlaceTrends:
-        return self._client.get_place_trends(self.woeid)
+    async def get_trends(self) -> PlaceTrends:
+        return await self._client.get_place_trends(self.woeid)
 
     def __repr__(self) -> str:
         return f'<Location name="{self.name}" woeid={self.woeid}>'

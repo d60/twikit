@@ -54,9 +54,9 @@ class Place:
             Place(client, place) for place in data.get('contained_within', [])
         ]
 
-    def update(self) -> None:
+    async def update(self) -> None:
         new = self._client.get_place(self.id)
-        self.__dict__.update(new.__dict__)
+        await self.__dict__.update(new.__dict__)
 
     def __repr__(self) -> str:
         return f'<Place id="{self.id}" name="{self.name}">'

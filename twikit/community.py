@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, NamedTuple
 
+from .utils import b64_to_str
 from .tweet import Tweet
 from .user import User
-from .utils import Result, b64_to_str
+from .utils import Result
 
 if TYPE_CHECKING:
     from .client import Client
@@ -140,7 +141,7 @@ class Community:
         else:
             self.rules = None
 
-    def get_tweets(
+    async def get_tweets(
         self,
         tweet_type: Literal['Top', 'Latest', 'Media'],
         count: int = 40,
@@ -163,40 +164,40 @@ class Community:
 
         Examples
         --------
-        >>> tweets = community.get_tweets('Latest')
+        >>> tweets = await community.get_tweets('Latest')
         >>> for tweet in tweets:
         ...     print(tweet)
         <Tweet id="...">
         <Tweet id="...">
         ...
-        >>> more_tweets = tweets.next()  # Retrieve more tweets
+        >>> more_tweets = await tweets.next()  # Retrieve more tweets
         """
-        return self._client.get_community_tweets(
+        return await self._client.get_community_tweets(
             self.id,
             tweet_type,
             count,
             cursor
         )
 
-    def join(self) -> Community:
+    async def join(self) -> Community:
         """
         Join the community.
         """
-        return self._client.join_community(self.id)
+        return await self._client.join_community(self.id)
 
-    def leave(self) -> Community:
+    async def leave(self) -> Community:
         """
         Leave the community.
         """
-        return self._client.leave_community(self.id)
+        return await self._client.leave_community(self.id)
 
-    def request_to_join(self, answer: str | None = None) -> Community:
+    async def request_to_join(self, answer: str | None = None) -> Community:
         """
         Request to join the community.
         """
-        return self._client.request_to_join_community(self.id, answer)
+        return await self._client.request_to_join_community(self.id, answer)
 
-    def get_members(
+    async def get_members(
         self, count: int = 20, cursor: str | None = None
     ) -> Result[CommunityMember]:
         """
@@ -212,13 +213,13 @@ class Community:
         Result[:class:`CommunityMember`]
             List of retrieved members.
         """
-        return self._client.get_community_members(
+        return await self._client.get_community_members(
             self.id,
             count,
             cursor
         )
 
-    def get_moderators(
+    async def get_moderators(
         self, count: int = 20, cursor: str | None = None
     ) -> Result[CommunityMember]:
         """
@@ -234,13 +235,13 @@ class Community:
         Result[:class:`CommunityMember`]
             List of retrieved moderators.
         """
-        return self._client.get_community_moderators(
+        return await self._client.get_community_moderators(
             self.id,
             count,
             cursor
         )
 
-    def search_tweet(
+    async def search_tweet(
         self,
         query: str,
         count: int = 20,
@@ -260,15 +261,15 @@ class Community:
         Result[:class:`Tweet`]
             List of retrieved tweets.
         """
-        return self._client.search_community_tweet(
+        return await self._client.search_community_tweet(
             self.id,
             query,
             count,
             cursor
         )
 
-    def update(self) -> None:
-        new = self._client.get_community(self.id)
+    async def update(self) -> None:
+        new = await self._client.get_community(self.id)
         self.__dict__.update(new.__dict__)
 
     def __eq__(self, __value: object) -> bool:

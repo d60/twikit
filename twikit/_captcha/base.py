@@ -29,24 +29,24 @@ class CaptchaSolver:
     CAPTCHA_URL = 'https://twitter.com/account/access'
     CAPTCHA_SITE_KEY = '0152B4EB-D2DC-460A-89A1-629838B529C9'
 
-    def get_unlock_html(self) -> tuple[Response, UnlockHTML]:
+    async def get_unlock_html(self) -> tuple[Response, UnlockHTML]:
         headers = {
             'X-Twitter-Client-Language': 'en-US',
             'User-Agent': self.client._user_agent,
             'Upgrade-Insecure-Requests': '1'
         }
-        _, response = self.client.get(
+        _, response = await self.client.get(
             self.CAPTCHA_URL, headers=headers
         )
         return response, parse_unlock_html(response.text)
 
-    def ui_metrix(self) -> str:
-        js, _ = self.client.get(
+    async def ui_metrix(self) -> str:
+        js, _ = await self.client.get(
             'https://twitter.com/i/js_inst?c_name=ui_metrics'
         )
         return re.findall(r'return ({.*?});', js, re.DOTALL)[0]
 
-    def confirm_unlock(
+    async def confirm_unlock(
         self,
         authenticity_token: str,
         assignment_token: str,
@@ -65,14 +65,14 @@ class CaptchaSolver:
             data['language_code'] = 'en'
             params['lang'] = 'en'
         if ui_metrics:
-            data['ui_metrics'] = self.ui_metrix()
+            data['ui_metrics'] = await self.ui_metrix()
         data = urlencode(data)
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Upgrade-Insecure-Requests': '1',
             'Referer': self.CAPTCHA_URL
         }
-        _, response = self.client.post(
+        _, response = await self.client.post(
             self.CAPTCHA_URL, params=params, data=data, headers=headers
         )
         return response, parse_unlock_html(response.text)

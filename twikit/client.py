@@ -1,21 +1,19 @@
 from __future__ import annotations
 
+import asyncio
 import io
 import json
-import time
 import warnings
 from functools import partial
-from typing import Any, Generator, Literal
+from typing import Any, AsyncGenerator, Literal
 
 import filetype
 import httpx
-import pyotp
-from httpx import Response, HTTPTransport
+from httpx import AsyncHTTPTransport
 from httpx._utils import URLPattern
+import pyotp
+from httpx import Response
 
-from .bookmark import BookmarkFolder
-from ._captcha import Capsolver
-from .community import Community, CommunityMember
 from .errors import (
     AccountLocked,
     AccountSuspended,
@@ -34,30 +32,18 @@ from .errors import (
     UserUnavailable,
     raise_exceptions_from_response
 )
-from .geo import Place, _places_from_response
-from .group import Group, GroupMessage
-from .list import List
-from .message import Message
-from .notification import Notification
-from .trend import PlaceTrend, PlaceTrends, Location, Trend
-from .streaming import Payload, StreamingSession, _payload_from_data
-from .tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
-from .user import User
 from .utils import (
     BOOKMARK_FOLDER_TIMELINE_FEATURES,
     COMMUNITY_TWEETS_FEATURES,
     COMMUNITY_NOTE_FEATURES,
+    FEATURES,
     JOIN_COMMUNITY_FEATURES,
     LIST_FEATURES,
-    FEATURES,
     TOKEN,
-    TOKEN2,
     USER_FEATURES,
-    NOTE_TWEET_FEATURES,
     SIMILAR_POSTS_FEATURES,
+    NOTE_TWEET_FEATURES,
     Endpoint,
-    Flow,
-    Result,
     build_tweet_data,
     build_user_data,
     find_dict,
@@ -65,6 +51,22 @@ from .utils import (
     get_query_id,
     urlencode
 )
+from .bookmark import BookmarkFolder
+from ._captcha import Capsolver
+from .community import (
+    Community,
+    CommunityMember
+)
+from .geo import Place, _places_from_response
+from .group import Group, GroupMessage
+from .list import List
+from .message import Message
+from .notification import Notification
+from .trend import Location, PlaceTrend, PlaceTrends, Trend
+from .streaming import Payload, StreamingSession, _payload_from_data
+from .tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
+from .user import User
+from .utils import Flow, Result
 
 
 class BaseClient:
@@ -84,7 +86,7 @@ class BaseClient:
             )
             warnings.warn(message)
 
-        self.http = httpx.Client(proxy=proxy, **kwargs)
+        self.http = httpx.AsyncClient(proxy=proxy, **kwargs)
         self.language = language
         self.proxy = proxy
         self.captcha_solver = captcha_solver
@@ -92,14 +94,13 @@ class BaseClient:
             captcha_solver.client = self
 
         self._token = TOKEN
-        self._token2 = TOKEN2
         self._user_id = None
         self._user_agent = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                             'AppleWebKit/537.36 (KHTML, like Gecko) '
                             'Chrome/122.0.0.0 Safari/537.36')
         self._act_as = None
 
-    def request(
+    async def request(
         self,
         method: str,
         url: str,
@@ -108,7 +109,7 @@ class BaseClient:
         **kwargs
     ) -> tuple[dict | Any, httpx.Response]:
         cookies_backup = self.get_cookies().copy()
-        response = self.http.request(method, url, **kwargs)
+        response = await self.http.request(method, url, **kwargs)
         self._remove_duplicate_ct0_cookie()
 
         try:
@@ -131,9 +132,9 @@ class BaseClient:
                         'https://twitter.com/account/access to unlock it.'
                     )
                 if auto_unlock:
-                    self.unlock()
+                    await self.unlock()
                     self.set_cookies(cookies_backup, clear_cookies=True)
-                    response = self.http.request(method, url, **kwargs)
+                    response = await self.http.request(method, url, **kwargs)
                     self._remove_duplicate_ct0_cookie()
                     try:
                         response_data = response.json()
@@ -155,7 +156,7 @@ class BaseClient:
             elif status_code == 408:
                 raise RequestTimeout(message, headers=response.headers)
             elif status_code == 429:
-                if self._get_user_state() == 'suspended':
+                if await self._get_user_state() == 'suspended':
                     raise AccountSuspended(message, headers=response.headers)
                 raise TooManyRequests(message, headers=response.headers)
             elif 500 <= status_code < 600:
@@ -165,14 +166,14 @@ class BaseClient:
 
         return response_data, response
 
-    def get(self, url, **kwargs) -> tuple[dict | Any, httpx.Response]:
-        return self.request('GET', url, **kwargs)
+    async def get(self, url, **kwargs) -> tuple[dict | Any, httpx.Response]:
+        return await self.request('GET', url, **kwargs)
 
-    def post(self, url, **kwargs) -> tuple[dict | Any, httpx.Response]:
-        return self.request('POST', url, **kwargs)
+    async def post(self, url, **kwargs) -> tuple[dict | Any, httpx.Response]:
+        return await self.request('POST', url, **kwargs)
 
-    def stream(self, *args, **kwargs):
-        response = self.http.stream(*args, **kwargs)
+    async def stream(self, *args, **kwargs) -> Response:
+        response = await self.http.stream(*args, **kwargs)
         return response
 
     def _remove_duplicate_ct0_cookie(self) -> None:
@@ -185,7 +186,9 @@ class BaseClient:
 
     @property
     def proxy(self) -> str:
-        transport: HTTPTransport = self.http._mounts.get(URLPattern('all://'))
+        transport: AsyncHTTPTransport = self.http._mounts.get(
+            URLPattern('all://')
+        )
         if transport is None:
             return None
 
@@ -202,13 +205,15 @@ class BaseClient:
     @proxy.setter
     def proxy(self, url: str) -> None:
         self.http._mounts = {
-            URLPattern('all://'): HTTPTransport(proxy=url)
+            URLPattern('all://'): AsyncHTTPTransport(proxy=url)
         }
 
 
 class Client(BaseClient):
     """
     A client for interacting with the Twitter API.
+    Since this class is for asynchronous use,
+    methods must be executed using await.
 
     Parameters
     ----------
@@ -224,17 +229,17 @@ class Client(BaseClient):
     --------
     >>> client = Client(language='en-US')
 
-    >>> client.login(
+    >>> await client.login(
     ...     auth_info_1='example_user',
     ...     auth_info_2='email@example.com',
     ...     password='00000000'
     ... )
     """
-    def _get_guest_token(self) -> str:
+    async def _get_guest_token(self) -> str:
         headers = self._base_headers
         headers.pop('X-Twitter-Active-User')
         headers.pop('X-Twitter-Auth-Type')
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.GUEST_TOKEN,
             headers=headers,
             data={}
@@ -260,29 +265,40 @@ class Client(BaseClient):
             headers['Accept-Language'] = self.language
             headers['X-Twitter-Client-Language'] = self.language
 
-        csrf_token = self.http.cookies.get('ct0')
+        csrf_token = self._get_csrf_token()
         if csrf_token is not None:
             headers['X-Csrf-Token'] = csrf_token
         if self._act_as is not None:
             headers['X-Act-As-User-Id'] = self._act_as
-            headers['X-Contributor-Version'] = '1'
         return headers
 
-    def unlock(self) -> None:
+    def _get_csrf_token(self) -> str:
+        """
+        Retrieves the Cross-Site Request Forgery (CSRF) token from the
+        current session's cookies.
+
+        Returns
+        -------
+        :class:`str`
+            The CSRF token as a string.
+        """
+        return self.http.cookies.get('ct0')
+
+    async def unlock(self) -> None:
         if self.captcha_solver is None:
             raise ValueError('Captcha solver is not provided.')
 
-        response, html = self.captcha_solver.get_unlock_html()
+        response, html = await self.captcha_solver.get_unlock_html()
 
         if html.delete_button:
-            response, html = self.captcha_solver.confirm_unlock(
+            response, html = await self.captcha_solver.confirm_unlock(
                 html.authenticity_token,
                 html.assignment_token,
                 ui_metrics=True
             )
 
         if html.start_button or html.finish_button:
-            response, html = self.captcha_solver.confirm_unlock(
+            response, html = await self.captcha_solver.confirm_unlock(
                 html.authenticity_token,
                 html.assignment_token,
                 ui_metrics=True
@@ -295,21 +311,21 @@ class Client(BaseClient):
             attempt += 1
 
             if html.authenticity_token is None:
-                response, html = self.captcha_solver.get_unlock_html()
+                response, html = await self.captcha_solver.get_unlock_html()
 
             result = self.captcha_solver.solve_funcaptcha(html.blob)
             if result['errorId'] == 1:
                 continue
 
             self.set_cookies(cookies_backup, clear_cookies=True)
-            response, html = self.captcha_solver.confirm_unlock(
+            response, html = await self.captcha_solver.confirm_unlock(
                 html.authenticity_token,
                 html.assignment_token,
                 result['solution']['token'],
             )
 
             if html.finish_button:
-                response, html = self.captcha_solver.confirm_unlock(
+                response, html = await self.captcha_solver.confirm_unlock(
                     html.authenticity_token,
                     html.assignment_token,
                     ui_metrics=True
@@ -322,7 +338,7 @@ class Client(BaseClient):
                 return
         raise Exception('could not unlock the account.')
 
-    def login(
+    async def login(
         self,
         *,
         auth_info_1: str,
@@ -355,14 +371,14 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> client.login(
+        >>> await client.login(
         ...     auth_info_1='example_user',
         ...     auth_info_2='email@example.com',
         ...     password='00000000'
         ... )
         """
         self.http.cookies.clear()
-        guest_token = self._get_guest_token()
+        guest_token = await self._get_guest_token()
         headers = self._base_headers | {
             'x-guest-token': guest_token
         }
@@ -371,9 +387,9 @@ class Client(BaseClient):
 
         flow = Flow(self, Endpoint.LOGIN_FLOW, headers)
 
-        flow.execute_task(params={'flow_name': 'login'})
-        flow.execute_task()
-        flow.execute_task({
+        await flow.execute_task(params={'flow_name': 'login'})
+        await flow.execute_task()
+        await flow.execute_task({
             'subtask_id': 'LoginEnterUserIdentifierSSO',
             'settings_list': {
                 'setting_responses': [
@@ -389,7 +405,7 @@ class Client(BaseClient):
         })
 
         if flow.task_id == 'LoginEnterAlternateIdentifierSubtask':
-            flow.execute_task({
+            await flow.execute_task({
                 'subtask_id': 'LoginEnterAlternateIdentifierSubtask',
                 'enter_text': {
                     'text': auth_info_2,
@@ -397,7 +413,7 @@ class Client(BaseClient):
                 }
             })
 
-        flow.execute_task({
+        await flow.execute_task({
             'subtask_id': 'LoginEnterPassword',
             'enter_password': {
                 'password': password,
@@ -405,7 +421,7 @@ class Client(BaseClient):
             }
         })
 
-        flow.execute_task({
+        await flow.execute_task({
             'subtask_id': 'AccountDuplicationCheck',
             'check_logged_in_account': {
                 'link': 'AccountDuplicationCheck_false'
@@ -424,7 +440,7 @@ class Client(BaseClient):
             else:
                 totp_code = pyotp.TOTP(totp_secret).now()
 
-            flow.execute_task({
+            await flow.execute_task({
                 'subtask_id': 'LoginTwoFactorAuthChallenge',
                 'enter_text': {
                     'text': totp_code,
@@ -435,7 +451,7 @@ class Client(BaseClient):
         if flow.task_id == 'LoginAcid':
             print(find_dict(flow.response, 'secondary_text', find_one=True)[0]['text'])
 
-            flow.execute_task({
+            await flow.execute_task({
                 'subtask_id': 'LoginAcid',
                 'enter_text': {
                     'text': input('>>> '),
@@ -445,35 +461,35 @@ class Client(BaseClient):
 
         return flow.response
 
-    def logout(self) -> Response:
+    async def logout(self) -> Response:
         """
         Logs out of the currently logged-in account.
         """
-        _, response = self.post(
+        response, _ = await self.post(
             Endpoint.LOGOUT,
             headers=self._base_headers
         )
         return response
 
-    def user_id(self) -> str:
+    async def user_id(self) -> str:
         """
         Retrieves the user ID associated with the authenticated account.
         """
         if self._user_id is not None:
             return self._user_id
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.SETTINGS,
             headers=self._base_headers
         )
         screen_name = response['screen_name']
-        self._user_id = self.get_user_by_screen_name(screen_name).id
+        self._user_id = (await self.get_user_by_screen_name(screen_name)).id
         return self._user_id
 
-    def user(self) -> User:
+    async def user(self) -> User:
         """
         Retrieve detailed information about the authenticated user.
         """
-        return self.get_user_by_id(self.user_id())
+        return await self.get_user_by_id(await self.user_id())
 
     def get_cookies(self) -> dict:
         """
@@ -577,7 +593,7 @@ class Client(BaseClient):
         """
         self._act_as = user_id
 
-    def _search(
+    async def _search(
         self,
         query: str,
         product: str,
@@ -599,7 +615,7 @@ class Client(BaseClient):
             'variables': variables,
             'features': FEATURES
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.SEARCH_TIMELINE,
             params=params,
             headers=self._base_headers
@@ -607,7 +623,7 @@ class Client(BaseClient):
 
         return response
 
-    def search_tweet(
+    async def search_tweet(
         self,
         query: str,
         product: Literal['Top', 'Latest', 'Media'],
@@ -637,7 +653,7 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> tweets = client.search_tweet('query', 'Top')
+        >>> tweets = await client.search_tweet('query', 'Top')
         >>> for tweet in tweets:
         ...    print(tweet)
         <Tweet id="...">
@@ -645,7 +661,7 @@ class Client(BaseClient):
         ...
         ...
 
-        >>> more_tweets = tweets.next()  # Retrieve more tweets
+        >>> more_tweets = await tweets.next()  # Retrieve more tweets
         >>> for tweet in more_tweets:
         ...     print(tweet)
         <Tweet id="...">
@@ -653,11 +669,12 @@ class Client(BaseClient):
         ...
         ...
 
-        >>> previous_tweets = tweets.previous()  # Retrieve previous tweets
+        >>> # Retrieve previous tweets
+        >>> previous_tweets = await tweets.previous()
         """
         product = product.capitalize()
 
-        response = self._search(query, product, count, cursor)
+        response = await self._search(query, product, count, cursor)
         instructions = find_dict(response, 'instructions', find_one=True)
         if not instructions:
             return Result([])
@@ -710,7 +727,7 @@ class Client(BaseClient):
             previous_cursor
         )
 
-    def search_user(
+    async def search_user(
         self,
         query: str,
         count: int = 20,
@@ -736,7 +753,7 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> result = client.search_user('query')
+        >>> result = await client.search_user('query')
         >>> for user in result:
         ...     print(user)
         <User id="...">
@@ -744,7 +761,7 @@ class Client(BaseClient):
         ...
         ...
 
-        >>> more_results = result.next()  # Retrieve more search results
+        >>> more_results = await result.next()  # Retrieve more search results
         >>> for user in more_results:
         ...     print(user)
         <User id="...">
@@ -752,7 +769,7 @@ class Client(BaseClient):
         ...
         ...
         """
-        response = self._search(query, 'People', count, cursor)
+        response = await self._search(query, 'People', count, cursor)
         items = find_dict(response, 'entries', find_one=True)[0]
         next_cursor = items[-1]['content']['value']
 
@@ -769,7 +786,7 @@ class Client(BaseClient):
             next_cursor
         )
 
-    def get_similar_tweets(self, tweet_id: str) -> list[Tweet]:
+    async def get_similar_tweets(self, tweet_id: str) -> list[Tweet]:
         """
         Retrieves tweets similar to the specified tweet (Twitter premium only).
 
@@ -788,7 +805,7 @@ class Client(BaseClient):
             'variables': {'tweet_id': tweet_id},
             'features': SIMILAR_POSTS_FEATURES
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.SIMILAR_POSTS,
             params=params,
             headers=self._base_headers
@@ -808,7 +825,7 @@ class Client(BaseClient):
 
         return results
 
-    def upload_media(
+    async def upload_media(
         self,
         source: str | bytes,
         wait_for_completion: bool = False,
@@ -848,16 +865,16 @@ class Client(BaseClient):
         --------
         Videos, images and gifs can be uploaded.
 
-        >>> media_id_1 = client.upload_media(
+        >>> media_id_1 = await client.upload_media(
         ...     'media1.jpg',
         ... )
 
-        >>> media_id_2 = client.upload_media(
+        >>> media_id_2 = await client.upload_media(
         ...     'media2.mp4',
         ...     wait_for_completion=True
         ... )
 
-        >>> media_id_3 = client.upload_media(
+        >>> media_id_3 = await client.upload_media(
         ...     'media3.gif',
         ...     wait_for_completion=True,
         ...     media_category='tweet_gif'  # media_category must be specified
@@ -907,7 +924,7 @@ class Client(BaseClient):
         }
         if media_category is not None:
             params['media_category'] = media_category
-        response, _ = self.post(
+        response, _ = await self.post(
             endpoint,
             params=params,
             headers=self._base_headers
@@ -917,6 +934,8 @@ class Client(BaseClient):
         segment_index = 0
         bytes_sent = 0
         MAX_SEGMENT_SIZE = 8 * 1024 * 1024  # The maximum segment size is 8 MB
+        tasks = []
+        chunk_streams: list[io.BytesIO] = []
 
         while bytes_sent < total_bytes:
             chunk = binary[bytes_sent:bytes_sent + MAX_SEGMENT_SIZE]
@@ -935,23 +954,28 @@ class Client(BaseClient):
                     'application/octet-stream',
                 )
             }
-            self.post(
-                endpoint,
-                params=params,
-                headers=headers,
-                files=files
-            )
 
-            chunk_stream.close()
+            coro = self.post(endpoint, params=params,
+                             headers=headers, files=files)
+            tasks.append(asyncio.create_task(coro))
+            chunk_streams.append(chunk_stream)
+
             segment_index += 1
             bytes_sent += len(chunk)
+
+        gather = asyncio.gather(*tasks)
+        await gather
+
+        # Close chunk streams
+        for chunk_stream in chunk_streams:
+            chunk_stream.close()
 
         # ========== FINALIZE ===========
         params = {
             'command': 'FINALIZE',
             'media_id': media_id,
         }
-        self.post(
+        await self.post(
             endpoint,
             params=params,
             headers=self._base_headers,
@@ -959,17 +983,17 @@ class Client(BaseClient):
 
         if wait_for_completion:
             while True:
-                state = self.check_media_status(media_id, is_long_video)
+                state = await self.check_media_status(media_id)
                 processing_info = state['processing_info']
                 if 'error' in processing_info:
                     raise InvalidMedia(processing_info['error'].get('message'))
                 if processing_info['state'] == 'succeeded':
                     break
-                time.sleep(status_check_interval)
+                await asyncio.sleep(status_check_interval)
 
         return media_id
 
-    def check_media_status(
+    async def check_media_status(
         self, media_id: str, is_long_video: bool = False
     ) -> dict:
         """
@@ -982,7 +1006,7 @@ class Client(BaseClient):
 
         Returns
         -------
-        :class:`dict`
+        dict
             A dictionary containing information about the status of
             the uploaded media.
         """
@@ -994,14 +1018,14 @@ class Client(BaseClient):
             endpoint = Endpoint.UPLOAD_MEDIA_2
         else:
             endpoint = Endpoint.UPLOAD_MEDIA
-        response, _ = self.get(
+        response, _ = await self.get(
             endpoint,
             params=params,
             headers=self._base_headers
         )
         return response
 
-    def create_media_metadata(
+    async def create_media_metadata(
         self,
         media_id: str,
         alt_text: str | None = None,
@@ -1027,27 +1051,27 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> media_id = client.upload_media('media.jpg')
-        >>> client.create_media_metadata(
+        >>> media_id = await client.upload_media('media.jpg')
+        >>> await client.create_media_metadata(
         ...     media_id,
         ...     alt_text='This is a sample media',
         ...     sensitive_warning=['other']
         ... )
-        >>> client.create_tweet(media_ids=[media_id])
+        >>> await client.create_tweet(media_ids=[media_id])
         """
         data = {'media_id': media_id}
         if alt_text is not None:
             data['alt_text'] = {'text': alt_text}
         if sensitive_warning is not None:
             data['sensitive_media_warning'] = sensitive_warning
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.CREATE_MEDIA_METADATA,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def create_poll(
+    async def create_poll(
         self,
         choices: list[str],
         duration_minutes: int
@@ -1073,7 +1097,7 @@ class Client(BaseClient):
 
         >>> choices = ['Option A', 'Option B', 'Option C']
         >>> duration_minutes = 60
-        >>> card_uri = client.create_poll(choices, duration_minutes)
+        >>> card_uri = await client.create_poll(choices, duration_minutes)
         >>> print(card_uri)
         'card://0000000000000000000'
         """
@@ -1088,7 +1112,7 @@ class Client(BaseClient):
 
         data = urlencode({'card_data': card_data})
         headers = self._base_headers | {'content-type': 'application/x-www-form-urlencoded'}
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.CREATE_CARD,
             data=data,
             headers=headers,
@@ -1096,7 +1120,7 @@ class Client(BaseClient):
 
         return response['card_uri']
 
-    def vote(
+    async def vote(
         self,
         selected_choice: str,
         card_uri: str,
@@ -1105,7 +1129,6 @@ class Client(BaseClient):
     ) -> Poll:
         """
         Vote on a poll with the selected choice.
-
         Parameters
         ----------
         selected_choice : :class:`str`
@@ -1116,7 +1139,6 @@ class Client(BaseClient):
             The ID of the original tweet containing the poll.
         card_name : :class:`str`
             The name of the poll card.
-
         Returns
         -------
         :class:`Poll`
@@ -1132,7 +1154,7 @@ class Client(BaseClient):
         headers = self._base_headers | {
             'content-type': 'application/x-www-form-urlencoded'
         }
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.VOTE,
             data=data,
             headers=headers
@@ -1144,7 +1166,7 @@ class Client(BaseClient):
         }
         return Poll(self, card_data, None)
 
-    def create_tweet(
+    async def create_tweet(
         self,
         text: str = '',
         media_ids: list[str] | None = None,
@@ -1155,7 +1177,7 @@ class Client(BaseClient):
         community_id: str | None = None,
         share_with_followers: bool = False,
         is_note_tweet: bool = False,
-        richtext_options: list[dict] | None = None,
+        richtext_options: list[dict] = None,
         edit_tweet_id: str | None = None
     ) -> Tweet:
         """
@@ -1181,7 +1203,7 @@ class Client(BaseClient):
             - 'mentioned': Limits replies to mentioned accounts only.
         attachment_url : :class:`str`
             URL of the tweet to be quoted.
-        is_note_tweet : class`bool`, default=False
+        is_note_tweet : :class:`bool`, default=False
             If this option is set to True, tweets longer than 280 characters
             can be posted (Twitter Premium only).
         richtext_options : list[:class:`dict`], default=None
@@ -1204,10 +1226,10 @@ class Client(BaseClient):
 
         >>> tweet_text = 'Example text'
         >>> media_ids = [
-        ...     client.upload_media('image1.png'),
-        ...     client.upload_media('image2.png')
+        ...     await client.upload_media('image1.png'),
+        ...     await client.upload_media('image2.png')
         ... ]
-        >>> client.create_tweet(
+        >>> await client.create_tweet(
         ...     tweet_text,
         ...     media_ids=media_ids
         ... )
@@ -1217,8 +1239,8 @@ class Client(BaseClient):
         >>> tweet_text = 'Example text'
         >>> poll_choices = ['Option A', 'Option B', 'Option C']
         >>> duration_minutes = 60
-        >>> poll_uri = client.create_poll(poll_choices, duration_minutes)
-        >>> client.create_tweet(
+        >>> poll_uri = await client.create_poll(poll_choices, duration_minutes)
+        >>> await client.create_tweet(
         ...     tweet_text,
         ...     poll_uri=poll_uri
         ... )
@@ -1278,7 +1300,6 @@ class Client(BaseClient):
             variables['richtext_options'] = {
                 'richtext_tags': richtext_options
             }
-
         if edit_tweet_id is not None:
             variables['edit_options'] = {
                 'previous_tweet_id': edit_tweet_id
@@ -1295,7 +1316,7 @@ class Client(BaseClient):
             'queryId': get_query_id(Endpoint.CREATE_TWEET),
             'features': features,
         }
-        response, _ = self.post(
+        response, _ = await self.post(
             endpoint,
             json=data,
             headers=self._base_headers,
@@ -1312,7 +1333,7 @@ class Client(BaseClient):
         user_info = tweet_info['core']['user_results']['result']
         return Tweet(self, tweet_info, User(self, user_info))
 
-    def create_scheduled_tweet(
+    async def create_scheduled_tweet(
         self,
         scheduled_at: int,
         text: str = '',
@@ -1342,10 +1363,10 @@ class Client(BaseClient):
         >>> scheduled_time = int(time.time()) + 3600  # One hour from now
         >>> tweet_text = 'Example text'
         >>> media_ids = [
-        ...     client.upload_media('image1.png'),
-        ...     client.upload_media('image2.png')
+        ...     await client.upload_media('image1.png'),
+        ...     await client.upload_media('image2.png')
         ... ]
-        >>> client.create_scheduled_tweet(
+        >>> await client.create_scheduled_tweet(
         ...     scheduled_time
         ...     tweet_text,
         ...     media_ids=media_ids
@@ -1364,14 +1385,14 @@ class Client(BaseClient):
             'variables': variables,
             'queryId': get_query_id(Endpoint.CREATE_SCHEDULED_TWEET),
         }
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.CREATE_SCHEDULED_TWEET,
             json=data,
             headers=self._base_headers,
         )
         return response['data']['tweet']['rest_id']
 
-    def delete_tweet(self, tweet_id: str) -> Response:
+    async def delete_tweet(self, tweet_id: str) -> Response:
         """Deletes a tweet.
 
         Parameters
@@ -1387,7 +1408,7 @@ class Client(BaseClient):
         Examples
         --------
         >>> tweet_id = '0000000000'
-        >>> delete_tweet(tweet_id)
+        >>> await delete_tweet(tweet_id)
         """
         data = {
             'variables': {
@@ -1396,14 +1417,14 @@ class Client(BaseClient):
             },
             'queryId': get_query_id(Endpoint.DELETE_TWEET)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.DELETE_TWEET,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def get_user_by_screen_name(self, screen_name: str) -> User:
+    async def get_user_by_screen_name(self, screen_name: str) -> User:
         """
         Fetches a user by screen name.
 
@@ -1421,7 +1442,7 @@ class Client(BaseClient):
         Examples
         --------
         >>> target_screen_name = 'example_user'
-        >>> user = client.get_user_by_name(target_screen_name)
+        >>> user = await client.get_user_by_name(target_screen_name)
         >>> print(user)
         <User id="...">
         """
@@ -1434,7 +1455,7 @@ class Client(BaseClient):
             'features': USER_FEATURES,
             'fieldToggles': {'withAuxiliaryUserLabels': False}
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.USER_BY_SCREEN_NAME,
             params=params,
             headers=self._base_headers
@@ -1448,7 +1469,7 @@ class Client(BaseClient):
 
         return User(self, user_data)
 
-    def get_user_by_id(self, user_id: str) -> User:
+    async def get_user_by_id(self, user_id: str) -> User:
         """
         Fetches a user by ID
 
@@ -1466,7 +1487,7 @@ class Client(BaseClient):
         Examples
         --------
         >>> target_screen_name = '000000000'
-        >>> user = client.get_user_by_id(target_screen_name)
+        >>> user = await client.get_user_by_id(target_screen_name)
         >>> print(user)
         <User id="000000000">
         """
@@ -1478,7 +1499,7 @@ class Client(BaseClient):
             'variables': variables,
             'features': USER_FEATURES
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.USER_BY_REST_ID,
             params=params,
             headers=self._base_headers
@@ -1490,7 +1511,7 @@ class Client(BaseClient):
             raise UserUnavailable(user_data.get('message'))
         return User(self, user_data)
 
-    def reverse_geocode(
+    async def reverse_geocode(
         self, lat: float, long: float, accuracy: str | float | None = None,
         granularity: str | None = None, max_results: int | None = None
     ) -> list[Place]:
@@ -1526,14 +1547,14 @@ class Client(BaseClient):
             if v is None:
                 params.pop(k)
 
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.REVERSE_GEOCODE,
             params=params,
             headers=self._base_headers
         )
         return _places_from_response(self, response)
 
-    def search_geo(
+    async def search_geo(
         self, lat: float | None = None, long: float | None = None,
         query: str | None = None, ip: str | None = None,
         granularity: str | None = None, max_results: int | None = None
@@ -1577,14 +1598,14 @@ class Client(BaseClient):
             if v is None:
                 params.pop(k)
 
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.SEARCH_GEO,
             params=params,
             headers=self._base_headers
         )
         return _places_from_response(self, response)
 
-    def get_place(self, id: str) -> Place:
+    async def get_place(self, id: str) -> Place:
         """
         Parameters
         ----------
@@ -1595,13 +1616,13 @@ class Client(BaseClient):
         -------
         :class:`.Place`
         """
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.PLACE_BY_ID.format(id),
             headers=self._base_headers
         )
         return Place(self, response)
 
-    def _get_tweet_detail(self, tweet_id: str, cursor: str | None):
+    async def _get_tweet_detail(self, tweet_id: str, cursor: str | None):
         variables = {
             'focalTweetId': tweet_id,
             'with_rux_injections': False,
@@ -1619,15 +1640,17 @@ class Client(BaseClient):
             'features': FEATURES,
             'fieldToggles': {'withAuxiliaryUserLabels': False}
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.TWEET_DETAIL,
             params=params,
             headers=self._base_headers
         )
         return response
 
-    def _get_more_replies(self, tweet_id: str, cursor: str) -> Result[Tweet]:
-        response = self._get_tweet_detail(tweet_id, cursor)
+    async def _get_more_replies(
+        self, tweet_id: str, cursor: str
+    ) -> Result[Tweet]:
+        response = await self._get_tweet_detail(tweet_id, cursor)
         entries = find_dict(response, 'entries', find_one=True)[0]
 
         results = []
@@ -1651,8 +1674,10 @@ class Client(BaseClient):
             next_cursor
         )
 
-    def _show_more_replies(self, tweet_id: str, cursor: str) -> Result[Tweet]:
-        response = self._get_tweet_detail(tweet_id, cursor)
+    async def _show_more_replies(
+        self, tweet_id: str, cursor: str
+    ) -> Result[Tweet]:
+        response = await self._get_tweet_detail(tweet_id, cursor)
         items = find_dict(response, 'moduleItems', find_one=True)[0]
         results = []
         for item in items:
@@ -1663,7 +1688,7 @@ class Client(BaseClient):
                 results.append(tweet)
         return Result(results)
 
-    def get_tweet_by_id(
+    async def get_tweet_by_id(
         self, tweet_id: str, cursor: str | None = None
     ) -> Tweet:
         """
@@ -1686,7 +1711,7 @@ class Client(BaseClient):
         >>> print(tweet)
         <Tweet id="...">
         """
-        response = self._get_tweet_detail(tweet_id, cursor)
+        response = await self._get_tweet_detail(tweet_id, cursor)
 
         if 'errors' in response:
             raise TweetNotAvailable(response['errors'][0]['message'])
@@ -1763,7 +1788,7 @@ class Client(BaseClient):
 
         return tweet
 
-    def get_scheduled_tweets(self) -> list[ScheduledTweet]:
+    async def get_scheduled_tweets(self) -> list[ScheduledTweet]:
         """
         Retrieves scheduled tweets.
 
@@ -1772,8 +1797,9 @@ class Client(BaseClient):
         list[:class:`ScheduledTweet`]
             List of ScheduledTweet objects representing the scheduled tweets.
         """
+
         params = flatten_params({'variables': {'ascending': True}})
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.FETCH_SCHEDULED_TWEETS,
             params=params,
             headers=self._base_headers
@@ -1781,7 +1807,7 @@ class Client(BaseClient):
         tweets = find_dict(response, 'scheduled_tweet_list', find_one=True)[0]
         return [ScheduledTweet(self, tweet) for tweet in tweets]
 
-    def delete_scheduled_tweet(self, tweet_id: str) -> Response:
+    async def delete_scheduled_tweet(self, tweet_id: str) -> Response:
         """
         Delete a scheduled tweet.
 
@@ -1799,14 +1825,14 @@ class Client(BaseClient):
             'variables': {'scheduled_tweet_id': tweet_id},
             'queryId': get_query_id(Endpoint.DELETE_SCHEDULED_TWEET)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.DELETE_SCHEDULED_TWEET,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def _get_tweet_engagements(
+    async def _get_tweet_engagements(
         self, tweet_id: str, count: int, cursor: str, endpoint: str,
     ) -> Result[User]:
         """
@@ -1823,12 +1849,12 @@ class Client(BaseClient):
             'variables': variables,
             'features': FEATURES
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             endpoint,
             params=params,
             headers=self._base_headers
         )
-        items_ = find_dict(response, 'entries', find_one=True)
+        items_ = find_dict(response, 'entries', True)
         if not items_:
             return Result([])
         items = items_[0]
@@ -1839,7 +1865,7 @@ class Client(BaseClient):
         for item in items:
             if not item['entryId'].startswith('user'):
                 continue
-            user_info_ = find_dict(item, 'result', find_one=True)
+            user_info_ = find_dict(item, 'result', True)
             if not user_info_:
                 continue
             user_info = user_info_[0]
@@ -1853,7 +1879,7 @@ class Client(BaseClient):
             previous_cursor
         )
 
-    def get_retweeters(
+    async def get_retweeters(
         self, tweet_id: str, count: int = 40, cursor: str | None = None
     ) -> Result[User]:
         """
@@ -1863,7 +1889,7 @@ class Client(BaseClient):
         ----------
         tweet_id : :class:`str`
             The ID of the tweet.
-        count : :class:`int`, default=40
+        count : int, default=40
             The maximum number of users to retrieve.
         cursor : :class:`str`, default=None
             A string indicating the position of the cursor for pagination.
@@ -1876,19 +1902,20 @@ class Client(BaseClient):
         Examples
         --------
         >>> tweet_id = '...'
-        >>> retweeters = client.get_retweeters(tweet_id)
+        >>> retweeters = await client.get_retweeters(tweet_id)
         >>> print(retweeters)
         [<User id="...">, <User id="...">, ..., <User id="...">]
 
-        >>> more_retweeters = retweeters.next()  # Retrieve more retweeters.
+        >>> # Retrieve more retweeters.
+        >>> more_retweeters = await retweeters.next()
         >>> print(more_retweeters)
         [<User id="...">, <User id="...">, ..., <User id="...">]
         """
-        return self._get_tweet_engagements(
+        return await self._get_tweet_engagements(
             tweet_id, count, cursor, Endpoint.RETWEETERS
         )
 
-    def get_favoriters(
+    async def get_favoriters(
         self, tweet_id: str, count: int = 40, cursor: str | None = None
     ) -> Result[User]:
         """
@@ -1911,19 +1938,20 @@ class Client(BaseClient):
         Examples
         --------
         >>> tweet_id = '...'
-        >>> favoriters = client.get_favoriters(tweet_id)
+        >>> favoriters = await client.get_favoriters(tweet_id)
         >>> print(favoriters)
         [<User id="...">, <User id="...">, ..., <User id="...">]
 
-        >>> more_favoriters = favoriters.next()  # Retrieve more favoriters.
+        >>> # Retrieve more favoriters.
+        >>> more_favoriters = await favoriters.next()
         >>> print(more_favoriters)
         [<User id="...">, <User id="...">, ..., <User id="...">]
         """
-        return self._get_tweet_engagements(
+        return await self._get_tweet_engagements(
             tweet_id, count, cursor, Endpoint.FAVORITERS
         )
 
-    def get_community_note(self, note_id: str) -> CommunityNote:
+    async def get_community_note(self, note_id: str) -> CommunityNote:
         """
         Fetches a community note by ID.
 
@@ -1953,17 +1981,17 @@ class Client(BaseClient):
             'variables': {'note_id': note_id},
             'features': COMMUNITY_NOTE_FEATURES
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.FETCH_COMMUNITY_NOTE,
             params=params,
             headers=self._base_headers
         )
         note_data = response['data']['birdwatch_note_by_rest_id']
         if 'data_v1' not in note_data:
-            raise TwitterException(f'Invalid note id: {note_id}')
+            raise TwitterException(f'Invalid user id: {note_id}')
         return CommunityNote(self, note_data)
 
-    def get_user_tweets(
+    async def get_user_tweets(
         self,
         user_id: str,
         tweet_type: Literal['Tweets', 'Replies', 'Media', 'Likes'],
@@ -2001,7 +2029,7 @@ class Client(BaseClient):
         >>> user = client.get_user_by_screen_name(screen_name)
         >>> user_id = user.id
 
-        >>> tweets = client.get_user_tweets(user_id, 'Tweets', count=20)
+        >>> tweets = await client.get_user_tweets(user_id, 'Tweets', count=20)
         >>> for tweet in tweets:
         ...    print(tweet)
         <Tweet id="...">
@@ -2009,7 +2037,7 @@ class Client(BaseClient):
         ...
         ...
 
-        >>> more_tweets = tweets.next()  # Retrieve more tweets
+        >>> more_tweets = await tweets.next()  # Retrieve more tweets
         >>> for tweet in more_tweets:
         ...     print(tweet)
         <Tweet id="...">
@@ -2017,7 +2045,8 @@ class Client(BaseClient):
         ...
         ...
 
-        >>> previous_tweets = tweets.previous()  # Retrieve previous tweets
+        >>> # Retrieve previous tweets
+        >>> previous_tweets = await tweets.previous()
 
         See Also
         --------
@@ -2046,13 +2075,13 @@ class Client(BaseClient):
             'Likes': Endpoint.USER_LIKES,
         }[tweet_type]
 
-        response, _ = self.get(
+        response, _ = await self.get(
             endpoint,
             params=params,
             headers=self._base_headers
         )
 
-        instructions_ = find_dict(response, 'instructions', find_one=True)
+        instructions_ = find_dict(response, 'instructions', True)
         if not instructions_:
             return Result([])
         instructions = instructions_[0]
@@ -2100,7 +2129,7 @@ class Client(BaseClient):
             previous_cursor
         )
 
-    def get_user_likes(
+    async def get_user_likes(
         self, user_id: str | None = None, screen_name: str | None = None,
         count: int = 40, cursor: str | None = None
     ) -> Result[Tweet]:
@@ -2133,7 +2162,7 @@ class Client(BaseClient):
         headers = self._base_headers
         headers['authorization'] = f'Bearer {self._token2}'
 
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.USER_LIKES_2,
             params=params,
             headers=headers
@@ -2150,7 +2179,7 @@ class Client(BaseClient):
             next_cursor
         )
 
-    def get_timeline(
+    async def get_timeline(
         self,
         count: int = 20,
         seen_tweet_ids: list[str] | None = None,
@@ -2162,7 +2191,7 @@ class Client(BaseClient):
 
         Parameters
         ----------
-        count : int, default=20
+        count : :class:`int`, default=20
             The number of tweets to retrieve.
         seen_tweet_ids : list[:class:`str`], default=None
             A list of tweet IDs that have been seen.
@@ -2176,14 +2205,14 @@ class Client(BaseClient):
 
         Example
         -------
-        >>> tweets = client.get_timeline()
+        >>> tweets = await client.get_timeline()
         >>> for tweet in tweets:
         ...     print(tweet)
         <Tweet id="...">
         <Tweet id="...">
         ...
         ...
-        >>> more_tweets = tweets.next() # Retrieve more tweets
+        >>> more_tweets = await tweets.next() # Retrieve more tweets
         >>> for tweet in more_tweets:
         ...     print(tweet)
         <Tweet id="...">
@@ -2207,7 +2236,7 @@ class Client(BaseClient):
             'queryId': get_query_id(Endpoint.HOME_TIMELINE),
             'features': FEATURES,
         }
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.HOME_TIMELINE,
             json=data,
             headers=self._base_headers
@@ -2231,7 +2260,7 @@ class Client(BaseClient):
             next_cursor
         )
 
-    def get_latest_timeline(
+    async def get_latest_timeline(
         self,
         count: int = 20,
         seen_tweet_ids: list[str] | None = None,
@@ -2243,7 +2272,7 @@ class Client(BaseClient):
 
         Parameters
         ----------
-        count : int, default=20
+        count : :class:`int`, default=20
             The number of tweets to retrieve.
         seen_tweet_ids : list[:class:`str`], default=None
             A list of tweet IDs that have been seen.
@@ -2257,14 +2286,14 @@ class Client(BaseClient):
 
         Example
         -------
-        >>> tweets = client.get_latest_timeline()
+        >>> tweets = await client.get_latest_timeline()
         >>> for tweet in tweets:
         ...     print(tweet)
         <Tweet id="...">
         <Tweet id="...">
         ...
         ...
-        >>> more_tweets = tweets.next() # Retrieve more tweets
+        >>> more_tweets = await tweets.next() # Retrieve more tweets
         >>> for tweet in more_tweets:
         ...     print(tweet)
         <Tweet id="...">
@@ -2288,7 +2317,7 @@ class Client(BaseClient):
             'queryId': get_query_id(Endpoint.HOME_LATEST_TIMELINE),
             'features': FEATURES,
         }
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.HOME_LATEST_TIMELINE,
             json=data,
             headers=self._base_headers
@@ -2312,7 +2341,7 @@ class Client(BaseClient):
             next_cursor
         )
 
-    def favorite_tweet(self, tweet_id: str) -> Response:
+    async def favorite_tweet(self, tweet_id: str) -> Response:
         """
         Favorites a tweet.
 
@@ -2329,7 +2358,7 @@ class Client(BaseClient):
         Examples
         --------
         >>> tweet_id = '...'
-        >>> client.favorite_tweet(tweet_id)
+        >>> await client.favorite_tweet(tweet_id)
 
         See Also
         --------
@@ -2339,14 +2368,14 @@ class Client(BaseClient):
             'variables': {'tweet_id': tweet_id},
             'queryId': get_query_id(Endpoint.FAVORITE_TWEET)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.FAVORITE_TWEET,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def unfavorite_tweet(self, tweet_id: str) -> Response:
+    async def unfavorite_tweet(self, tweet_id: str) -> Response:
         """
         Unfavorites a tweet.
 
@@ -2363,7 +2392,7 @@ class Client(BaseClient):
         Examples
         --------
         >>> tweet_id = '...'
-        >>> client.unfavorite_tweet(tweet_id)
+        >>> await client.unfavorite_tweet(tweet_id)
 
         See Also
         --------
@@ -2373,14 +2402,14 @@ class Client(BaseClient):
             'variables': {'tweet_id': tweet_id},
             'queryId': get_query_id(Endpoint.UNFAVORITE_TWEET)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.UNFAVORITE_TWEET,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def retweet(self, tweet_id: str) -> Response:
+    async def retweet(self, tweet_id: str) -> Response:
         """
         Retweets a tweet.
 
@@ -2397,7 +2426,7 @@ class Client(BaseClient):
         Examples
         --------
         >>> tweet_id = '...'
-        >>> client.retweet(tweet_id)
+        >>> await client.retweet(tweet_id)
 
         See Also
         --------
@@ -2407,14 +2436,14 @@ class Client(BaseClient):
             'variables': {'tweet_id': tweet_id, 'dark_request': False},
             'queryId': get_query_id(Endpoint.CREATE_RETWEET)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.CREATE_RETWEET,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def delete_retweet(self, tweet_id: str) -> Response:
+    async def delete_retweet(self, tweet_id: str) -> Response:
         """
         Deletes the retweet.
 
@@ -2431,7 +2460,7 @@ class Client(BaseClient):
         Examples
         --------
         >>> tweet_id = '...'
-        >>> client.delete_retweet(tweet_id)
+        >>> await client.delete_retweet(tweet_id)
 
         See Also
         --------
@@ -2441,14 +2470,14 @@ class Client(BaseClient):
             'variables': {'source_tweet_id': tweet_id,'dark_request': False},
             'queryId': get_query_id(Endpoint.DELETE_RETWEET)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.DELETE_RETWEET,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def bookmark_tweet(
+    async def bookmark_tweet(
         self, tweet_id: str, folder_id: str | None = None
     ) -> Response:
         """
@@ -2469,7 +2498,7 @@ class Client(BaseClient):
         Examples
         --------
         >>> tweet_id = '...'
-        >>> client.bookmark_tweet(tweet_id)
+        >>> await client.bookmark_tweet(tweet_id)
         """
         variables = {'tweet_id': tweet_id}
         if folder_id is None:
@@ -2482,14 +2511,14 @@ class Client(BaseClient):
             'variables': variables,
             'queryId': get_query_id(Endpoint.CREATE_BOOKMARK)
         }
-        _, response = self.post(
+        _, response = await self.post(
             endpoint,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def delete_bookmark(self, tweet_id: str) -> Response:
+    async def delete_bookmark(self, tweet_id: str) -> Response:
         """
         Removes the tweet from bookmarks.
 
@@ -2506,7 +2535,7 @@ class Client(BaseClient):
         Examples
         --------
         >>> tweet_id = '...'
-        >>> client.delete_bookmark(tweet_id)
+        >>> await client.delete_bookmark(tweet_id)
 
         See Also
         --------
@@ -2516,14 +2545,14 @@ class Client(BaseClient):
             'variables': {'tweet_id': tweet_id},
             'queryId': get_query_id(Endpoint.DELETE_BOOKMARK)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.DELETE_BOOKMARK,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def get_bookmarks(
+    async def get_bookmarks(
         self, count: int = 20,
         cursor: str | None = None, folder_id: str | None = None
     ) -> Result[Tweet]:
@@ -2545,13 +2574,14 @@ class Client(BaseClient):
 
         Example
         -------
-        >>> bookmarks = client.get_bookmarks()
+        >>> bookmarks = await client.get_bookmarks()
         >>> for bookmark in bookmarks:
         ...     print(bookmark)
         <Tweet id="...">
         <Tweet id="...">
 
-        >>> more_bookmarks = bookmarks.next()  # To retrieve more bookmarks
+        >>> # # To retrieve more bookmarks
+        >>> more_bookmarks = await bookmarks.next()
         >>> for bookmark in more_bookmarks:
         ...     print(bookmark)
         <Tweet id="...">
@@ -2577,7 +2607,7 @@ class Client(BaseClient):
             'variables': variables,
             'features': features
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             endpoint,
             params=params,
             headers=self._base_headers
@@ -2597,8 +2627,6 @@ class Client(BaseClient):
 
         results = []
         for item in items:
-            if not item['entryId'].startswith('tweet'):
-                continue
             tweet = tweet_from_data(self, item)
             if tweet is None:
                 continue
@@ -2612,7 +2640,7 @@ class Client(BaseClient):
             previous_cursor
         )
 
-    def delete_all_bookmarks(self) -> Response:
+    async def delete_all_bookmarks(self) -> Response:
         """
         Deleted all bookmarks.
 
@@ -2623,20 +2651,20 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> client.delete_all_bookmarks()
+        >>> await client.delete_all_bookmarks()
         """
         data = {
             'variables': {},
             'queryId': get_query_id(Endpoint.BOOKMARKS_ALL_DELETE)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.BOOKMARKS_ALL_DELETE,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def get_bookmark_folders(
+    async def get_bookmark_folders(
         self, cursor: str | None = None
     ) -> Result[BookmarkFolder]:
         """
@@ -2649,16 +2677,16 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> folders = client.get_bookmark_folders()
+        >>> folders = await client.get_bookmark_folders()
         >>> print(folders)
         [<BookmarkFolder id="...">, ..., <BookmarkFolder id="...">]
-        >>> more_folders = folders.next()  # Retrieve more folders
+        >>> more_folders = await folders.next()  # Retrieve more folders
         """
         variables = {}
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({'variables': variables})
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.BOOKMARK_FOLDERS,
             params=params,
             headers=self._base_headers
@@ -2682,7 +2710,7 @@ class Client(BaseClient):
             next_cursor
         )
 
-    def edit_bookmark_folder(
+    async def edit_bookmark_folder(
         self, folder_id: str, name: str
     ) -> BookmarkFolder:
         """
@@ -2702,7 +2730,7 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> client.edit_bookmark_folder('123456789', 'MyFolder')
+        >>> await client.edit_bookmark_folder('123456789', 'MyFolder')
         """
         variables = {
             'bookmark_collection_id': folder_id,
@@ -2712,14 +2740,14 @@ class Client(BaseClient):
             'variables': variables,
             'queryId': get_query_id(Endpoint.EDIT_BOOKMARK_FOLDER)
         }
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.EDIT_BOOKMARK_FOLDER,
             json=data,
             headers=self._base_headers
         )
         return BookmarkFolder(self, response['data']['bookmark_collection_update'])
 
-    def delete_bookmark_folder(self, folder_id: str) -> Response:
+    async def delete_bookmark_folder(self, folder_id: str) -> Response:
         """
         Deletes a bookmark folder.
 
@@ -2738,14 +2766,14 @@ class Client(BaseClient):
             'variables': variables,
             'queryId': get_query_id(Endpoint.DELETE_BOOKMARK_FOLDER)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.DELETE_BOOKMARK_FOLDER,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def create_bookmark_folder(self, name: str) -> BookmarkFolder:
+    async def create_bookmark_folder(self, name: str) -> BookmarkFolder:
         """Creates a bookmark folder.
 
         Parameters
@@ -2763,14 +2791,14 @@ class Client(BaseClient):
             'variables': variables,
             'queryId': get_query_id(Endpoint.CREATE_BOOKMARK_FOLDER)
         }
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.CREATE_BOOKMARK_FOLDER,
             json=data,
             headers=self._base_headers
         )
         return BookmarkFolder(self, response['data']['bookmark_collection_create'])
 
-    def follow_user(self, user_id: str) -> Response:
+    async def follow_user(self, user_id: str) -> Response:
         """
         Follows a user.
 
@@ -2781,13 +2809,13 @@ class Client(BaseClient):
 
         Returns
         -------
-        :class:`httpx.Response:class:`
+        :class:`httpx.Response`
             Response returned from twitter api.
 
         Examples
         --------
         >>> user_id = '...'
-        >>> client.follow_user(user_id)
+        >>> await client.follow_user(user_id)
 
         See Also
         --------
@@ -2811,14 +2839,14 @@ class Client(BaseClient):
         headers = self._base_headers | {
             'content-type': 'application/x-www-form-urlencoded'
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.CREATE_FRIENDSHIPS,
             data=data,
             headers=headers
         )
         return response
 
-    def unfollow_user(self, user_id: str) -> Response:
+    async def unfollow_user(self, user_id: str) -> Response:
         """
         Unfollows a user.
 
@@ -2835,7 +2863,7 @@ class Client(BaseClient):
         Examples
         --------
         >>> user_id = '...'
-        >>> client.unfollow_user(user_id)
+        >>> await client.unfollow_user(user_id)
 
         See Also
         --------
@@ -2859,14 +2887,14 @@ class Client(BaseClient):
         headers = self._base_headers | {
             'content-type': 'application/x-www-form-urlencoded'
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.DESTROY_FRIENDSHIPS,
             data=data,
             headers=headers
         )
         return response
 
-    def block_user(self, user_id: str) -> Response:
+    async def block_user(self, user_id: str) -> Response:
         """
         Blocks a user.
 
@@ -2887,14 +2915,14 @@ class Client(BaseClient):
         data = urlencode({'user_id': user_id})
         headers = self._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.BLOCK_USER,
             data=data,
             headers=headers
         )
         return response
 
-    def unblock_user(self, user_id: str) -> Response:
+    async def unblock_user(self, user_id: str) -> Response:
         """
         Unblocks a user.
 
@@ -2915,14 +2943,14 @@ class Client(BaseClient):
         data = urlencode({'user_id': user_id})
         headers = self._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.UNBLOCK_USER,
             data=data,
             headers=headers
         )
         return response
 
-    def mute_user(self, user_id: str) -> Response:
+    async def mute_user(self, user_id: str) -> Response:
         """
         Mutes a user.
 
@@ -2943,14 +2971,14 @@ class Client(BaseClient):
         data = urlencode({'user_id': user_id})
         headers = self._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.MUTE_USER,
             data=data,
             headers=headers
         )
         return response
 
-    def unmute_user(self, user_id: str) -> Response:
+    async def unmute_user(self, user_id: str) -> Response:
         """
         Unmutes a user.
 
@@ -2971,14 +2999,14 @@ class Client(BaseClient):
         data = urlencode({'user_id': user_id})
         headers = self._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.UNMUTE_USER,
             data=data,
             headers=headers
         )
         return response
 
-    def get_trends(
+    async def get_trends(
         self,
         category: Literal['trending', 'for-you', 'news', 'sports', 'entertainment'],
         count: int = 20,
@@ -3014,7 +3042,7 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> trends = client.get_trends('trending')
+        >>> trends = await client.get_trends('trending')
         >>> for trend in trends:
         ...     print(trend)
         <Trend name="...">
@@ -3031,7 +3059,7 @@ class Client(BaseClient):
         }
         if additional_request_params is not None:
             params |= additional_request_params
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.TREND,
             params=params,
             headers=self._base_headers
@@ -3048,7 +3076,7 @@ class Client(BaseClient):
                 return []
             # Recall the method again, as the trend information
             # may not be returned due to a Twitter error.
-            return self.get_trends(category, count, retry, additional_request_params)
+            return await self.get_trends(category, count, retry, additional_request_params)
 
         items = entries[-1]['content']['timelineModule']['items']
 
@@ -3059,7 +3087,7 @@ class Client(BaseClient):
 
         return results
 
-    def get_available_locations(self) -> list[Location]:
+    async def get_available_locations(self) -> list[Location]:
         """
         Retrieves locations where trends can be retrieved.
 
@@ -3067,19 +3095,19 @@ class Client(BaseClient):
         -------
         list[:class:`.Location`]
         """
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.AVAILABLE_LOCATIONS,
             headers=self._base_headers
         )
         return [Location(self, data) for data in response]
 
-    def get_place_trends(self, woeid: int) -> PlaceTrends:
+    async def get_place_trends(self, woeid: int) -> PlaceTrends:
         """
         Retrieves the top 50 trending topics for a specific id.
         You can get available woeid using
         :attr:`.Client.get_available_locations`.
         """
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.PLACE_TRENDS,
             params={'id': woeid},
             headers=self._base_headers
@@ -3089,7 +3117,7 @@ class Client(BaseClient):
         trend_data['trends'] = trends
         return trend_data
 
-    def _get_user_friendship(
+    async def _get_user_friendship(
         self,
         user_id: str,
         count: int,
@@ -3110,7 +3138,7 @@ class Client(BaseClient):
             'variables': variables,
             'features': FEATURES
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             endpoint,
             params=params,
             headers=self._base_headers
@@ -3142,7 +3170,7 @@ class Client(BaseClient):
             next_cursor
         )
 
-    def _get_user_friendship_2(
+    async def _get_user_friendship_2(
         self, user_id: str, screen_name: str,
         count: int, endpoint: str, cursor: str
     ) -> Result[User]:
@@ -3155,7 +3183,7 @@ class Client(BaseClient):
         if cursor is not None:
             params['cursor'] = cursor
 
-        response, _ = self.get(
+        response, _ = await self.get(
             endpoint,
             params=params,
             headers=self._base_headers
@@ -3177,9 +3205,8 @@ class Client(BaseClient):
             previous_cursor
         )
 
-    def get_user_followers(
-        self, user_id: str,
-        count: int = 20, cursor: str | None = None
+    async def get_user_followers(
+        self, user_id: str, count: int = 20, cursor: str | None = None
     ) -> Result[User]:
         """
         Retrieves a list of followers for a given user.
@@ -3188,7 +3215,7 @@ class Client(BaseClient):
         ----------
         user_id : :class:`str`
             The ID of the user for whom to retrieve followers.
-        count : :class:`int`, default=20
+        count : int, default=20
             The number of followers to retrieve.
 
         Returns
@@ -3196,11 +3223,11 @@ class Client(BaseClient):
         Result[:class:`User`]
             A list of User objects representing the followers.
         """
-        return self._get_user_friendship(
+        return await self._get_user_friendship(
             user_id, count, Endpoint.FOLLOWERS, cursor
         )
 
-    def get_latest_followers(
+    async def get_latest_followers(
         self, user_id: str | None = None, screen_name: str | None = None,
         count: int = 200, cursor: str | None = None
     ) -> Result[User]:
@@ -3208,11 +3235,11 @@ class Client(BaseClient):
         Retrieves the latest followers.
         Max count : 200
         """
-        return self._get_user_friendship_2(
+        return await self._get_user_friendship_2(
             user_id, screen_name, count, Endpoint.FOLLOWERS2, cursor
         )
 
-    def get_latest_friends(
+    async def get_latest_friends(
         self, user_id: str | None = None, screen_name: str | None = None,
         count: int = 200, cursor: str | None = None
     ) -> Result[User]:
@@ -3220,11 +3247,11 @@ class Client(BaseClient):
         Retrieves the latest friends (following users).
         Max count : 200
         """
-        return self._get_user_friendship_2(
+        return await self._get_user_friendship_2(
             user_id, screen_name, count, Endpoint.FOLLOWING2, cursor
         )
 
-    def get_user_verified_followers(
+    async def get_user_verified_followers(
         self, user_id: str, count: int = 20, cursor: str | None = None
     ) -> Result[User]:
         """
@@ -3242,11 +3269,11 @@ class Client(BaseClient):
         Result[:class:`User`]
             A list of User objects representing the verified followers.
         """
-        return self._get_user_friendship(
+        return await self._get_user_friendship(
             user_id, count, Endpoint.BLUE_VERIFIED_FOLLOWERS, cursor
         )
 
-    def get_user_followers_you_know(
+    async def get_user_followers_you_know(
         self, user_id: str, count: int = 20, cursor: str | None = None
     ) -> Result[User]:
         """
@@ -3264,11 +3291,11 @@ class Client(BaseClient):
         Result[:class:`User`]
             A list of User objects representing the followers you might know.
         """
-        return self._get_user_friendship(
+        return await self._get_user_friendship(
             user_id, count, Endpoint.FOLLOWERS_YOU_KNOW, cursor
         )
 
-    def get_user_following(
+    async def get_user_following(
         self, user_id: str, count: int = 20, cursor: str | None = None
     ) -> Result[User]:
         """
@@ -3286,11 +3313,11 @@ class Client(BaseClient):
         Result[:class:`User`]
             A list of User objects representing the users being followed.
         """
-        return self._get_user_friendship(
+        return await self._get_user_friendship(
             user_id, count, Endpoint.FOLLOWING, cursor
         )
 
-    def get_user_subscriptions(
+    async def get_user_subscriptions(
         self, user_id: str, count: int = 20, cursor: str | None = None
     ) -> Result[User]:
         """
@@ -3308,11 +3335,11 @@ class Client(BaseClient):
         Result[:class:`User`]
             A list of User objects representing the subscribed users.
         """
-        return self._get_user_friendship(
+        return await self._get_user_friendship(
             user_id, count, Endpoint.SUBSCRIPTIONS, cursor
         )
 
-    def _get_friendship_ids(
+    async def _get_friendship_ids(
         self,
         user_id: str | None,
         screen_name: str | None,
@@ -3329,7 +3356,7 @@ class Client(BaseClient):
         if cursor is not None:
             params['cursor'] = cursor
 
-        response, _ = self.get(
+        response, _ = await self.get(
             endpoint,
             params=params,
             headers=self._base_headers
@@ -3339,14 +3366,13 @@ class Client(BaseClient):
 
         return Result(
             response['ids'],
-            partial(self._get_friendship_ids, user_id,
-                     screen_name, count, endpoint, next_cursor),
+            partial(self._get_friendship_ids, user_id, screen_name, count, endpoint, next_cursor),
             next_cursor,
             partial(self._get_friendship_ids, user_id, screen_name, count, endpoint, previous_cursor),
             previous_cursor
         )
 
-    def get_followers_ids(
+    async def get_followers_ids(
         self,
         user_id: str | None = None,
         screen_name: str | None = None,
@@ -3370,11 +3396,11 @@ class Client(BaseClient):
         :class:`Result`[:class:`int`]
             A Result object containing the IDs of the followers.
         """
-        return self._get_friendship_ids(
+        return await self._get_friendship_ids(
             user_id, screen_name, count, Endpoint.FOLLOWERS_IDS, cursor
         )
 
-    def get_friends_ids(
+    async def get_friends_ids(
         self,
         user_id: str | None = None,
         screen_name: str | None = None,
@@ -3398,11 +3424,11 @@ class Client(BaseClient):
         :class:`Result`[:class:`int`]
             A Result object containing the IDs of the friends.
         """
-        return self._get_friendship_ids(
+        return await self._get_friendship_ids(
             user_id, screen_name, count, Endpoint.FRIENDS_IDS, cursor
         )
 
-    def _send_dm(
+    async def _send_dm(
         self,
         conversation_id: str,
         text: str,
@@ -3426,14 +3452,14 @@ class Client(BaseClient):
         if reply_to is not None:
             data['reply_to_dm_id'] = reply_to
 
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.SEND_DM,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def _get_dm_history(
+    async def _get_dm_history(
         self,
         conversation_id: str,
         max_id: str | None = None
@@ -3445,14 +3471,14 @@ class Client(BaseClient):
         if max_id is not None:
             params['max_id'] = max_id
 
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.CONVERSATION.format(conversation_id),
             params=params,
             headers=self._base_headers
         )
         return response
 
-    def send_dm(
+    async def send_dm(
         self,
         user_id: str,
         text: str,
@@ -3484,8 +3510,8 @@ class Client(BaseClient):
         --------
         >>> # send DM with media
         >>> user_id = '000000000'
-        >>> media_id = client.upload_media('image.png')
-        >>> message = client.send_dm(user_id, 'text', media_id)
+        >>> media_id = await client.upload_media('image.png')
+        >>> message = await client.send_dm(user_id, 'text', media_id)
         >>> print(message)
         <Message id='...'>
 
@@ -3494,8 +3520,8 @@ class Client(BaseClient):
         .upload_media
         .delete_dm
         """
-        response = self._send_dm(
-            f'{user_id}-{self.user_id()}', text, media_id, reply_to
+        response = await self._send_dm(
+            f'{user_id}-{await self.user_id()}', text, media_id, reply_to
         )
 
         message_data = find_dict(response, 'message_data', find_one=True)[0]
@@ -3507,7 +3533,7 @@ class Client(BaseClient):
             users[1]['id_str'] if len(users) == 2 else users[0]['id_str']
         )
 
-    def add_reaction_to_message(
+    async def add_reaction_to_message(
         self, message_id: str, conversation_id: str, emoji: str
     ) -> Response:
         """
@@ -3531,8 +3557,8 @@ class Client(BaseClient):
         Examples
         --------
         >>> message_id = '00000000'
-        >>> conversation_id = f'00000001-{client.user_id()}'
-        >>> client.add_reaction_to_message(
+        >>> conversation_id = f'00000001-{await client.user_id()}'
+        >>> await client.add_reaction_to_message(
         ...    message_id, conversation_id, 'Emoji here'
         ... )
         """
@@ -3546,14 +3572,14 @@ class Client(BaseClient):
             'variables': variables,
             'queryId': get_query_id(Endpoint.MESSAGE_ADD_REACTION)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.MESSAGE_ADD_REACTION,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def remove_reaction_from_message(
+    async def remove_reaction_from_message(
         self, message_id: str, conversation_id: str, emoji: str
     ) -> Response:
         """
@@ -3577,8 +3603,8 @@ class Client(BaseClient):
         Examples
         --------
         >>> message_id = '00000000'
-        >>> conversation_id = f'00000001-{client.user_id()}'
-        >>> client.remove_reaction_from_message(
+        >>> conversation_id = f'00000001-{await client.user_id()}'
+        >>> await client.remove_reaction_from_message(
         ...    message_id, conversation_id, 'Emoji here'
         ... )
         """
@@ -3592,14 +3618,14 @@ class Client(BaseClient):
             'variables': variables,
             'queryId': get_query_id(Endpoint.MESSAGE_REMOVE_REACTION)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.MESSAGE_REMOVE_REACTION,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def delete_dm(self, message_id: str) -> Response:
+    async def delete_dm(self, message_id: str) -> Response:
         """
         Deletes a direct message with the specified message ID.
 
@@ -3615,7 +3641,7 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> client.delete_dm('0000000000')
+        >>> await client.delete_dm('0000000000')
         """
 
         data = {
@@ -3624,14 +3650,14 @@ class Client(BaseClient):
             },
             'queryId': get_query_id(Endpoint.DELETE_DM)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.DELETE_DM,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def get_dm_history(
+    async def get_dm_history(
         self,
         user_id: str,
         max_id: str | None = None
@@ -3655,7 +3681,7 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> messages = client.get_dm_history('0000000000')
+        >>> messages = await client.get_dm_history('0000000000')
         >>> for message in messages:
         >>>     print(message)
         <Message id="...">
@@ -3663,7 +3689,7 @@ class Client(BaseClient):
         ...
         ...
 
-        >>> more_messages = messages.next()  # Retrieve more messages
+        >>> more_messages = await messages.next()  # Retrieve more messages
         >>> for message in more_messages:
         >>>     print(message)
         <Message id="...">
@@ -3671,11 +3697,14 @@ class Client(BaseClient):
         ...
         ...
         """
-        response = self._get_dm_history(f'{user_id}-{self.user_id()}', max_id)
+        response = await self._get_dm_history(
+            f'{user_id}-{await self.user_id()}', max_id
+        )
+
+        items = response['conversation_timeline']['entries']
         if 'entries' not in response['conversation_timeline']:
             return Result([])
 
-        items = response['conversation_timeline']['entries']
         messages = []
         for item in items:
             message_info = item['message']['message_data']
@@ -3685,13 +3714,14 @@ class Client(BaseClient):
                 message_info['sender_id'],
                 message_info['recipient_id']
             ))
+
         return Result(
             messages,
             partial(self.get_dm_history, user_id, messages[-1].id),
             messages[-1].id
         )
 
-    def send_dm_to_group(
+    async def send_dm_to_group(
         self,
         group_id: str,
         text: str,
@@ -3724,8 +3754,8 @@ class Client(BaseClient):
         --------
         >>> # send DM with media
         >>> group_id = '000000000'
-        >>> media_id = client.upload_media('image.png')
-        >>> message = client.send_dm_to_group(group_id, 'text', media_id)
+        >>> media_id = await client.upload_media('image.png')
+        >>> message = await client.send_dm_to_group(group_id, 'text', media_id)
         >>> print(message)
         <GroupMessage id='...'>
 
@@ -3734,7 +3764,7 @@ class Client(BaseClient):
         .upload_media
         .delete_dm
         """
-        response = self._send_dm(group_id, text, media_id, reply_to)
+        response = await self._send_dm(group_id, text, media_id, reply_to)
 
         message_data = find_dict(response, 'message_data', find_one=True)[0]
         users = list(response['users'].values())
@@ -3745,7 +3775,7 @@ class Client(BaseClient):
             group_id
         )
 
-    def get_group_dm_history(
+    async def get_group_dm_history(
         self,
         group_id: str,
         max_id: str | None = None
@@ -3769,7 +3799,7 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> messages = client.get_group_dm_history('0000000000')
+        >>> messages = await client.get_group_dm_history('0000000000')
         >>> for message in messages:
         >>>     print(message)
         <GroupMessage id="...">
@@ -3777,7 +3807,7 @@ class Client(BaseClient):
         ...
         ...
 
-        >>> more_messages = messages.next()  # Retrieve more messages
+        >>> more_messages = await messages.next()  # Retrieve more messages
         >>> for message in more_messages:
         >>>     print(message)
         <GroupMessage id="...">
@@ -3785,7 +3815,7 @@ class Client(BaseClient):
         ...
         ...
         """
-        response = self._get_dm_history(group_id, max_id)
+        response = await self._get_dm_history(group_id, max_id)
         if 'entries' not in response['conversation_timeline']:
             return Result([])
 
@@ -3801,13 +3831,14 @@ class Client(BaseClient):
                 message_info['sender_id'],
                 group_id
             ))
+
         return Result(
             messages,
             partial(self.get_group_dm_history, group_id, messages[-1].id),
             messages[-1].id
         )
 
-    def get_group(self, group_id: str) -> Group:
+    async def get_group(self, group_id: str) -> Group:
         """
         Fetches a guild by ID.
 
@@ -3825,14 +3856,14 @@ class Client(BaseClient):
             'context': 'FETCH_DM_CONVERSATION_HISTORY',
             'include_conversation_info': True,
         }
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.CONVERSATION.format(group_id),
             params=params,
             headers=self._base_headers
         )
         return Group(self, group_id, response)
 
-    def add_members_to_group(
+    async def add_members_to_group(
         self, group_id: str, user_ids: list[str]
     ) -> Response:
         """Adds members to a group.
@@ -3853,7 +3884,7 @@ class Client(BaseClient):
         --------
         >>> group_id = '...'
         >>> members = ['...']
-        >>> client.add_members_to_group(group_id, members)
+        >>> await client.add_members_to_group(group_id, members)
         """
         data = {
             'variables': {
@@ -3862,14 +3893,14 @@ class Client(BaseClient):
             },
             'queryId': get_query_id(Endpoint.ADD_MEMBER_TO_GROUP)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.ADD_MEMBER_TO_GROUP,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def change_group_name(self, group_id: str, name: str) -> Response:
+    async def change_group_name(self, group_id: str, name: str) -> Response:
         """Changes group name
 
         Parameters
@@ -3889,14 +3920,14 @@ class Client(BaseClient):
         })
         headers = self._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.CHANGE_GROUP_NAME.format(group_id),
             data=data,
             headers=headers
         )
         return response
 
-    def create_list(
+    async def create_list(
         self, name: str, description: str = '', is_private: bool = False
     ) -> List:
         """
@@ -3913,12 +3944,12 @@ class Client(BaseClient):
 
         Returns
         -------
-        list
+        :class:`List`
             The created list.
 
         Examples
         --------
-        >>> list = client.create_list(
+        >>> list = await client.create_list(
         ...     'list name',
         ...     'list description',
         ...     is_private=True
@@ -3936,7 +3967,7 @@ class Client(BaseClient):
             'features': LIST_FEATURES,
             'queryId': get_query_id(Endpoint.CREATE_LIST)
         }
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.CREATE_LIST,
             json=data,
             headers=self._base_headers
@@ -3944,7 +3975,7 @@ class Client(BaseClient):
         list_info = find_dict(response, 'list', find_one=True)[0]
         return List(self, list_info)
 
-    def edit_list_banner(self, list_id: str, media_id: str) -> Response:
+    async def edit_list_banner(self, list_id: str, media_id: str) -> Response:
         """
         Edit the banner image of a list.
 
@@ -3963,8 +3994,8 @@ class Client(BaseClient):
         Examples
         --------
         >>> list_id = '...'
-        >>> media_id = client.upload_media('image.png')
-        >>> client.edit_list_banner(list_id, media_id)
+        >>> media_id = await client.upload_media('image.png')
+        >>> await client.edit_list_banner(list_id, media_id)
         """
         variables = {
             'listId': list_id,
@@ -3975,14 +4006,14 @@ class Client(BaseClient):
             'features': LIST_FEATURES,
             'queryId': get_query_id(Endpoint.EDIT_LIST_BANNER)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.EDIT_LIST_BANNER,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def delete_list_banner(self, list_id: str) -> Response:
+    async def delete_list_banner(self, list_id: str) -> Response:
         """Deletes list banner.
 
         Parameters
@@ -4002,14 +4033,14 @@ class Client(BaseClient):
             'features': LIST_FEATURES,
             'queryId': get_query_id(Endpoint.DELETE_LIST_BANNER)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.DELETE_LIST_BANNER,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def edit_list(
+    async def edit_list(
         self,
         list_id: str,
         name: str | None = None,
@@ -4033,12 +4064,12 @@ class Client(BaseClient):
 
         Returns
         -------
-        list
+        :class:`List`
             The updated Twitter list.
 
         Examples
         --------
-        >>> client.edit_list(
+        >>> await client.edit_list(
         ...     'new name', 'new description', True
         ... )
         """
@@ -4054,7 +4085,7 @@ class Client(BaseClient):
             'features': LIST_FEATURES,
             'queryId': get_query_id(Endpoint.UPDATE_LIST)
         }
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.UPDATE_LIST,
             json=data,
             headers=self._base_headers
@@ -4062,7 +4093,7 @@ class Client(BaseClient):
         list_info = find_dict(response, 'list', find_one=True)[0]
         return List(self, list_info)
 
-    def add_list_member(self, list_id: str, user_id: str) -> Response:
+    async def add_list_member(self, list_id: str, user_id: str) -> Response:
         """
         Adds a user to a list.
 
@@ -4080,7 +4111,7 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> client.add_list_member('list id', 'user id')
+        >>> await client.add_list_member('list id', 'user id')
         """
         variables = {
             'listId': list_id,
@@ -4091,14 +4122,14 @@ class Client(BaseClient):
             'features': LIST_FEATURES,
             'queryId': get_query_id(Endpoint.LIST_ADD_MEMBER)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.LIST_ADD_MEMBER,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def remove_list_member(self, list_id: str, user_id: str) -> Response:
+    async def remove_list_member(self, list_id: str, user_id: str) -> Response:
         """
         Removes a user from a list.
 
@@ -4116,7 +4147,7 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> client.remove_list_member('list id', 'user id')
+        >>> await client.remove_list_member('list id', 'user id')
         """
         variables = {
             'listId': list_id,
@@ -4127,14 +4158,14 @@ class Client(BaseClient):
             'features': LIST_FEATURES,
             'queryId': get_query_id(Endpoint.LIST_REMOVE_MEMBER)
         }
-        _, response = self.post(
+        _, response = await self.post(
             Endpoint.LIST_REMOVE_MEMBER,
             json=data,
             headers=self._base_headers
         )
         return response
 
-    def get_lists(
+    async def get_lists(
         self, count: int = 100, cursor: str = None
     ) -> Result[List]:
         """
@@ -4168,14 +4199,14 @@ class Client(BaseClient):
             'variables': variables,
             'features': FEATURES
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.LIST_MANAGEMENT,
             params=params,
             headers=self._base_headers
         )
 
         entries = find_dict(response, 'entries', find_one=True)[0]
-        items = find_dict(entries, 'items', find_one=True)
+        items = find_dict(entries, 'items')
 
         if len(items) < 2:
             return Result([])
@@ -4192,7 +4223,7 @@ class Client(BaseClient):
             next_cursor
         )
 
-    def get_list(self, list_id: str) -> List:
+    async def get_list(self, list_id: str) -> List:
         """
         Retrieve list by ID.
 
@@ -4210,7 +4241,7 @@ class Client(BaseClient):
             'variables': {'listId': list_id},
             'features': LIST_FEATURES
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.LIST_BY_REST_ID,
             params=params,
             headers=self._base_headers
@@ -4218,7 +4249,7 @@ class Client(BaseClient):
         list_info = find_dict(response, 'list', find_one=True)[0]
         return List(self, list_info)
 
-    def get_list_tweets(
+    async def get_list_tweets(
         self, list_id: str, count: int = 20, cursor: str | None = None
     ) -> Result[Tweet]:
         """
@@ -4240,7 +4271,7 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> tweets = client.get_list_tweets('list id')
+        >>> tweets = await client.get_list_tweets('list id')
         >>> for tweet in tweets:
         ...    print(tweet)
         <Tweet id="...">
@@ -4248,7 +4279,7 @@ class Client(BaseClient):
         ...
         ...
 
-        >>> more_tweets = tweets.next()  # Retrieve more tweets
+        >>> more_tweets = await tweets.next()  # Retrieve more tweets
         >>> for tweet in more_tweets:
         ...     print(tweet)
         <Tweet id="...">
@@ -4263,7 +4294,7 @@ class Client(BaseClient):
             'variables': variables,
             'features': FEATURES
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.LIST_LATEST_TWEETS,
             params=params,
             headers=self._base_headers
@@ -4287,7 +4318,7 @@ class Client(BaseClient):
             next_cursor
         )
 
-    def _get_list_users(
+    async def _get_list_users(
         self, endpoint: str, list_id: str, count: int, cursor: str
     ) -> Result[User]:
         """
@@ -4300,7 +4331,7 @@ class Client(BaseClient):
             'variables': variables,
             'features': FEATURES
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             endpoint,
             params=params,
             headers=self._base_headers
@@ -4323,7 +4354,7 @@ class Client(BaseClient):
             next_cursor
         )
 
-    def get_list_members(
+    async def get_list_members(
         self, list_id: str, count: int = 20, cursor: str | None = None
     ) -> Result[User]:
         """Retrieves members of a list.
@@ -4332,7 +4363,7 @@ class Client(BaseClient):
         ----------
         list_id : :class:`str`
             List ID.
-        count : :class:`int`, default=20
+        count : int, default=20
             Number of members to retrieve.
 
         Returns
@@ -4351,11 +4382,11 @@ class Client(BaseClient):
         ...
         >>> more_members = members.next()  # Retrieve more members
         """
-        return self._get_list_users(
+        return await self._get_list_users(
             Endpoint.LIST_MEMBERS, list_id, count, cursor
         )
 
-    def get_list_subscribers(
+    async def get_list_subscribers(
         self, list_id: str, count: int = 20, cursor: str | None = None
     ) -> Result[User]:
         """Retrieves subscribers of a list.
@@ -4383,11 +4414,11 @@ class Client(BaseClient):
         ...
         >>> more_subscribers = members.next()  # Retrieve more subscribers
         """
-        return self._get_list_users(
+        return await self._get_list_users(
             Endpoint.LIST_SUBSCRIBERS, list_id, count, cursor
         )
 
-    def search_list(
+    async def search_list(
         self, query: str, count: int = 20, cursor: str | None = None
     ) -> Result[List]:
         """
@@ -4408,16 +4439,16 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> lists = client.search_list('query')
+        >>> lists = await client.search_list('query')
         >>> for list in lists:
         ...     print(list)
         <List id="...">
         <List id="...">
         ...
 
-        >>> more_lists = lists.next()  # Retrieve more lists
+        >>> more_lists = await lists.next()  # Retrieve more lists
         """
-        response = self._search(query, 'Lists', count, cursor)
+        response = await self._search(query, 'Lists', count, cursor)
         entries = find_dict(response, 'entries', find_one=True)[0]
 
         if cursor is None:
@@ -4436,7 +4467,7 @@ class Client(BaseClient):
             next_cursor
         )
 
-    def get_notifications(
+    async def get_notifications(
         self,
         type: Literal['All', 'Verified', 'Mentions'],
         count: int = 40,
@@ -4462,7 +4493,7 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> notifications = client.get_notifications('All')
+        >>> notifications = await client.get_notifications('All')
         >>> for notification in notifications:
         ...     print(notification)
         <Notification id="...">
@@ -4471,7 +4502,7 @@ class Client(BaseClient):
         ...
 
         >>> # Retrieve more notifications
-        >>> more_notifications = notifications.next()
+        >>> more_notifications = await notifications.next()
         """
         type = type.capitalize()
 
@@ -4485,7 +4516,7 @@ class Client(BaseClient):
         if cursor is not None:
             params['cursor'] = cursor
 
-        response, _ = self.get(
+        response, _ = await self.get(
             endpoint,
             params=params,
             headers=self._base_headers
@@ -4540,7 +4571,7 @@ class Client(BaseClient):
             next_cursor
         )
 
-    def search_community(
+    async def search_community(
         self, query: str, cursor: str | None = None
     ) -> Result[Community]:
         """
@@ -4558,22 +4589,25 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> communities = client.search_communities('query')
+        >>> communities = await client.search_communities('query')
         >>> for community in communities:
         ...     print(community)
         <Community id="...">
         <Community id="...">
         ...
 
-        >>> more_communities = communities.next()  # Retrieve more communities
+        >>> # Retrieve more communities
+        >>> more_communities = await communities.next()
         """
-        variables = {'query': query}
+        variables = {
+            'query': query,
+        }
         if cursor is not None:
             variables['cursor'] = cursor
         params = flatten_params({
             'variables': variables
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.SEARCH_COMMUNITY,
             params=params,
             headers=self._base_headers
@@ -4595,7 +4629,7 @@ class Client(BaseClient):
             next_cursor
         )
 
-    def get_community(self, community_id: str) -> Community:
+    async def get_community(self, community_id: str) -> Community:
         """
         Retrieves community by ID.
 
@@ -4616,7 +4650,7 @@ class Client(BaseClient):
                 'c9s_superc9s_indication_enabled':False
             }
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.GET_COMMUNITY,
             params=params,
             headers=self._base_headers
@@ -4624,7 +4658,7 @@ class Client(BaseClient):
         community_data = find_dict(response, 'result', find_one=True)[0]
         return Community(self, community_data)
 
-    def get_community_tweets(
+    async def get_community_tweets(
         self,
         community_id: str,
         tweet_type: Literal['Top', 'Latest', 'Media'],
@@ -4651,13 +4685,13 @@ class Client(BaseClient):
         Examples
         --------
         >>> community_id = '...'
-        >>> tweets = client.get_community_tweets(community_id, 'Latest')
+        >>> tweets = await client.get_community_tweets(community_id, 'Latest')
         >>> for tweet in tweets:
         ...     print(tweet)
         <Tweet id="...">
         <Tweet id="...">
         ...
-        >>> more_tweets = tweets.next()  # Retrieve more tweets
+        >>> more_tweets = await tweets.next()  # Retrieve more tweets
         """
         tweet_type = tweet_type.capitalize()
 
@@ -4683,7 +4717,7 @@ class Client(BaseClient):
             'variables': variables,
             'features': COMMUNITY_TWEETS_FEATURES
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             endpoint,
             params=params,
             headers=self._base_headers
@@ -4721,7 +4755,7 @@ class Client(BaseClient):
             previous_cursor
         )
 
-    def get_communities_timeline(
+    async def get_communities_timeline(
         self, count: int = 20, cursor: str | None = None
     ) -> Result[Tweet]:
         """
@@ -4739,13 +4773,13 @@ class Client(BaseClient):
 
         Examples
         --------
-        >>> tweets = client.get_communities_timeline()
+        >>> tweets = await client.get_communities_timeline()
         >>> for tweet in tweets:
         ...     print(tweet)
         <Tweet id="...">
         <Tweet id="...">
         ...
-        >>> more_tweets = tweets.next()  # Retrieve more tweets
+        >>> more_tweets = await tweets.next()  # Retrieve more tweets
         """
         variables = {
             'count': count,
@@ -4757,7 +4791,7 @@ class Client(BaseClient):
             'variables': variables,
             'features': COMMUNITY_TWEETS_FEATURES
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.COMMUNITIES_TIMELINE,
             params=params,
             headers=self._base_headers
@@ -4767,7 +4801,6 @@ class Client(BaseClient):
         for item in items:
             if not item['entryId'].startswith('tweet'):
                 continue
-            tweet = tweet_from_data(self, item)
             tweet_data = find_dict(item, 'result', find_one=True)[0]
             if 'tweet' in tweet_data:
                 tweet_data = tweet_data['tweet']
@@ -4790,7 +4823,7 @@ class Client(BaseClient):
             previous_cursor
         )
 
-    def join_community(self, community_id: str) -> Community:
+    async def join_community(self, community_id: str) -> Community:
         """
         Join a community.
 
@@ -4811,7 +4844,7 @@ class Client(BaseClient):
             'features': JOIN_COMMUNITY_FEATURES,
             'queryId': get_query_id(Endpoint.JOIN_COMMUNITY)
         }
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.JOIN_COMMUNITY,
             json=data,
             headers=self._base_headers
@@ -4820,7 +4853,7 @@ class Client(BaseClient):
         community_data['rest_id'] = community_data['id_str']
         return Community(self, community_data)
 
-    def leave_community(self, community_id: str) -> Community:
+    async def leave_community(self, community_id: str) -> Community:
         """
         Leave a community.
 
@@ -4841,7 +4874,7 @@ class Client(BaseClient):
             'features': JOIN_COMMUNITY_FEATURES,
             'queryId': get_query_id(Endpoint.LEAVE_COMMUNITY)
         }
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.LEAVE_COMMUNITY,
             json=data,
             headers=self._base_headers
@@ -4850,7 +4883,7 @@ class Client(BaseClient):
         community_data['rest_id'] = community_data['id_str']
         return Community(self, community_data)
 
-    def request_to_join_community(
+    async def request_to_join_community(
         self, community_id: str, answer: str | None = None
     ) -> Community:
         """
@@ -4876,7 +4909,7 @@ class Client(BaseClient):
             'features': JOIN_COMMUNITY_FEATURES,
             'queryId': get_query_id(Endpoint.REQUEST_TO_JOIN_COMMUNITY)
         }
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.REQUEST_TO_JOIN_COMMUNITY,
             json=data,
             headers=self._base_headers
@@ -4885,7 +4918,7 @@ class Client(BaseClient):
         community_data['rest_id'] = community_data['id_str']
         return Community(self, community_data)
 
-    def _get_community_users(
+    async def _get_community_users(
         self, endpoint: str, community_id: str, count: int, cursor: str | None
     ):
         """
@@ -4903,7 +4936,7 @@ class Client(BaseClient):
                 'responsive_web_graphql_timeline_navigation_enabled': True
             }
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             endpoint,
             params=params,
             headers=self._base_headers
@@ -4932,7 +4965,7 @@ class Client(BaseClient):
             next_cursor
         )
 
-    def get_community_members(
+    async def get_community_members(
         self, community_id: str, count: int = 20, cursor: str | None = None
     ) -> Result[CommunityMember]:
         """
@@ -4950,11 +4983,11 @@ class Client(BaseClient):
         Result[:class:`CommunityMember`]
             List of retrieved members.
         """
-        return self._get_community_users(
+        return await self._get_community_users(
             Endpoint.COMMUNITY_MEMBERS, community_id, count, cursor
         )
 
-    def get_community_moderators(
+    async def get_community_moderators(
         self, community_id: str, count: int = 20, cursor: str | None = None
     ) -> Result[CommunityMember]:
         """
@@ -4972,11 +5005,11 @@ class Client(BaseClient):
         Result[:class:`CommunityMember`]
             List of retrieved moderators.
         """
-        return self._get_community_users(
+        return await self._get_community_users(
             Endpoint.COMMUNITY_MODERATORS, community_id, count, cursor
         )
 
-    def search_community_tweet(
+    async def search_community_tweet(
         self,
         community_id: str,
         query: str,
@@ -5016,7 +5049,7 @@ class Client(BaseClient):
             'variables': variables,
             'features': COMMUNITY_TWEETS_FEATURES
         })
-        response, _ = self.get(
+        response, _ = await self.get(
             Endpoint.SEARCH_COMMUNITY_TWEET,
             params=params,
             headers=self._base_headers
@@ -5043,14 +5076,16 @@ class Client(BaseClient):
             previous_cursor,
         )
 
-    def _stream(self, topics: set[str]) -> Generator[tuple[str, Payload]]:
+    async def _stream(
+        self, topics: set[str]
+    ) -> AsyncGenerator[tuple[str, Payload]]:
         headers = self._base_headers
         headers.pop('content-type')
         params = {'topics': ','.join(topics)}
 
-        with self.stream('GET', Endpoint.EVENTS, params=params, timeout=None) as response:
+        async with self.stream('GET', Endpoint.EVENTS, params=params, timeout=None) as response:
             self._remove_duplicate_ct0_cookie()
-            for line in response.iter_lines():
+            async for line in response.aiter_lines():
                 try:
                     data = json.loads(line)
                 except json.JSONDecodeError:
@@ -5058,7 +5093,7 @@ class Client(BaseClient):
                 payload = _payload_from_data(data['payload'])
                 yield data.get('topic'), payload
 
-    def get_streaming_session(
+    async def get_streaming_session(
         self, topics: set[str], auto_reconnect: bool = True
     ) -> StreamingSession:
         """
@@ -5086,9 +5121,9 @@ class Client(BaseClient):
         ...     Topic.dm_update('17544932482-174455537996'), # Stream DM update
         ...     Topic.dm_typing('17544932482-174455537996') # Stream DM typing
         ... }
-        >>> session = client.get_streaming_session(topics)
+        >>> session = await client.get_streaming_session(topics)
         >>>
-        >>> for topic, payload in session:
+        >>> async for topic, payload in session:
         ...     if payload.dm_update:
         ...         conversation_id = payload.dm_update.conversation_id
         ...         user_id = payload.dm_update.user_id
@@ -5118,7 +5153,9 @@ class Client(BaseClient):
         ...     Topic.dm_update('17544932482-174455537996'),
         ...     Topic.dm_update('17544932482-174455537996')
         ... }
-        >>> session.update_subscriptions(subscribe_topics, unsubscribe_topics)
+        >>> await session.update_subscriptions(
+        ...     subscribe_topics, unsubscribe_topics
+        ... )
 
         See Also
         --------
@@ -5128,10 +5165,10 @@ class Client(BaseClient):
         .Topic
         """
         stream = self._stream(topics)
-        session_id = next(stream)[1].config.session_id
+        session_id = (await anext(stream))[1].config.session_id
         return StreamingSession(self, session_id, stream, topics, auto_reconnect)
 
-    def _update_subscriptions(
+    async def _update_subscriptions(
         self,
         session: StreamingSession,
         subscribe: set[str] | None = None,
@@ -5149,7 +5186,7 @@ class Client(BaseClient):
         headers = self._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
         headers['LivePipeline-Session'] = session.id
-        response, _ = self.post(
+        response, _ = await self.post(
             Endpoint.UPDATE_SUBSCRIPTIONS, data=data, headers=headers
         )
         session.topics |= subscribe
@@ -5157,8 +5194,10 @@ class Client(BaseClient):
 
         return _payload_from_data(response)
 
-    def _get_user_state(self) -> Literal['normal', 'bounced', 'suspended']:
-        response, _ = self.get(
+    async def _get_user_state(
+        self
+    ) -> Literal['normal', 'bounced', 'suspended']:
+        response, _ = await self.get(
             Endpoint.USER_STATE,
             headers=self._base_headers
         )

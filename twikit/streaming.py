@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generator, NamedTuple
+from typing import TYPE_CHECKING, AsyncGenerator, NamedTuple
 
 if TYPE_CHECKING:
     from .client import Client
@@ -23,7 +23,7 @@ class StreamingSession:
     """
     def __init__(
         self, client: Client, session_id: str,
-        stream: Generator[Payload], topics: set[str], auto_reconnect: bool
+        stream: AsyncGenerator[Payload], topics: set[str], auto_reconnect: bool
     ) -> None:
         self._client = client
         self.id = session_id
@@ -31,17 +31,17 @@ class StreamingSession:
         self.topics = topics
         self.auto_reconnect = auto_reconnect
 
-    def reconnect(self) -> tuple[str, Payload]:
+    async def reconnect(self) -> tuple[str, Payload]:
         """
         Reconnects the session.
         """
-        stream = self._client._stream(self.topics)
-        config_event = next(stream)
+        stream = await self._client._stream(self.topics)
+        config_event = await anext(stream)
         self.id = config_event[1].config.session_id
         self._stream = stream
         return config_event
 
-    def update_subscriptions(
+    async def update_subscriptions(
         self,
         subscribe: set[str] | None = None,
         unsubscribe: set[str] | None = None
@@ -69,7 +69,9 @@ class StreamingSession:
         ...     Topic.dm_update('17544932482-174455537996'),
         ...     Topic.dm_typing('17544932482-174455537996)'
         ... }
-        >>> session.update_subscriptions(subscribe_topics, unsubscribe_topics)
+        >>> await session.update_subscriptions(
+        ...     subscribe_topics, unsubscribe_topics
+        ... )
 
         Note
         ----
@@ -79,15 +81,17 @@ class StreamingSession:
         --------
         .Topic
         """
-        return self._client._update_subscriptions(self, subscribe, unsubscribe)
+        return await self._client._update_subscriptions(
+            self, subscribe, unsubscribe
+        )
 
-    def __iter__(self) -> Generator[tuple[str, Payload]]:
+    async def __aiter__(self) -> AsyncGenerator[tuple[str, Payload]]:
         while True:
-            for event in self._stream:
+            async for event in self._stream:
                 yield event
             if not self.auto_reconnect:
                 break
-            yield self.reconnect()
+            yield await self.reconnect()
 
     def __repr__(self) -> str:
         return f'<StreamingSession id="{self.id}">'

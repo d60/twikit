@@ -4,8 +4,8 @@ import re
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from .user import User
 from .utils import find_dict, timestamp_to_datetime
+from .user import User
 
 if TYPE_CHECKING:
     from httpx import Response
@@ -74,8 +74,6 @@ class Tweet:
         Related tweets.
     hashtags: list[:class:`str`]
         Hashtags included in the tweet text.
-    poll : :class:`Poll`
-        Poll attached to the tweet.
     has_card : :class:`bool`
         Indicates if the tweet contains a card.
     thumbnail_title : :class:`str` | None
@@ -127,9 +125,7 @@ class Tweet:
             if 'tweet' in quoted_tweet:
                 quoted_tweet = quoted_tweet['tweet']
             if quoted_tweet.get('__typename') != 'TweetTombstone':
-                quoted_user = User(
-                    client, quoted_tweet['core']['user_results']['result']
-                )
+                quoted_user = User(client, quoted_tweet['core']['user_results']['result'])
                 self.quote: Tweet = Tweet(client, quoted_tweet, quoted_user)
         else:
             self.quote = None
@@ -220,7 +216,7 @@ class Tweet:
     def poll(self) -> Poll:
         return self._poll_data and Poll(self._client, self._poll_data, self)
 
-    def delete(self) -> Response:
+    async def delete(self) -> Response:
         """Deletes the tweet.
 
         Returns
@@ -230,11 +226,11 @@ class Tweet:
 
         Examples
         --------
-        >>> tweet.delete()
+        >>> await tweet.delete()
         """
-        return self._client.delete_tweet(self.id)
+        return await self._client.delete_tweet(self.id)
 
-    def favorite(self) -> Response:
+    async def favorite(self) -> Response:
         """
         Favorites the tweet.
 
@@ -247,9 +243,9 @@ class Tweet:
         --------
         Client.favorite_tweet
         """
-        return self._client.favorite_tweet(self.id)
+        return await self._client.favorite_tweet(self.id)
 
-    def unfavorite(self) -> Response:
+    async def unfavorite(self) -> Response:
         """
         Favorites the tweet.
 
@@ -262,9 +258,9 @@ class Tweet:
         --------
         Client.unfavorite_tweet
         """
-        return self._client.unfavorite_tweet(self.id)
+        return await self._client.unfavorite_tweet(self.id)
 
-    def retweet(self) -> Response:
+    async def retweet(self) -> Response:
         """
         Retweets the tweet.
 
@@ -277,9 +273,9 @@ class Tweet:
         --------
         Client.retweet
         """
-        return self._client.retweet(self.id)
+        return await self._client.retweet(self.id)
 
-    def delete_retweet(self) -> Response:
+    async def delete_retweet(self) -> Response:
         """
         Deletes the retweet.
 
@@ -292,9 +288,9 @@ class Tweet:
         --------
         Client.delete_retweet
         """
-        return self._client.delete_retweet(self.id)
+        return await self._client.delete_retweet(self.id)
 
-    def bookmark(self) -> Response:
+    async def bookmark(self) -> Response:
         """
         Adds the tweet to bookmarks.
 
@@ -307,9 +303,9 @@ class Tweet:
         --------
         Client.bookmark_tweet
         """
-        return self._client.bookmark_tweet(self.id)
+        return await self._client.bookmark_tweet(self.id)
 
-    def delete_bookmark(self) -> Response:
+    async def delete_bookmark(self) -> Response:
         """
         Removes the tweet from bookmarks.
 
@@ -322,9 +318,9 @@ class Tweet:
         --------
         Client.delete_bookmark
         """
-        return self._client.delete_bookmark(self.id)
+        return await self._client.delete_bookmark(self.id)
 
-    def reply(
+    async def reply(
         self,
         text: str = '',
         media_ids: list[str] | None = None,
@@ -353,7 +349,7 @@ class Tweet:
         ...     client.upload_media('image1.png'),
         ...     client.upload_media('image2.png')
         ... ]
-        >>> tweet.reply(
+        >>> await tweet.reply(
         ...     tweet_text,
         ...     media_ids=media_ids
         ... )
@@ -362,11 +358,11 @@ class Tweet:
         --------
         `Client.upload_media`
         """
-        return self._client.create_tweet(
+        return await self._client.create_tweet(
             text, media_ids, reply_to=self.id, **kwargs
         )
 
-    def get_retweeters(
+    async def get_retweeters(
         self, count: str = 40, cursor: str | None = None
     ) -> Result[User]:
         """
@@ -395,9 +391,9 @@ class Tweet:
         >>> print(more_retweeters)
         [<User id="...">, <User id="...">, ..., <User id="...">]
         """
-        return self._client.get_retweeters(self.id, count, cursor)
+        return await self._client.get_retweeters(self.id, count, cursor)
 
-    def get_favoriters(
+    async def get_favoriters(
         self, count: str = 40, cursor: str | None = None
     ) -> Result[User]:
         """
@@ -407,7 +403,7 @@ class Tweet:
         ----------
         tweet_id : :class:`str`
             The ID of the tweet.
-        count : int, default=40
+        count : :class:`int`, default=40
             The maximum number of users to retrieve.
         cursor : :class:`str`, default=None
             A string indicating the position of the cursor for pagination.
@@ -428,9 +424,9 @@ class Tweet:
         >>> print(more_favoriters)
         [<User id="...">, <User id="...">, ..., <User id="...">]
         """
-        return self._client.get_favoriters(self.id, count, cursor)
+        return await self._client.get_favoriters(self.id, count, cursor)
 
-    def get_similar_tweets(self) -> list[Tweet]:
+    async def get_similar_tweets(self) -> list[Tweet]:
         """
         Retrieves tweets similar to the tweet (Twitter premium only).
 
@@ -440,10 +436,10 @@ class Tweet:
             A list of Tweet objects representing tweets
             similar to the tweet.
         """
-        return self._client.get_similar_tweets(self.id)
+        return await self._client.get_similar_tweets(self.id)
 
-    def update(self) -> None:
-        new = self._client.get_tweet_by_id(self.id)
+    async def update(self) -> None:
+        new = await self._client.get_tweet_by_id(self.id)
         self.__dict__.update(new.__dict__)
 
     def __repr__(self) -> str:
@@ -488,7 +484,7 @@ class ScheduledTweet:
         self.text: str = data['tweet_create_request']['status']
         self.media = [i['media_info'] for i in data.get('media_entities', [])]
 
-    def delete(self) -> Response:
+    async def delete(self) -> Response:
         """
         Delete the scheduled tweet.
 
@@ -497,16 +493,10 @@ class ScheduledTweet:
         :class:`httpx.Response`
             Response returned from twitter api.
         """
-        return self._client.delete_scheduled_tweet(self.id)
+        return await self._client.delete_scheduled_tweet(self.id)
 
     def __repr__(self) -> str:
         return f'<ScheduledTweet id="{self.id}">'
-
-    def __eq__(self, __value: object) -> bool:
-        return isinstance(__value, ScheduledTweet) and self.id == __value.id
-
-    def __ne__(self, __value: object) -> bool:
-        return not self == __value
 
 
 class TweetTombstone:
@@ -527,7 +517,6 @@ class TweetTombstone:
 
 class Poll:
     """Represents a poll associated with a tweet.
-
     Attributes
     ----------
     tweet : :class:`Tweet`
@@ -596,21 +585,19 @@ class Poll:
         else:
             self.selected_choice = None
 
-    def vote(self, selected_choice: str) -> Poll:
+    async def vote(self, selected_choice: str) -> Poll:
         """
         Vote on the poll with the specified selected choice.
-
         Parameters
         ----------
         selected_choice : :class:`str`
             The label of the selected choice for the vote.
-
         Returns
         -------
         :class:`Poll`
             The Poll object representing the updated poll after voting.
         """
-        return self._client.vote(
+        return await self._client.vote(
             selected_choice,
             self.id,
             self.tweet.id,
@@ -674,8 +661,8 @@ class CommunityNote:
         self.birdwatch_profile: dict = data.get('birdwatch_profile')
         self.tweet_id: str = data['tweet_results']['result']['rest_id']
 
-    def update(self) -> None:
-        new = self._client.get_community_note(self.id)
+    async def update(self) -> None:
+        new = await self._client.get_community_note(self.id)
         self.__dict__.update(new.__dict__)
 
     def __repr__(self) -> str:

@@ -3,16 +3,7 @@ from __future__ import annotations
 import base64
 import json
 from datetime import datetime
-from typing import (
-    Any,
-    TYPE_CHECKING,
-    Callable,
-    Generic,
-    Iterator,
-    Literal,
-    TypedDict,
-    TypeVar
-)
+from typing import TYPE_CHECKING, Any, Awaitable, Generic, Iterator, Literal, TypedDict, TypeVar
 from urllib import parse
 
 if TYPE_CHECKING:
@@ -329,9 +320,9 @@ class Result(Generic[T]):
     def __init__(
         self,
         results: list[T],
-        fetch_next_result: Callable | None = None,
+        fetch_next_result: Awaitable | None = None,
         next_cursor: str | None = None,
-        fetch_previous_result: Callable | None = None,
+        fetch_previous_result: Awaitable | None = None,
         previous_cursor: str | None = None
     ) -> None:
         self.__results = results
@@ -340,21 +331,21 @@ class Result(Generic[T]):
         self.previous_cursor = previous_cursor
         self.__fetch_previous_result = fetch_previous_result
 
-    def next(self) -> Result[T]:
+    async def next(self) -> Result[T]:
         """
         The next result.
         """
         if self.__fetch_next_result is None:
             return Result([])
-        return self.__fetch_next_result()
+        return await self.__fetch_next_result()
 
-    def previous(self) -> Result[T]:
+    async def previous(self) -> Result[T]:
         """
         The previous result.
         """
         if self.__fetch_previous_result is None:
             return Result([])
-        return self.__fetch_previous_result()
+        return await self.__fetch_previous_result()
 
     @property
     def cursor(self) -> str:
@@ -388,7 +379,7 @@ class Flow:
         self.headers = headers
         self.response = None
 
-    def execute_task(self, *subtask_inputs, **kwargs) -> None:
+    async def execute_task(self, *subtask_inputs, **kwargs) -> None:
         data = {}
 
         if self.token is not None:
@@ -396,7 +387,7 @@ class Flow:
         if subtask_inputs is not None:
             data['subtask_inputs'] = list(subtask_inputs)
 
-        response, _ = self._client.post(
+        response, _ = await self._client.post(
             self.endpoint,
             data=json.dumps(data),
             headers=self.headers,

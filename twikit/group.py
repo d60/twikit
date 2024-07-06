@@ -45,7 +45,9 @@ class Group:
             User(client, build_user_data(i)) for i in members
         ]
 
-    def get_history(self, max_id: str | None = None) -> Result[GroupMessage]:
+    async def get_history(
+        self, max_id: str | None = None
+    ) -> Result[GroupMessage]:
         """
         Retrieves the DM conversation history in the group.
 
@@ -62,7 +64,7 @@ class Group:
 
         Examples
         --------
-        >>> messages = group.get_history()
+        >>> messages = await group.get_history()
         >>> for message in messages:
         >>>     print(message)
         <GroupMessage id="...">
@@ -70,7 +72,7 @@ class Group:
         ...
         ...
 
-        >>> more_messages = messages.next()  # Retrieve more messages
+        >>> more_messages = await messages.next()  # Retrieve more messages
         >>> for message in more_messages:
         >>>     print(message)
         <GroupMessage id="...">
@@ -78,9 +80,9 @@ class Group:
         ...
         ...
         """
-        return self._client.get_group_dm_history(self.id, max_id)
+        return await self._client.get_group_dm_history(self.id, max_id)
 
-    def add_members(self, user_ids: list[str]) -> Response:
+    async def add_members(self, user_ids: list[str]) -> Response:
         """Adds members to the group.
 
         Parameters
@@ -96,11 +98,11 @@ class Group:
         Examples
         --------
         >>> members = ['...']
-        >>> group.add_members(members)
+        >>> await group.add_members(members)
         """
-        return self._client.add_members_to_group(self.id, user_ids)
+        return await self._client.add_members_to_group(self.id, user_ids)
 
-    def change_name(self, name: str) -> Response:
+    async def change_name(self, name: str) -> Response:
         """Changes group name
 
         Parameters
@@ -113,9 +115,9 @@ class Group:
         :class:`httpx.Response`
             Response returned from twitter api.
         """
-        return self._client.change_group_name(self.id, name)
+        return await self._client.change_group_name(self.id, name)
 
-    def send_message(
+    async def send_message(
         self,
         text: str,
         media_id: str | None = None,
@@ -144,15 +146,17 @@ class Group:
         --------
         >>> # send DM with media
         >>> group_id = '000000000'
-        >>> media_id = client.upload_media('image.png')
-        >>> message = group.send_message('text', media_id)
+        >>> media_id = await client.upload_media('image.png')
+        >>> message = await group.send_message('text', media_id)
         >>> print(message)
         <GroupMessage id='...'>
         """
-        return self._client.send_dm_to_group(self.id, text, media_id, reply_to)
+        return await self._client.send_dm_to_group(
+            self.id, text, media_id, reply_to
+        )
 
-    def update(self) -> None:
-        new = self._client.get_group(self.id)
+    async def update(self) -> None:
+        new = await self._client.get_group(self.id)
         self.__dict__.update(new.__dict__)
 
     def __repr__(self) -> str:
@@ -186,13 +190,15 @@ class GroupMessage(Message):
         super().__init__(client, data, sender_id, None)
         self.group_id = group_id
 
-    def group(self) -> Group:
+    async def group(self) -> Group:
         """
         Gets the group to which the message was sent.
         """
-        return self._client.get_group(self.group_id)
+        return await self._client.get_group(self.group_id)
 
-    def reply(self, text: str, media_id: str | None = None) -> GroupMessage:
+    async def reply(
+        self, text: str, media_id: str | None = None
+    ) -> GroupMessage:
         """Replies to the message.
 
         Parameters
@@ -214,11 +220,11 @@ class GroupMessage(Message):
         --------
         Client.send_dm_to_group
         """
-        return self._client.send_dm_to_group(
+        return await self._client.send_dm_to_group(
             self.group_id, text, media_id, self.id
         )
 
-    def add_reaction(self, emoji: str) -> Response:
+    async def add_reaction(self, emoji: str) -> Response:
         """
         Adds a reaction to the message.
 
@@ -232,11 +238,11 @@ class GroupMessage(Message):
         :class:`httpx.Response`
             Response returned from twitter api.
         """
-        return self._client.add_reaction_to_message(
+        return await self._client.add_reaction_to_message(
             self.id, self.group_id, emoji
         )
 
-    def remove_reaction(self, emoji: str) -> Response:
+    async def remove_reaction(self, emoji: str) -> Response:
         """
         Removes a reaction from the message.
 
@@ -247,10 +253,10 @@ class GroupMessage(Message):
 
         Returns
         -------
-        httpx.Response
+        :class:`httpx.Response`
             Response returned from twitter api.
         """
-        return self._client.remove_reaction_from_message(
+        return await self._client.remove_reaction_from_message(
             self.id, self.group_id, emoji
         )
 

@@ -28,29 +28,31 @@ class BookmarkFolder:
         self.name: str = data['name']
         self.media: dict = data['media']
 
-    def get_tweets(self, cursor: str | None = None) -> Result[Tweet]:
+    async def get_tweets(self, cursor: str | None = None) -> Result[Tweet]:
         """
         Retrieves tweets from the folder.
         """
-        return self._client.get_bookmarks(cursor=cursor, folder_id=self.id)
+        return await self._client.get_bookmarks(
+            cursor=cursor, folder_id=self.id
+        )
 
-    def edit(self, name: str) -> BookmarkFolder:
+    async def edit(self, name: str) -> BookmarkFolder:
         """
         Edits the folder.
         """
-        return self._client.edit_bookmark_folder(self.id, name)
+        return await self._client.edit_bookmark_folder(self.id, name)
 
-    def delete(self) -> Response:
+    async def delete(self) -> Response:
         """
         Deletes the folder.
         """
-        return self._client.delete_bookmark_folder(self.id)
+        return await self._client.delete_bookmark_folder(self.id)
 
-    def add(self, tweet_id: str) -> Response:
+    async def add(self, tweet_id: str) -> Response:
         """
         Adds a tweet to the folder.
         """
-        return self._client.bookmark_tweet(tweet_id, self.id)
+        return await self._client.bookmark_tweet(tweet_id, self.id)
 
     def __eq__(self, __value: object) -> bool:
         return isinstance(__value, BookmarkFolder) and self.id == __value.id
