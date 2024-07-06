@@ -29,7 +29,7 @@ You can use functions such as posting or searching for tweets without an API key
 ## Important Notice: Twikit Sync Support Ending in Version 2
 We're planning to discontinue support for synchronous operations starting from version 2 of Twikit. As our codebase has grown, maintaining both synchronous and asynchronous versions has become challenging, impacting our ability to uphold code quality effectively.
 
-The release date for version 2 is not yet determined. We recommend transitioning your code to the asynchronous version (twikit_async) as soon as possible. You can find documentation for twikit_async here.
+The release date for version 2 is not yet determined. We recommend transitioning your code to the asynchronous version (twikit_async) as soon as possible. You can find documentation for twikit_async [here](https://twikit.readthedocs.io/en/latest/twikit.twikit_async.html).
 
 
 
