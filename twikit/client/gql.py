@@ -210,17 +210,7 @@ class GQLClient:
         else:
             endpoint = Endpoint.CREATE_TWEET
             features = FEATURES
-        # data = {
-        #     'variables': variables,
-        #     'queryId': get_query_id(Endpoint.CREATE_TWEET),
-        #     'features': features,
-        # }
         return await self.gql_post(endpoint, variables, features)
-        # return await self.base.post(
-        #     endpoint,
-        #     json=data,
-        #     headers=self.base._base_headers,
-        # )
 
     async def create_scheduled_tweet(self, scheduled_at, text, media_ids) -> str:
         variables = {
@@ -232,15 +222,7 @@ class GQLClient:
             },
             'execute_at': scheduled_at
         }
-        data = {
-            'variables': variables,
-            'queryId': get_query_id(Endpoint.CREATE_SCHEDULED_TWEET),
-        }
-        return await self.base.post(
-            Endpoint.CREATE_SCHEDULED_TWEET,
-            json=data,
-            headers=self.base._base_headers,
-        )
+        return await self.gql_post(Endpoint.CREATE_SCHEDULED_TWEET, variables)
 
     async def delete_tweet(self, tweet_id):
         data = {
