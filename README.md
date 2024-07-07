@@ -121,7 +121,7 @@ for tweet in tweets:
 
 **Retrieve user tweets**
 ```python
-tweets = client.get_user_tweets('123456', 'Tweet')
+tweets = client.get_user_tweets('123456', 'Tweets')
 
 for tweet in tweets:
     print(tweet.text)

@@ -116,7 +116,7 @@ for tweet in tweets:
 
 **检索用户的推文**
 ```python
-tweets = client.get_user_tweets('123456', 'Tweet')
+tweets = client.get_user_tweets('123456', 'Tweets')
 
 for tweet in tweets:
     print(tweet.text)
