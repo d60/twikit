@@ -34,6 +34,7 @@ class Capsolver(CaptchaSolver):
 
     use_blob_data : :class:`bool`, default=False
     """
+
     def __init__(
         self,
         api_key: str,

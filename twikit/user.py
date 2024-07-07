@@ -8,7 +8,7 @@ from .utils import timestamp_to_datetime
 if TYPE_CHECKING:
     from httpx import Response
 
-    from .client import Client
+    from .client.client import Client
     from .message import Message
     from .tweet import Tweet
     from .utils import Result

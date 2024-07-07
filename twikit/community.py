@@ -8,7 +8,7 @@ from .user import User
 from .utils import Result
 
 if TYPE_CHECKING:
-    from .client import Client
+    from .client.client import Client
 
 
 class CommunityCreator(NamedTuple):
@@ -53,6 +53,7 @@ class CommunityMember:
 
     def __repr__(self) -> str:
         return f'<CommunityMember id="{self.id}">'
+
 
 class Community:
     """

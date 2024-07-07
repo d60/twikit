@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import warnings
 from typing import TYPE_CHECKING
+
 from .errors import TwitterException
 
 if TYPE_CHECKING:
-    from .client import Client
+    from .client.client import Client
 
 
 class Place:
