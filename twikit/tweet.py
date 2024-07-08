@@ -453,6 +453,7 @@ class Tweet:
 
 
 def tweet_from_data(client: Client, data: dict) -> Tweet:
+    ':meta private:'
     tweet_data_ = find_dict(data, 'result', True)
     if not tweet_data_:
         return None
@@ -564,7 +565,7 @@ class Poll:
 
         for i in range(1, choices_number + 1):
             choice_label = binding_values[f'choice{i}_label']
-            choice_count = binding_values[f'choice{i}_count']
+            choice_count = binding_values.get(f'choice{i}_count', {})
             choices.append({
                 'number': str(i),
                 'label': choice_label['string_value'],

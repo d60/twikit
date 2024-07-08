@@ -4,15 +4,13 @@ twikit package
 .. automodule:: twikit
    :members:
    :undoc-members:
-   :show-inheritance:
 
 Client
 --------------------
 
-.. automodule:: twikit.client
+.. autoclass:: twikit.client.client.Client
    :members:
    :undoc-members:
-   :show-inheritance:
    :member-order: bysource
 
 Tweet
@@ -20,8 +18,7 @@ Tweet
 
 .. automodule:: twikit.tweet
    :members:
-   :undoc-members:
-   :show-inheritance:
+   :exclude-members: TweetTombstone
    :member-order: bysource
 
 User
@@ -30,7 +27,6 @@ User
 .. automodule:: twikit.user
    :members:
    :undoc-members:
-   :show-inheritance:
    :member-order: bysource
 
 Message
@@ -39,7 +35,6 @@ Message
 .. automodule:: twikit.message
    :members:
    :undoc-members:
-   :show-inheritance:
    :member-order: bysource
 
 Streaming
@@ -83,7 +78,6 @@ Example Code:
 .. automodule:: twikit.streaming
    :members:
    :undoc-members:
-   :show-inheritance:
    :member-order: bysource
 
 Trend
@@ -92,16 +86,14 @@ Trend
 .. automodule:: twikit.trend
    :members:
    :undoc-members:
-   :show-inheritance:
    :member-order: bysource
 
 List
 -------------------
 
-.. automodule:: twikit.list
+.. autoclass:: twikit.list.List
    :members:
    :undoc-members:
-   :show-inheritance:
    :member-order: bysource
 
 Community
@@ -110,43 +102,39 @@ Community
 .. automodule:: twikit.community
    :members:
    :undoc-members:
-   :show-inheritance:
    :member-order: bysource
 
 Notification
 -------------------
 
-.. automodule:: twikit.notification
+.. autoclass:: twikit.notification.Notification
    :members:
    :undoc-members:
-   :show-inheritance:
    :member-order: bysource
 
 Geo
 -------------------
 
-.. automodule:: twikit.geo
+.. autoclass:: twikit.geo.Place
    :members:
    :undoc-members:
-   :show-inheritance:
    :member-order: bysource
 
 Capsolver
 -------------------
 
-.. automodule:: twikit._captcha.capsolver
+.. autoclass:: twikit._captcha.capsolver.Capsolver
    :members:
    :undoc-members:
-   :show-inheritance:
    :member-order: bysource
+   :exclude-members: create_task,get_task_result,solve_funcaptcha
 
 Utils
 -------------------
 
-.. automodule:: twikit.utils
+.. autoclass:: twikit.utils.Result
    :members:
    :undoc-members:
-   :show-inheritance:
    :member-order: bysource
 
 Errors
@@ -155,5 +143,4 @@ Errors
 .. automodule:: twikit.errors
    :members:
    :undoc-members:
-   :show-inheritance:
    :member-order: bysource

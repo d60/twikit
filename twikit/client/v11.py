@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-import json
 
 from ..utils import urlencode
 
@@ -467,20 +466,13 @@ class V11Client:
         )
 
     async def notifications_all(self, count, cursor):
-        return self._notifications(Endpoint.NOTIFICATIONS_ALL, count, cursor)
+        return await self._notifications(Endpoint.NOTIFICATIONS_ALL, count, cursor)
 
     async def notifications_verified(self, count, cursor):
-        return self._notifications(Endpoint.NOTIFICATIONS_VERIFIED, count, cursor)
+        return await self._notifications(Endpoint.NOTIFICATIONS_VERIFIED, count, cursor)
 
     async def notifications_mentions(self, count, cursor):
-        return self._notifications(Endpoint.NOTIFICATIONS_MENTIONS, count, cursor)
-
-    async def live_pipeline_events(self, topics):
-        headers = self.base._base_headers
-        headers.pop('content-type')
-        params = {'topics': ','.join(topics)}
-
-        return self.base.stream('GET', Endpoint.LIVE_PIPELINE_EVENTS, params=params, timeout=None)
+        return await self._notifications(Endpoint.NOTIFICATIONS_MENTIONS, count, cursor)
 
     async def live_pipeline_update_subscriptions(self, session, subscribe, unsubscribe):
         data = urlencode({

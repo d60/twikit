@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 from datetime import datetime
+from httpx import AsyncHTTPTransport
 from typing import TYPE_CHECKING, Any, Awaitable, Generic, Iterator, Literal, TypedDict, TypeVar
 from urllib import parse
 
@@ -11,7 +12,6 @@ if TYPE_CHECKING:
 
 # This token is common to all accounts and does not need to be changed.
 TOKEN = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'
-TOKEN2 = 'AAAAAAAAAAAAAAAAAAAAAFQODgEAAAAAVHTp76lzh3rFzcHbmHVvQxYYpTw%3DckAlMINMjmCwxUcaXbAN4XqJVdgMJaHqNOFgPMK0zN1qLqLQCF'
 
 FEATURES = {
     'creator_subscriptions_tweet_preview_api_enabled': True,
@@ -236,17 +236,9 @@ class Result(Generic[T]):
             return Result([])
         return await self.__fetch_previous_result()
 
-    @property
-    def cursor(self) -> str:
-        """Alias of `next_token`
-        """
-        return self.next_cursor
-
-    @property
-    def token(self) -> str:
-        """Alias of `next_token`
-        """
-        return self.next_cursor
+    @classmethod
+    def empty(cls):
+        return cls([])
 
     def __iter__(self) -> Iterator[T]:
         yield from self.__results
@@ -305,6 +297,25 @@ def find_dict(
             if r and find_one:
                 return results
     return results
+
+
+def httpx_transport_to_url(transport: AsyncHTTPTransport) -> str:
+    url = transport._pool._proxy_url
+    scheme = url.scheme.decode()
+    host = url.host.decode()
+    port = url.port
+    auth = None
+    if transport._pool._proxy_headers:
+        auth_header = dict(transport._pool._proxy_headers)[b'Proxy-Authorization'].decode()
+        auth = base64.b64decode(auth_header.split()[1]).decode()
+
+    url_str = f'{scheme}://'
+    if auth is not None:
+        url_str += auth + '@'
+    url_str += host
+    if port is not None:
+        url_str += f':{port}'
+    return url_str
 
 
 def get_query_id(url: str) -> str:

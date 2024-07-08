@@ -42,7 +42,7 @@ from ..streaming import Payload, StreamingSession, _payload_from_data
 from ..trend import Location, PlaceTrend, PlaceTrends, Trend
 from ..tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
 from ..user import User
-from ..utils import TOKEN, Flow, Result, build_tweet_data, build_user_data, find_dict
+from ..utils import TOKEN, Flow, Result, build_tweet_data, build_user_data, find_dict, httpx_transport_to_url
 from .gql import GQLClient
 from .v11 import V11Client
 
@@ -113,6 +113,7 @@ class Client:
         raise_exception: bool = True,
         **kwargs
     ) -> tuple[dict | Any, Response]:
+        ':meta private:'
         cookies_backup = self.get_cookies().copy()
         response = await self.http.request(method, url, **kwargs)
         self._remove_duplicate_ct0_cookie()
@@ -172,14 +173,12 @@ class Client:
         return response_data, response
 
     async def get(self, url, **kwargs) -> tuple[dict | Any, Response]:
+        ':meta private:'
         return await self.request('GET', url, **kwargs)
 
     async def post(self, url, **kwargs) -> tuple[dict | Any, Response]:
+        ':meta private:'
         return await self.request('POST', url, **kwargs)
-
-    async def stream(self, *args, **kwargs) -> Response:
-        response = await self.http.stream(*args, **kwargs)
-        return response
 
     def _remove_duplicate_ct0_cookie(self) -> None:
         cookies = {}
@@ -191,21 +190,15 @@ class Client:
 
     @property
     def proxy(self) -> str:
+        ':meta private:'
         transport: AsyncHTTPTransport = self.http._mounts.get(
             URLPattern('all://')
         )
         if transport is None:
             return None
-
-        url = transport._pool._proxy_url
-        scheme = url.scheme.decode()
-        host = url.host.decode()
-        port = url.port
-
-        url_str = f'{scheme}://{host}'
-        if port is not None:
-            url_str += f':{port}'
-        return url_str
+        if not hasattr(transport._pool, '_proxy_url'):
+            return None
+        return httpx_transport_to_url(transport)
 
     @proxy.setter
     def proxy(self, url: str) -> None:
@@ -381,6 +374,13 @@ class Client:
         return response
 
     async def unlock(self) -> None:
+        """
+        Unlocks the account using the provided CAPTCHA solver.
+
+        See Also
+        --------
+        .capsolver
+        """
         if self.captcha_solver is None:
             raise ValueError('Captcha solver is not provided.')
 
@@ -751,7 +751,7 @@ class Client:
         self,
         source: str | bytes,
         wait_for_completion: bool = False,
-        status_check_interval: float = 1.0,
+        status_check_interval: float | None = None,
         media_type: str | None = None,
         media_category: str | None = None,
         is_long_video: bool = False
@@ -842,7 +842,7 @@ class Client:
         segment_index = 0
         bytes_sent = 0
         MAX_SEGMENT_SIZE = 8 * 1024 * 1024  # The maximum segment size is 8 MB
-        tasks = []
+        append_tasks = []
         chunk_streams: list[io.BytesIO] = []
 
         while bytes_sent < total_bytes:
@@ -851,14 +851,14 @@ class Client:
             coro = self.v11.upload_media_append(
                 is_long_video, media_id, segment_index, chunk_stream
             )
-            tasks.append(asyncio.create_task(coro))
+            append_tasks.append(asyncio.create_task(coro))
             chunk_streams.append(chunk_stream)
 
             segment_index += 1
             bytes_sent += len(chunk)
 
-        gather = asyncio.gather(*tasks)
-        await gather
+        append_gather = asyncio.gather(*append_tasks)
+        await append_gather
 
         # Close chunk streams
         for chunk_stream in chunk_streams:
@@ -876,7 +876,7 @@ class Client:
                     raise InvalidMedia(processing_info['error'].get('message'))
                 if processing_info['state'] == 'succeeded':
                     break
-                await asyncio.sleep(status_check_interval)
+                await asyncio.sleep(status_check_interval or processing_info['check_after_secs'])
 
         return media_id
 
@@ -897,7 +897,7 @@ class Client:
             A dictionary containing information about the status of
             the uploaded media.
         """
-        response, _ = self.v11.upload_media_status(is_long_video, media_id)
+        response, _ = await self.v11.upload_media_status(is_long_video, media_id)
         return response
 
     async def create_media_metadata(
@@ -966,7 +966,7 @@ class Client:
         >>> print(card_uri)
         'card://0000000000000000000'
         """
-        response, _ = self.v11.create_card(choices, duration_minutes)
+        response, _ = await self.v11.create_card(choices, duration_minutes)
         return response['card_uri']
 
     async def vote(
@@ -1484,7 +1484,7 @@ class Client:
         :class:`httpx.Response`
             Response returned from twitter api.
         """
-        _, response = await self.delete_scheduled_tweet(tweet_id)
+        _, response = await self.gql.delete_scheduled_tweet(tweet_id)
         return response
 
     async def _get_tweet_engagements(
@@ -1521,7 +1521,7 @@ class Client:
             previous_cursor
         )
 
-    def get_retweeters(
+    async def get_retweeters(
         self, tweet_id: str, count: int = 40, cursor: str | None = None
     ) -> Result[User]:
         """
@@ -1552,7 +1552,7 @@ class Client:
         >>> print(more_retweeters)
         [<User id="...">, <User id="...">, ..., <User id="...">]
         """
-        return self._get_tweet_engagements(tweet_id, count, cursor, self.gql.retweeters)
+        return await self._get_tweet_engagements(tweet_id, count, cursor, self.gql.retweeters)
 
     async def get_favoriters(
         self, tweet_id: str, count: int = 40, cursor: str | None = None
@@ -1617,7 +1617,7 @@ class Client:
         response, _ = await self.gql.bird_watch_one_note(note_id)
         note_data = response['data']['birdwatch_note_by_rest_id']
         if 'data_v1' not in note_data:
-            raise TwitterException(f'Invalid user id: {note_id}')
+            raise TwitterException(f'Invalid note id: {note_id}')
         return CommunityNote(self, note_data)
 
     async def get_user_tweets(
@@ -2194,7 +2194,7 @@ class Client:
         response, _ = await self.gql.create_bookmark_folder(name)
         return BookmarkFolder(self, response['data']['bookmark_collection_create'])
 
-    async def follow_user(self, user_id: str) -> Response:
+    async def follow_user(self, user_id: str) -> User:
         """
         Follows a user.
 
@@ -2205,8 +2205,8 @@ class Client:
 
         Returns
         -------
-        :class:`httpx.Response`
-            Response returned from twitter api.
+        :class:`User`
+            The followed user.
 
         Examples
         --------
@@ -2217,10 +2217,10 @@ class Client:
         --------
         .unfollow_user
         """
-        _, response = await self.v11.create_friendships(user_id)
-        return response
+        response, _ = await self.v11.create_friendships(user_id)
+        return User(self, build_user_data(response))
 
-    async def unfollow_user(self, user_id: str) -> Response:
+    async def unfollow_user(self, user_id: str) -> User:
         """
         Unfollows a user.
 
@@ -2231,8 +2231,8 @@ class Client:
 
         Returns
         -------
-        :class:`httpx.Response`
-            Response returned from twitter api.
+        :class:`User`
+            The unfollowed user.
 
         Examples
         --------
@@ -2243,10 +2243,10 @@ class Client:
         --------
         .follow_user
         """
-        _, response = await self.v11.destroy_friendships(user_id)
-        return response
+        response, _ = await self.v11.destroy_friendships(user_id)
+        return User(self, build_user_data(response))
 
-    async def block_user(self, user_id: str) -> Response:
+    async def block_user(self, user_id: str) -> User:
         """
         Blocks a user.
 
@@ -2257,17 +2257,17 @@ class Client:
 
         Returns
         -------
-        :class:`httpx.Response`
-            Response returned from twitter api.
+        :class:`User`
+            The blocked user.
 
         See Also
         --------
         .unblock_user
         """
-        _, response = await self.v11.create_blocks(user_id)
-        return response
+        response, _ = await self.v11.create_blocks(user_id)
+        return User(self, build_user_data(response))
 
-    async def unblock_user(self, user_id: str) -> Response:
+    async def unblock_user(self, user_id: str) -> User:
         """
         Unblocks a user.
 
@@ -2278,17 +2278,17 @@ class Client:
 
         Returns
         -------
-        :class:`httpx.Response`
-            Response returned from twitter api.
+        :class:`User`
+            The unblocked user.
 
         See Also
         --------
         .block_user
         """
-        _, response = await self.v11.destroy_blocks(user_id)
-        return response
+        response, _ = await self.v11.destroy_blocks(user_id)
+        return User(self, build_user_data(response))
 
-    async def mute_user(self, user_id: str) -> Response:
+    async def mute_user(self, user_id: str) -> User:
         """
         Mutes a user.
 
@@ -2299,17 +2299,17 @@ class Client:
 
         Returns
         -------
-        :class:`httpx.Response`
-            Response returned from twitter api.
+        :class:`User`
+            The muted user.
 
         See Also
         --------
         .unmute_user
         """
-        _, response = await self.v11.create_mutes(user_id)
-        return response
+        response, _ = await self.v11.create_mutes(user_id)
+        return User(self, build_user_data(response))
 
-    async def unmute_user(self, user_id: str) -> Response:
+    async def unmute_user(self, user_id: str) -> User:
         """
         Unmutes a user.
 
@@ -2320,15 +2320,15 @@ class Client:
 
         Returns
         -------
-        :class:`httpx.Response`
-            Response returned from twitter api.
+        :class:`User`
+            The unmuted user.
 
         See Also
         --------
         .mute_user
         """
-        _, response = await self.v11.destroy_mutes(user_id)
-        return response
+        response, _ = await self.v11.destroy_mutes(user_id)
+        return User(self, build_user_data(response))
 
     async def get_trends(
         self,
@@ -2435,7 +2435,10 @@ class Client:
         """
         response, _ = await f(user_id, count, cursor)
 
-        items = find_dict(response, 'entries', find_one=True)[0]
+        items_ = find_dict(response, 'entries', find_one=True)
+        if not items_:
+            return Result.empty()
+        items = items_[0]
         results = []
         for item in items:
             entry_id = item['entryId']
@@ -2465,6 +2468,8 @@ class Client:
         count: int, f, cursor: str
     ) -> Result[User]:
         response, _ = await f(user_id, screen_name, count, cursor)
+        from jlog import log
+        log(response)
 
         users = response['users']
         results = []
@@ -2476,9 +2481,9 @@ class Client:
 
         return Result(
             results,
-            partial(self._get_user_friendship_2, user_id, count, f, next_cursor),
+            partial(self._get_user_friendship_2, user_id, screen_name, count, f, next_cursor),
             next_cursor,
-            partial(self._get_user_friendship_2, user_id, count, f, previous_cursor),
+            partial(self._get_user_friendship_2, user_id, screen_name, count, f, previous_cursor),
             previous_cursor
         )
 
@@ -3053,7 +3058,7 @@ class Client:
         :class:`Group`
             An object representing the retrieved group.
         """
-        response, _ = await self._get_dm_history(group_id)
+        response = await self._get_dm_history(group_id)
         return Group(self, group_id, response)
 
     async def add_members_to_group(
@@ -3079,7 +3084,7 @@ class Client:
         >>> members = ['...']
         >>> await client.add_members_to_group(group_id, members)
         """
-        _, response = await self.gql.add_members_to_group(group_id, user_ids)
+        _, response = await self.gql.add_participants_mutation(group_id, user_ids)
         return response
 
     async def change_group_name(self, group_id: str, name: str) -> Response:
@@ -3212,7 +3217,7 @@ class Client:
         list_info = find_dict(response, 'list', find_one=True)[0]
         return List(self, list_info)
 
-    async def add_list_member(self, list_id: str, user_id: str) -> Response:
+    async def add_list_member(self, list_id: str, user_id: str) -> List:
         """
         Adds a user to a list.
 
@@ -3225,17 +3230,17 @@ class Client:
 
         Returns
         -------
-        :class:`httpx.Response`
-            Response returned from twitter api.
+        :class:`List`
+            The updated Twitter list.
 
         Examples
         --------
         >>> await client.add_list_member('list id', 'user id')
         """
-        _, response = await self.gql.list_add_member(list_id, user_id)
-        return response
+        response, _ = await self.gql.list_add_member(list_id, user_id)
+        return List(self, response['data']['list'])
 
-    async def remove_list_member(self, list_id: str, user_id: str) -> Response:
+    async def remove_list_member(self, list_id: str, user_id: str) -> List:
         """
         Removes a user from a list.
 
@@ -3248,15 +3253,17 @@ class Client:
 
         Returns
         -------
-        :class:`httpx.Response`
-            Response returned from twitter api.
+        :class:`List`
+            The updated Twitter list.
 
         Examples
         --------
         >>> await client.remove_list_member('list id', 'user id')
         """
-        _, response = await self.gql.list_remove_member(list_id, user_id)
-        return response
+        response, _ = await self.gql.list_remove_member(list_id, user_id)
+        if 'errors' in response:
+            raise TwitterException(response['errors'][0]['message'])
+        return List(self, response['data']['list'])
 
     async def get_lists(
         self, count: int = 100, cursor: str = None
@@ -3320,8 +3327,10 @@ class Client:
             List object.
         """
         response, _ = await self.gql.list_by_rest_id(list_id)
-        list_info = find_dict(response, 'list', find_one=True)[0]
-        return List(self, list_info)
+        list_data_ = find_dict(response, 'list', find_one=True)
+        if not list_data_:
+            raise ValueError(f'Invalid list id: {list_id}')
+        return List(self, list_data_[0])
 
     async def get_list_tweets(
         self, list_id: str, count: int = 20, cursor: str | None = None
@@ -3363,7 +3372,10 @@ class Client:
         """
         response, _ = await self.gql.list_latest_tweets_timeline(list_id, count, cursor)
 
-        items = find_dict(response, 'entries', find_one=True)[0]
+        items_ = find_dict(response, 'entries', find_one=True)
+        if not items_:
+            raise ValueError(f'Invalid list id: {list_id}')
+        items = items_[0]
         next_cursor = items[-1]['content']['value']
 
         results = []
@@ -3710,7 +3722,7 @@ class Client:
             response, _ = await self.gql.community_media_timeline(community_id, count, cursor)
         elif tweet_type == 'Top':
             response, _ = await self.gql.community_tweets_timeline(community_id, 'Relevance', count, cursor)
-        elif tweet_type == 'Recency':
+        elif tweet_type == 'Latest':
             response, _ = await self.gql.community_tweets_timeline(community_id, 'Recency', count, cursor)
         else:
             raise ValueError(f'Invalid tweet_type: {tweet_type}')
@@ -3981,7 +3993,12 @@ class Client:
         )
 
     async def _stream(self, topics: set[str]) -> AsyncGenerator[tuple[str, Payload]]:
-        async with self.v11.live_pipeline_events(topics) as response:
+        url = 'https://api.twitter.com/live_pipeline/events'
+        params = {'topics': ','.join(topics)}
+        headers = self._base_headers
+        headers.pop('content-type')
+
+        async with self.http.stream('GET', url, params=params, headers=headers, timeout=None) as response:
             self._remove_duplicate_ct0_cookie()
             async for line in response.aiter_lines():
                 try:
@@ -4085,8 +4102,6 @@ class Client:
 
         return _payload_from_data(response)
 
-    async def _get_user_state(
-        self
-    ) -> Literal['normal', 'bounced', 'suspended']:
+    async def _get_user_state(self) -> Literal['normal', 'bounced', 'suspended']:
         response, _ = await self.v11.user_state()
         return response['userState']

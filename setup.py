@@ -15,7 +15,8 @@ setup(
         'httpx',
         'filetype',
         'beautifulsoup4',
-        'pyotp'
+        'pyotp',
+        'lxml'
     ],
     python_requires='>=3.8',
     description='Twitter API wrapper for python with **no API key required**.',

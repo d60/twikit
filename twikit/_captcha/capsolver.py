@@ -82,6 +82,7 @@ class Capsolver(CaptchaSolver):
             'websiteURL': 'https://iframe.arkoselabs.com',
             'websitePublicKey': self.CAPTCHA_SITE_KEY,
             'funcaptchaApiJSSubdomain': 'https://client-api.arkoselabs.com',
+            'proxy': self.client.proxy
         }
         if self.use_blob_data:
             task_data['data'] = '{"blob":"%s"}' % blob

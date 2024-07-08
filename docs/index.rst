@@ -6,7 +6,6 @@ Welcome to twikit's documentation!
    :caption: Contents:
 
    twikit
-   twikit.twikit_async
 
 
 Indices and tables
