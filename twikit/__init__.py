@@ -7,7 +7,7 @@ https://github.com/d60/twikit
 A Python library for interacting with the Twitter API.
 """
 
-__version__ = '2.0.0b2'
+__version__ = '2.0.0'
 
 import asyncio
 import os
@@ -20,8 +20,7 @@ from .bookmark import BookmarkFolder
 from .errors import *
 from .utils import build_query
 from .client.client import Client
-from .community import (Community, CommunityCreator, CommunityMember,
-                        CommunityRule)
+from .community import Community, CommunityCreator, CommunityMember, CommunityRule
 from .geo import Place
 from .group import Group, GroupMessage
 from .list import List

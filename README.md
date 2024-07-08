@@ -1,4 +1,4 @@
-<img  src="https://i.imgur.com/iJe6rsZ.png"  width="500">
+<img src="https://i.imgur.com/iJe6rsZ.png"  width="500">
 
 
 
@@ -43,10 +43,6 @@ This library uses scraping and does not require an API key.
 
 This library is free to use.
 
-### Both Synchronous and Asynchronous Support
-
-Twikit supports both synchronous and asynchronous.
-
 
 ## Functionality
 
@@ -77,6 +73,7 @@ pip install twikit
 **Define a client and log in to the account.**
 
 ```python
+import asyncio
 from twikit import Client
 
 USERNAME = 'example_user'
@@ -86,11 +83,14 @@ PASSWORD = 'password0000'
 # Initialize client
 client = Client('en-US')
 
-client.login(
-    auth_info_1=USERNAME ,
-    auth_info_2=EMAIL,
-    password=PASSWORD
-)
+async def main():
+    await client.login(
+        auth_info_1=USERNAME ,
+        auth_info_2=EMAIL,
+        password=PASSWORD
+    )
+
+asyncio.run(main())
 ```
 
 **Create a tweet with media attached.**
@@ -98,12 +98,12 @@ client.login(
 ```python
 # Upload media files and obtain media_ids
 media_ids = [
-    client.upload_media('media1.jpg'),
-    client.upload_media('media2.jpg')
+    await client.upload_media('media1.jpg'),
+    await client.upload_media('media2.jpg')
 ]
 
 # Create a tweet with the provided text and attached media
-client.create_tweet(
+await client.create_tweet(
     text='Example Tweet',
     media_ids=media_ids
 )
@@ -112,7 +112,7 @@ client.create_tweet(
 
 **Search the latest tweets based on a keyword**
 ```python
-tweets = client.search_tweet('python', 'Latest')
+tweets = await client.search_tweet('python', 'Latest')
 
 for tweet in tweets:
     print(
@@ -124,7 +124,7 @@ for tweet in tweets:
 
 **Retrieve user tweets**
 ```python
-tweets = client.get_user_tweets('123456', 'Tweet')
+tweets = await client.get_user_tweets('123456', 'Tweet')
 
 for tweet in tweets:
     print(tweet.text)

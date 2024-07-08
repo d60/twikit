@@ -1,4 +1,4 @@
-<img  src="https://i.imgur.com/iJe6rsZ.png"  width="500">
+<img src="https://i.imgur.com/iJe6rsZ.png"  width="500">
 
 
 
@@ -36,10 +36,6 @@
 
 本库无需付费。
 
-### 同步/异步支持
-
-Twikit 同时提供同步和异步的实现。
-
 
 ## 功能
 
@@ -69,6 +65,7 @@ pip install twikit
 **定义一个客户端并登录**
 
 ```python
+import asyncio
 from twikit import Client
 
 USERNAME = 'example_user'
@@ -78,11 +75,14 @@ PASSWORD = 'password0000'
 # 初始化客户端
 client = Client('en-US')
 
-client.login(
-    auth_info_1=USERNAME ,
-    auth_info_2=EMAIL,
-    password=PASSWORD
-)
+async def main():
+    await client.login(
+        auth_info_1=USERNAME ,
+        auth_info_2=EMAIL,
+        password=PASSWORD
+    )
+
+asyncio.run(main())
 ```
 
 **创建一条附带媒体的推文**
@@ -90,12 +90,12 @@ client.login(
 ```python
 # 上传媒体文件并获取媒体ID
 media_ids = [
-    client.upload_media('media1.jpg'),
-    client.upload_media('media2.jpg')
+    await client.upload_media('media1.jpg'),
+    await client.upload_media('media2.jpg')
 ]
 
 # 创建一条带有提供的文本和附加媒体的推文
-client.create_tweet(
+await client.create_tweet(
     text='Example Tweet',
     media_ids=media_ids
 )
@@ -104,7 +104,7 @@ client.create_tweet(
 
 **搜索推文**
 ```python
-tweets = client.search_tweet('python', 'Latest')
+tweets = await client.search_tweet('python', 'Latest')
 
 for tweet in tweets:
     print(
@@ -116,7 +116,7 @@ for tweet in tweets:
 
 **检索用户的推文**
 ```python
-tweets = client.get_user_tweets('123456', 'Tweet')
+tweets = await client.get_user_tweets('123456', 'Tweet')
 
 for tweet in tweets:
     print(tweet.text)
