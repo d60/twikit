@@ -2,3 +2,4 @@ httpx
 filetype
 beautifulsoup4
 pyotp
+lxml

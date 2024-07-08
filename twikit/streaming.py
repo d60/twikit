@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, AsyncGenerator, NamedTuple
 
 if TYPE_CHECKING:
-    from .client import Client
+    from .client.client import Client
 
 
 class StreamingSession:

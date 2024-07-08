@@ -34,6 +34,7 @@ class Capsolver(CaptchaSolver):
 
     use_blob_data : :class:`bool`, default=False
     """
+
     def __init__(
         self,
         api_key: str,
@@ -81,6 +82,7 @@ class Capsolver(CaptchaSolver):
             'websiteURL': 'https://iframe.arkoselabs.com',
             'websitePublicKey': self.CAPTCHA_SITE_KEY,
             'funcaptchaApiJSSubdomain': 'https://client-api.arkoselabs.com',
+            'proxy': self.client.proxy
         }
         if self.use_blob_data:
             task_data['data'] = '{"blob":"%s"}' % blob

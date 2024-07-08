@@ -1,3 +1,14 @@
+"""
+==========================
+Twikit Twitter API Wrapper
+==========================
+
+https://github.com/d60/twikit
+A Python library for interacting with the Twitter API.
+"""
+
+__version__ = '2.0.0'
+
 import asyncio
 import os
 
@@ -8,9 +19,8 @@ from ._captcha import Capsolver
 from .bookmark import BookmarkFolder
 from .errors import *
 from .utils import build_query
-from .client import Client
-from .community import (Community, CommunityCreator, CommunityMember,
-                        CommunityRule)
+from .client.client import Client
+from .community import Community, CommunityCreator, CommunityMember, CommunityRule
 from .geo import Place
 from .group import Group, GroupMessage
 from .list import List

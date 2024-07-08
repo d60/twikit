@@ -1,4 +1,4 @@
-<img  src="https://i.imgur.com/iJe6rsZ.png"  width="500">
+<img src="https://i.imgur.com/iJe6rsZ.png"  width="500">
 
 
 
@@ -34,10 +34,6 @@
 
 このライブラリは、無料で使用することができます。
 
-### 同期と非同期の両方に対応
-
-同期と非同期の両方に対応しています。
-
 
 ## 機能
 
@@ -67,6 +63,7 @@ pip install twikit
 **クライアントを定義し、アカウントにログインする。**
 
 ```python
+import asyncio
 from twikit import Client
 
 USERNAME = 'example_user'
@@ -76,12 +73,15 @@ PASSWORD = 'password0000'
 # Initialize client
 client = Client('en-US')
 
-# アカウントにログイン
-client.login(
-    auth_info_1=USERNAME ,
-    auth_info_2=EMAIL,
-    password=PASSWORD
-)
+async def main():
+    # アカウントにログイン
+    client.login(
+        auth_info_1=USERNAME ,
+        auth_info_2=EMAIL,
+        password=PASSWORD
+    )
+
+asyncio.run(main())
 ```
 
 **メディア付きツイートを作成する。**
@@ -89,12 +89,12 @@ client.login(
 ```python
 # メディアをアップロードし、メディアIDを取得する。
 media_ids = [
-    client.upload_media('media1.jpg'),
-    client.upload_media('media2.jpg')
+    await client.upload_media('media1.jpg'),
+    await client.upload_media('media2.jpg')
 ]
 
 # ツイートを投稿する
-client.create_tweet(
+await client.create_tweet(
     text='Example Tweet',
     media_ids=media_ids
 )
@@ -103,7 +103,7 @@ client.create_tweet(
 
 **ツイートを検索する**
 ```python
-tweets = client.search_tweet('python', 'Latest')
+tweets = await client.search_tweet('python', 'Latest')
 
 for tweet in tweets:
     print(
@@ -115,7 +115,7 @@ for tweet in tweets:
 
 **ユーザーのツイートを取得する**
 ```python
-tweets = client.get_user_tweets('123456', 'Tweet')
+tweets = await client.get_user_tweets('123456', 'Tweet')
 
 for tweet in tweets:
     print(tweet.text)

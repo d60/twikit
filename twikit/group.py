@@ -9,7 +9,7 @@ from .utils import build_user_data
 if TYPE_CHECKING:
     from httpx import Response
 
-    from .client import Client
+    from .client.client import Client
     from .utils import Result
 
 

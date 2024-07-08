@@ -9,7 +9,7 @@ from httpx import Response
 from twikit.utils import urlencode
 
 if TYPE_CHECKING:
-    from ..client import Client
+    from ..client.client import Client
 
 
 class UnlockHTML(NamedTuple):
