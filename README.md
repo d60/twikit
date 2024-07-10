@@ -26,7 +26,7 @@ You can use functions such as posting or searching for tweets without an API key
 [Discord](https://discord.gg/nCrByrr8cX)
 
 > [!IMPORTANT]
-> With the release of version 2.0.0 on July 11, there have been some specification changes, including the discontinuation of the synchronous version. Existing code will no longer work with v2.0.0 or later, so please refer to the documentation and the code in the examples folder for adjustments.
+> With the release of version 2.0.0 on July 11, there have been some specification changes, including the discontinuation of the synchronous version. Existing code will no longer work with v2.0.0 or later, so please refer to the documentation or the code in the examples folder for adjustments.
 > We apologize for any inconvenience this may cause.
 
 
