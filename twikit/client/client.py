@@ -15,6 +15,7 @@ from httpx._utils import URLPattern
 from .._captcha import Capsolver
 from ..bookmark import BookmarkFolder
 from ..community import Community, CommunityMember
+from ..constants import TOKEN
 from ..errors import (
     AccountLocked,
     AccountSuspended,
@@ -42,7 +43,7 @@ from ..streaming import Payload, StreamingSession, _payload_from_data
 from ..trend import Location, PlaceTrend, PlaceTrends, Trend
 from ..tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
 from ..user import User
-from ..utils import TOKEN, Flow, Result, build_tweet_data, build_user_data, find_dict, httpx_transport_to_url
+from ..utils import Flow, Result, build_tweet_data, build_user_data, find_dict, httpx_transport_to_url
 from .gql import GQLClient
 from .v11 import V11Client
 

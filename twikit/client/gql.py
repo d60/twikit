@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..utils import (
+from ..constants import (
     BOOKMARK_FOLDER_TIMELINE_FEATURES,
     COMMUNITY_NOTE_FEATURES,
     COMMUNITY_TWEETS_FEATURES,
@@ -11,10 +11,9 @@ from ..utils import (
     LIST_FEATURES,
     NOTE_TWEET_FEATURES,
     SIMILAR_POSTS_FEATURES,
-    USER_FEATURES,
-    flatten_params,
-    get_query_id
+    USER_FEATURES
 )
+from ..utils import flatten_params, get_query_id
 
 if TYPE_CHECKING:
     from .client import Client
@@ -112,7 +111,6 @@ class GQLClient:
             params |= extra_params
         if headers is None:
             headers = self.base._base_headers
-
         return await self.base.get(url, params=flatten_params(params), headers=headers, **kwargs)
 
     async def gql_post(
@@ -131,7 +129,6 @@ class GQLClient:
             data |= extra_data
         if headers is None:
             headers = self.base._base_headers
-
         return await self.base.post(url, json=data, headers=headers, **kwargs)
 
     async def search_timeline(
