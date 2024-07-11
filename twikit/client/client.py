@@ -327,6 +327,9 @@ class Client:
             }
         })
 
+        if flow.task_id == 'DenyLoginSubtask':
+            raise TwitterException(flow.response['subtasks'][0]['cta']['secondary_text']['text'])
+
         await flow.execute_task({
             'subtask_id': 'AccountDuplicationCheck',
             'check_logged_in_account': {

@@ -1,4 +1,4 @@
-httpx
+httpx[socks]
 filetype
 beautifulsoup4
 pyotp

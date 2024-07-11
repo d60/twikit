@@ -443,9 +443,7 @@ class V11Client:
         )
 
     async def conversation_update_name(self, group_id, name):
-        data = urlencode({
-            'name': name
-        })
+        data = urlencode({'name': name})
         headers = self.base._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
         return await self.base.post(

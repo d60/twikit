@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, NamedTuple
 
-from .utils import b64_to_str
 from .tweet import Tweet
 from .user import User
-from .utils import Result
+from .utils import Result, b64_to_str
 
 if TYPE_CHECKING:
     from .client.client import Client

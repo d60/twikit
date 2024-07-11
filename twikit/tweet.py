@@ -4,8 +4,9 @@ import re
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from .utils import find_dict, timestamp_to_datetime
+from .geo import Place
 from .user import User
+from .utils import find_dict, timestamp_to_datetime
 
 if TYPE_CHECKING:
     from httpx import Response
@@ -58,6 +59,8 @@ class Tweet:
         The state of the tweet views.
     retweet_count : :class:`int`
         The count of retweets for the tweet.
+    place : :class:`.Place` | None
+        The location associated with the tweet.
     editable_until_msecs : :class:`int`
         The timestamp until which the tweet is editable.
     is_translatable : :class:`bool`
@@ -112,6 +115,7 @@ class Tweet:
         self.favorite_count: int = legacy['favorite_count']
         self.favorited: bool = legacy['favorited']
         self.retweet_count: int = legacy['retweet_count']
+        self._place_data = legacy.get('place')
         self.editable_until_msecs: int = data['edit_control'].get('editable_until_msecs')
         self.is_translatable: bool = data.get('is_translatable')
         self.is_edit_eligible: bool = data['edit_control'].get('is_edit_eligible')
@@ -215,6 +219,10 @@ class Tweet:
     @property
     def poll(self) -> Poll:
         return self._poll_data and Poll(self._client, self._poll_data, self)
+
+    @property
+    def place(self) -> Place:
+        return self._place_data and Place(self._client, self._place_data)
 
     async def delete(self) -> Response:
         """Deletes the tweet.

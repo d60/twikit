@@ -30,7 +30,7 @@ class Place:
     attributes : :class:`dict`
     bounding_box : :class:`dict`
         The bounding box that defines the geographical area of the place.
-    centroid : list[:class:`float`]
+    centroid : list[:class:`float`] | None
         The geographical center of the place, represented by latitude and
         longitude.
     contained_within : list[:class:`.Place`]
@@ -47,9 +47,9 @@ class Place:
         self.country_code: str = data['country_code']
         self.url: str = data['url']
         self.place_type: str = data['place_type']
-        self.attributes: dict = data['attributes']
+        self.attributes: dict | None = data.get('attributes')
         self.bounding_box: dict = data['bounding_box']
-        self.centroid: list[float] = data['centroid']
+        self.centroid: list[float] | None = data.get('centroid')
 
         self.contained_within: list[Place] = [
             Place(client, place) for place in data.get('contained_within', [])
