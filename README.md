@@ -26,7 +26,9 @@ You can use functions such as posting or searching for tweets without an API key
 [Discord](https://discord.gg/nCrByrr8cX)
 
 > [!IMPORTANT]
-> We're planning to discontinue support for synchronous operations starting from version 2 of Twikit. As our codebase has grown, maintaining both synchronous and asynchronous versions has become challenging, impacting our ability to uphold code quality effectively. The release date for version 2 is not yet determined. We recommend transitioning your code to the asynchronous version (twikit_async) as soon as possible. You can find documentation for twikit_async [here](https://twikit.readthedocs.io/en/latest/twikit.twikit_async.html).
+> With the release of version 2.0.0 on July 11, there have been some specification changes, including the discontinuation of the synchronous version. Existing code will no longer work with v2.0.0 or later, so please refer to the [documentation](https://twikit.readthedocs.io/en/latest/twikit.html) or the code in the [examples folder](https://github.com/d60/twikit/tree/main/examples) for adjustments.
+> We apologize for any inconvenience this may cause.
+
 
 
 
