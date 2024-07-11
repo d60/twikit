@@ -27,13 +27,13 @@ async def main():
     reply_message = 'Hello'
 
     topics = {
-        Topic.dm_update(f'{client.user_id()}-{user_id}')
+        Topic.dm_update(f'{await client.user_id()}-{user_id}')
     }
     streaming_session = await client.get_streaming_session(topics)
 
     async for topic, payload in streaming_session:
         if payload.dm_update:
-            if client.user_id() == payload.dm_update.user_id:
+            if await client.user_id() == payload.dm_update.user_id:
                 continue
             await client.send_dm(payload.dm_update.user_id, reply_message)
 
