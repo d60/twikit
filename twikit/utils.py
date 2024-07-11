@@ -6,6 +6,7 @@ from datetime import datetime
 from httpx import AsyncHTTPTransport
 from typing import TYPE_CHECKING, Any, Awaitable, Generic, Iterator, Literal, TypedDict, TypeVar
 from urllib import parse
+import urllib
 
 if TYPE_CHECKING:
     from .client.client import Client
@@ -154,15 +155,6 @@ def get_query_id(url: str) -> str:
     'queryid'
     """
     return url.rsplit('/', 2)[-2]
-
-
-def urlencode(data: dict[str, Any]) -> str:
-    """
-    Encodes a dictionary into a URL-encoded string.
-    """
-    data_encoded = parse.urlencode(data)
-    # replace single quote to double quote.
-    return data_encoded.replace('%27', '%22')
 
 
 def timestamp_to_datetime(timestamp: str) -> datetime:

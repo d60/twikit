@@ -1,8 +1,7 @@
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
-
-from ..utils import urlencode
 
 if TYPE_CHECKING:
     from .client import Client
@@ -182,7 +181,7 @@ class V11Client:
         for i, choice in enumerate(choices, 1):
             card_data[f'twitter:string:choice{i}_label'] = choice
 
-        data = urlencode({'card_data': card_data})
+        data = {'card_data': json.dumps(card_data)}
         headers = self.base._base_headers | {'content-type': 'application/x-www-form-urlencoded'}
         return await self.base.post(
             Endpoint.CREATE_CARD,
@@ -191,13 +190,13 @@ class V11Client:
         )
 
     async def vote(self, selected_choice: str, card_uri: str, tweet_id: str, card_name: str):
-        data = urlencode({
+        data = {
             'twitter:string:card_uri': card_uri,
             'twitter:long:original_tweet_id': tweet_id,
             'twitter:string:response_card_name': card_name,
             'twitter:string:cards_platform': 'Web-12',
             'twitter:string:selected_choice': selected_choice
-        })
+        }
         headers = self.base._base_headers | {
             'content-type': 'application/x-www-form-urlencoded'
         }
@@ -250,7 +249,7 @@ class V11Client:
         )
 
     async def create_friendships(self, user_id):
-        data = urlencode({
+        data = {
             'include_profile_interstitial_type': 1,
             'include_blocking': 1,
             'include_blocked_by': 1,
@@ -264,7 +263,7 @@ class V11Client:
             'include_ext_profile_image_shape': 1,
             'skip_status': 1,
             'user_id': user_id
-        })
+        }
         headers = self.base._base_headers | {
             'content-type': 'application/x-www-form-urlencoded'
         }
@@ -275,7 +274,7 @@ class V11Client:
         )
 
     async def destroy_friendships(self, user_id):
-        data = urlencode({
+        data = {
             'include_profile_interstitial_type': 1,
             'include_blocking': 1,
             'include_blocked_by': 1,
@@ -289,7 +288,7 @@ class V11Client:
             'include_ext_profile_image_shape': 1,
             'skip_status': 1,
             'user_id': user_id
-        })
+        }
         headers = self.base._base_headers | {
             'content-type': 'application/x-www-form-urlencoded'
         }
@@ -300,7 +299,7 @@ class V11Client:
         )
 
     async def create_blocks(self, user_id):
-        data = urlencode({'user_id': user_id})
+        data = {'user_id': user_id}
         headers = self.base._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
         return await self.base.post(
@@ -310,7 +309,7 @@ class V11Client:
         )
 
     async def destroy_blocks(self, user_id):
-        data = urlencode({'user_id': user_id})
+        data = {'user_id': user_id}
         headers = self.base._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
         return await self.base.post(
@@ -320,7 +319,7 @@ class V11Client:
         )
 
     async def create_mutes(self, user_id):
-        data = urlencode({'user_id': user_id})
+        data = {'user_id': user_id}
         headers = self.base._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
         return await self.base.post(
@@ -330,7 +329,7 @@ class V11Client:
         )
 
     async def destroy_mutes(self, user_id):
-        data = urlencode({'user_id': user_id})
+        data = {'user_id': user_id}
         headers = self.base._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
         return await self.base.post(
@@ -443,7 +442,7 @@ class V11Client:
         )
 
     async def conversation_update_name(self, group_id, name):
-        data = urlencode({'name': name})
+        data = {'name': name}
         headers = self.base._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
         return await self.base.post(
@@ -473,10 +472,10 @@ class V11Client:
         return await self._notifications(Endpoint.NOTIFICATIONS_MENTIONS, count, cursor)
 
     async def live_pipeline_update_subscriptions(self, session, subscribe, unsubscribe):
-        data = urlencode({
+        data = {
             'sub_topics': subscribe,
             'unsub_topics': unsubscribe
-        })
+        }
         headers = self.base._base_headers
         headers['content-type'] = 'application/x-www-form-urlencoded'
         headers['LivePipeline-Session'] = session
