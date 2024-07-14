@@ -129,6 +129,11 @@ for tweet in tweets:
     print(tweet.text)
 ```
 
+**Send a dm**
+```python
+await client.send_dm('123456789', 'Hello')
+```
+
 More Examples: [examples](https://github.com/d60/twikit/tree/main/examples) <br>
 
 ## Contributing
