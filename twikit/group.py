@@ -26,7 +26,6 @@ class Group:
     members : list[:class:`str`]
         Member IDs
     """
-
     def __init__(self, client: Client, group_id: str, data: dict) -> None:
         self._client = client
         self.id = group_id
@@ -41,7 +40,9 @@ class Group:
         members = conversation_timeline["users"].values()
         self.members: list[User] = [User(client, build_user_data(i)) for i in members]
 
-    async def get_history(self, max_id: str | None = None) -> Result[GroupMessage]:
+    async def get_history(
+        self, max_id: str | None = None
+    ) -> Result[GroupMessage]:
         """
         Retrieves the DM conversation history in the group.
 
@@ -112,7 +113,10 @@ class Group:
         return await self._client.change_group_name(self.id, name)
 
     async def send_message(
-        self, text: str, media_id: str | None = None, reply_to: str | None = None
+        self,
+        text: str,
+        media_id: str | None = None,
+        reply_to: str | None = None
     ) -> GroupMessage:
         """
         Sends a message to the group.
@@ -142,7 +146,9 @@ class Group:
         >>> print(message)
         <GroupMessage id='...'>
         """
-        return await self._client.send_dm_to_group(self.id, text, media_id, reply_to)
+        return await self._client.send_dm_to_group(
+            self.id, text, media_id, reply_to
+        )
 
     async def update(self) -> None:
         new = await self._client.get_group(self.id)
@@ -169,9 +175,12 @@ class GroupMessage(Message):
     group_id : :class:`str`
         The ID of the group.
     """
-
     def __init__(
-        self, client: Client, data: dict, sender_id: str, group_id: str
+        self,
+        client: Client,
+        data: dict,
+        sender_id: str,
+        group_id: str
     ) -> None:
         super().__init__(client, data, sender_id, None)
         self.group_id = group_id
@@ -182,7 +191,9 @@ class GroupMessage(Message):
         """
         return await self._client.get_group(self.group_id)
 
-    async def reply(self, text: str, media_id: str | None = None) -> GroupMessage:
+    async def reply(
+        self, text: str, media_id: str | None = None
+    ) -> GroupMessage:
         """Replies to the message.
 
         Parameters
@@ -222,7 +233,9 @@ class GroupMessage(Message):
         :class:`httpx.Response`
             Response returned from twitter api.
         """
-        return await self._client.add_reaction_to_message(self.id, self.group_id, emoji)
+        return await self._client.add_reaction_to_message(
+            self.id, self.group_id, emoji
+        )
 
     async def remove_reaction(self, emoji: str) -> Response:
         """
