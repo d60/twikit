@@ -21,8 +21,6 @@ You can use functions such as posting or searching for tweets without an API key
 
 - [Documentation (English)](https://twikit.readthedocs.io/en/latest/twikit.html)
 
-- [Async Documentation](https://twikit.readthedocs.io/en/latest/twikit.twikit_async.html)
-
 
 🔵 [Discord](https://discord.gg/nCrByrr8cX)
 
