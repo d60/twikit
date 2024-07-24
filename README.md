@@ -124,7 +124,7 @@ for tweet in tweets:
 
 **Retrieve user tweets**
 ```python
-tweets = await client.get_user_tweets('123456', 'Tweet')
+tweets = await client.get_user_tweets('123456', 'Tweets')
 
 for tweet in tweets:
     print(tweet.text)
@@ -133,6 +133,11 @@ for tweet in tweets:
 **Send a dm**
 ```python
 await client.send_dm('123456789', 'Hello')
+```
+
+**Get trends**
+```python
+await client.get_trends('trending')
 ```
 
 More Examples: [examples](https://github.com/d60/twikit/tree/main/examples) <br>
