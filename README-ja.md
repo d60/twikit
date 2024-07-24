@@ -18,8 +18,6 @@
 
 - [ドキュメント](https://twikit.readthedocs.io/en/latest/twikit.html)
 
-- [非同期ドキュメント](https://twikit.readthedocs.io/en/latest/twikit.twikit_async.html)
-
 [Discord](https://discord.gg/nCrByrr8cX)
 
 
@@ -119,6 +117,11 @@ tweets = await client.get_user_tweets('123456', 'Tweet')
 
 for tweet in tweets:
     print(tweet.text)
+```
+
+**トレンドを取得する**
+```python
+await client.get_trends('trending')
 ```
 
 [examples](https://github.com/d60/twikit/tree/main/examples)<br>
