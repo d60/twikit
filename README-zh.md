@@ -20,8 +20,6 @@
 
 - [文档（英文）](https://twikit.readthedocs.io/en/latest/twikit.html)
 
-- [异步文档（英文）](https://twikit.readthedocs.io/en/latest/twikit.twikit_async.html)
-
 [Discord 服务器](https://discord.gg/nCrByrr8cX)
 
 
@@ -120,6 +118,11 @@ tweets = await client.get_user_tweets('123456', 'Tweet')
 
 for tweet in tweets:
     print(tweet.text)
+```
+
+**获取趋势**
+```python
+await client.get_trends('trending')
 ```
 
 [更多样例...](https://github.com/d60/twikit/tree/main/examples)<br>
