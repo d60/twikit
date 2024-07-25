@@ -30,20 +30,15 @@ class Group:
         self._client = client
         self.id = group_id
 
-        entries = data['conversation_timeline']['entries']
-        name_update_log = next(
-            filter(lambda x: 'conversation_name_update' in x, entries),
-            None
-        )
+        conversation_timeline = data["conversation_timeline"]
         self.name: str | None = (
-            name_update_log['conversation_name_update']['conversation_name']
-            if name_update_log else None
+            conversation_timeline["conversations"][group_id]["name"]
+            if len(conversation_timeline["conversations"].keys()) > 0
+            else None
         )
 
-        members = data['conversation_timeline']['users'].values()
-        self.members: list[User] = [
-            User(client, build_user_data(i)) for i in members
-        ]
+        members = conversation_timeline["users"].values()
+        self.members: list[User] = [User(client, build_user_data(i)) for i in members]
 
     async def get_history(
         self, max_id: str | None = None
