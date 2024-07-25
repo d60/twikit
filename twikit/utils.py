@@ -5,8 +5,6 @@ import json
 from datetime import datetime
 from httpx import AsyncHTTPTransport
 from typing import TYPE_CHECKING, Any, Awaitable, Generic, Iterator, Literal, TypedDict, TypeVar
-from urllib import parse
-import urllib
 
 if TYPE_CHECKING:
     from .client.client import Client
@@ -105,9 +103,7 @@ class Flow:
         return self.response['subtasks'][0]['subtask_id']
 
 
-def find_dict(
-    obj: list | dict, key: str | int, find_one: bool = False
-) -> list[Any]:
+def find_dict(obj: list | dict, key: str | int, find_one: bool = False) -> list[Any]:
     """
     Retrieves elements from a nested dictionary.
     """
