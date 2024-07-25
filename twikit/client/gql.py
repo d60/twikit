@@ -11,12 +11,17 @@ from ..constants import (
     LIST_FEATURES,
     NOTE_TWEET_FEATURES,
     SIMILAR_POSTS_FEATURES,
-    USER_FEATURES
+    TWEET_RESULT_BY_REST_ID_FEATURES,
+    USER_FEATURES,
+    USER_HIGHLIGHTS_TWEETS_FEATURES
 )
 from ..utils import flatten_params, get_query_id
 
 if TYPE_CHECKING:
+    from ..guest.client import GuestClient
     from .client import Client
+
+    ClientType = Client | GuestClient
 
 
 class Endpoint:
@@ -33,6 +38,7 @@ class Endpoint:
     USER_BY_SCREEN_NAME = url('NimuplG1OB7Fd2btCLdBOw/UserByScreenName')
     USER_BY_REST_ID = url('tD8zKvQzwY3kdx5yz6YmOw/UserByRestId')
     TWEET_DETAIL = url('U0HTv-bAWTBYylwEMT7x5A/TweetDetail')
+    TWEET_RESULT_BY_REST_ID = url('Xl5pC_lBk_gcO2ItU39DQw/TweetResultByRestId')
     FETCH_SCHEDULED_TWEETS = url('ITtjAzvlZni2wWXwf295Qg/FetchScheduledTweets')
     DELETE_SCHEDULED_TWEET = url('CTOVqej0JBXAZSwkp1US0g/DeleteScheduledTweet')
     RETWEETERS = url('X-XEqG5qHQSAwmvy00xfyQ/Retweeters')
@@ -42,6 +48,7 @@ class Endpoint:
     USER_TWEETS_AND_REPLIES = url('vMkJyzx1wdmvOeeNG0n6Wg/UserTweetsAndReplies')
     USER_MEDIA = url('2tLOJWwGuCTytDrGBg8VwQ/UserMedia')
     USER_LIKES = url('IohM3gxQHfvWePH5E3KuNA/Likes')
+    USER_HIGHLIGHTS_TWEETS = url('tHFm_XZc_NNi-CfUThwbNw/UserHighlightsTweets')
     HOME_TIMELINE = url('-X_hcgQzmHGl29-UXxz4sw/HomeTimeline')
     HOME_LATEST_TIMELINE = url('U0cdisy7QFIoTfu3-Okw0A/HomeLatestTimeline')
     FAVORITE_TWEET = url('lI07N6Otwv1PhnEgXILM7A/FavoriteTweet')
@@ -92,7 +99,7 @@ class Endpoint:
 
 
 class GQLClient:
-    def __init__(self, base: Client) -> None:
+    def __init__(self, base: ClientType) -> None:
         self.base = base
 
     async def gql_get(
@@ -320,14 +327,30 @@ class GQLClient:
     async def user_likes(self, user_id, count, cursor):
         return await self._get_user_tweets(user_id, count, cursor, Endpoint.USER_LIKES)
 
+    async def user_highlights_tweets(self, user_id, count, cursor):
+        variables = {
+            'userId': user_id,
+            'count': count,
+            'includePromotedContent': True,
+            'withVoice': True
+        }
+        if cursor is not None:
+            variables['cursor'] = cursor
+        return await self.gql_get(
+            Endpoint.USER_HIGHLIGHTS_TWEETS,
+            variables,
+            USER_HIGHLIGHTS_TWEETS_FEATURES,
+            self.base._base_headers
+        )
+
     async def home_timeline(self, count, seen_tweet_ids, cursor):
         variables = {
-            "count": count,
-            "includePromotedContent": True,
-            "latestControlAvailable": True,
-            "requestContext": "launch",
-            "withCommunity": True,
-            "seenTweetIds": seen_tweet_ids or []
+            'count': count,
+            'includePromotedContent': True,
+            'latestControlAvailable': True,
+            'requestContext': 'launch',
+            'withCommunity': True,
+            'seenTweetIds': seen_tweet_ids or []
         }
         if cursor is not None:
             variables['cursor'] = cursor
@@ -335,12 +358,12 @@ class GQLClient:
 
     async def home_latest_timeline(self, count, seen_tweet_ids, cursor):
         variables = {
-            "count": count,
-            "includePromotedContent": True,
-            "latestControlAvailable": True,
-            "requestContext": "launch",
-            "withCommunity": True,
-            "seenTweetIds": seen_tweet_ids or []
+            'count': count,
+            'includePromotedContent': True,
+            'latestControlAvailable': True,
+            'requestContext': 'launch',
+            'withCommunity': True,
+            'seenTweetIds': seen_tweet_ids or []
         }
         if cursor is not None:
             variables['cursor'] = cursor
@@ -632,16 +655,38 @@ class GQLClient:
 
     async def community_tweet_search_module_query(self, community_id, query, count, cursor):
         variables = {
-            "count": count,
-            "query": query,
-            "communityId": community_id,
-            "includePromotedContent": False,
-            "withBirdwatchNotes": True,
-            "withVoice": False,
-            "isListMemberTargetUserId": "0",
-            "withCommunity": False,
-            "withSafetyModeUserFields": True
+            'count': count,
+            'query': query,
+            'communityId': community_id,
+            'includePromotedContent': False,
+            'withBirdwatchNotes': True,
+            'withVoice': False,
+            'isListMemberTargetUserId': '0',
+            'withCommunity': False,
+            'withSafetyModeUserFields': True
         }
         if cursor is not None:
             variables['cursor'] = cursor
         return await self.gql_get(Endpoint.COMMUNITY_TWEET_SEARCH_MODULE_QUERY, variables, COMMUNITY_TWEETS_FEATURES)
+
+    ####################
+    # For guest client
+    ####################
+
+    async def tweet_result_by_rest_id(self, tweet_id):
+        variables = {
+            'tweetId': tweet_id,
+            'withCommunity': False,
+            'includePromotedContent': False,
+            'withVoice': False
+        }
+        params = {
+            'fieldToggles': {
+                'withArticleRichContentState': True,
+                'withArticlePlainText': False,
+                'withGrokAnalyze': False
+            }
+        }
+        return await self.gql_get(
+            Endpoint.TWEET_RESULT_BY_REST_ID, variables, TWEET_RESULT_BY_REST_ID_FEATURES, extra_params=params
+        )

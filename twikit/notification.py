@@ -20,9 +20,9 @@ class Notification:
         Dictionary containing icon data for the notification.
     message : :class:`str`
         The message text of the notification.
-    tweet : :class:`Tweet`
+    tweet : :class:`.Tweet`
         The tweet associated with the notification.
-    from_user : :class:`User`
+    from_user : :class:`.User`
         The user who triggered the notification.
     """
     def __init__(

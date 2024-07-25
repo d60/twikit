@@ -476,6 +476,40 @@ class User:
         """
         return await self._client.get_dm_history(self.id, max_id)
 
+    async def get_highlights_tweets(self, count: int = 20, cursor: str | None = None) -> Result[Tweet]:
+        """
+        Retrieves highlighted tweets from the user's timeline.
+
+        Parameters
+        ----------
+        count : :class:`int`, default=20
+            The number of tweets to retrieve.
+
+        Returns
+        -------
+        Result[:class:`Tweet`]
+            An instance of the `Result` class containing the highlighted tweets.
+
+        Examples
+        --------
+        >>> result = await user.get_highlights_tweets()
+        >>> for tweet in result:
+        ...     print(tweet)
+        <Tweet id="...">
+        <Tweet id="...">
+        ...
+        ...
+
+        >>> more_results = await result.next()  # Retrieve more highlighted tweets
+        >>> for tweet in more_results:
+        ...     print(tweet)
+        <Tweet id="...">
+        <Tweet id="...">
+        ...
+        ...
+        """
+        return await self._client.get_user_highlights_tweets(self.id, count, cursor)
+
     async def update(self) -> None:
         new = await self._client.get_user_by_id(self.id)
         self.__dict__.update(new.__dict__)

@@ -4,7 +4,10 @@ import json
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from ..guest.client import GuestClient
     from .client import Client
+
+    ClientType = Client | GuestClient
 
 
 class Endpoint:
@@ -45,13 +48,13 @@ class Endpoint:
 
 
 class V11Client:
-    def __init__(self, base: Client) -> None:
+    def __init__(self, base: ClientType) -> None:
         self.base = base
 
     async def guest_activate(self):
         headers = self.base._base_headers
-        headers.pop('X-Twitter-Active-User')
-        headers.pop('X-Twitter-Auth-Type')
+        headers.pop('X-Twitter-Active-User', None)
+        headers.pop('X-Twitter-Auth-Type', None)
         return await self.base.post(
             Endpoint.GUEST_ACTIVATE,
             headers=headers,

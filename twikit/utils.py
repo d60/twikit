@@ -235,6 +235,13 @@ def b64_to_str(b64: str) -> str:
     return base64.b64decode(b64).decode()
 
 
+def find_entry_by_type(entries, type_filter):
+    for entry in entries:
+        if entry.get('type') == type_filter:
+            return entry
+    return None
+
+
 FILTERS = Literal[
     'media',
     'retweets',

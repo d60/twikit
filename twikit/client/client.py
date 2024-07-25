@@ -43,7 +43,7 @@ from ..streaming import Payload, StreamingSession, _payload_from_data
 from ..trend import Location, PlaceTrend, PlaceTrends, Trend
 from ..tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
 from ..user import User
-from ..utils import Flow, Result, build_tweet_data, build_user_data, find_dict, httpx_transport_to_url
+from ..utils import Flow, Result, build_tweet_data, build_user_data, find_dict, find_entry_by_type, httpx_transport_to_url
 from .gql import GQLClient
 from .v11 import V11Client
 
@@ -750,6 +750,73 @@ class Client:
                 results.append(tweet)
 
         return results
+
+    async def get_user_highlights_tweets(
+        self,
+        user_id: str,
+        count: int = 20,
+        cursor: str | None = None
+    ) -> Result[Tweet]:
+        """
+        Retrieves highlighted tweets from a user's timeline.
+
+        Parameters
+        ----------
+        user_id : :class:`str`
+            The user ID
+        count : :class:`int`, default=20
+            The number of tweets to retrieve.
+
+        Returns
+        -------
+        Result[:class:`Tweet`]
+            An instance of the `Result` class containing the highlighted tweets.
+
+        Examples
+        --------
+        >>> result = await client.get_user_highlights_tweets('123456789')
+        >>> for tweet in result:
+        ...     print(tweet)
+        <Tweet id="...">
+        <Tweet id="...">
+        ...
+        ...
+
+        >>> more_results = await result.next()  # Retrieve more highlighted tweets
+        >>> for tweet in more_results:
+        ...     print(tweet)
+        <Tweet id="...">
+        <Tweet id="...">
+        ...
+        ...
+        """
+        response, _ = await self.gql.user_highlights_tweets(user_id, count, cursor)
+
+        instructions = response['data']['user']['result']['timeline']['timeline']['instructions']
+        instruction = find_entry_by_type(instructions, 'TimelineAddEntries')
+        if instruction is None:
+            return Result.empty()
+        entries = instruction['entries']
+        previous_cursor = None
+        next_cursor = None
+        results = []
+
+        for entry in entries:
+            entryId = entry['entryId']
+            if entryId.startswith('tweet'):
+                results.append(tweet_from_data(self, entry))
+            elif entryId.startswith('cursor-top'):
+                previous_cursor = entry['content']['value']
+            elif entryId.startswith('cursor-bottom'):
+                next_cursor = entry['content']['value']
+
+        return Result(
+            results,
+            partial(self.get_user_highlights_tweets, user_id, count, next_cursor),
+            next_cursor,
+            partial(self.get_user_highlights_tweets, user_id, count, previous_cursor),
+            previous_cursor
+        )
 
     async def upload_media(
         self,
