@@ -15,6 +15,7 @@ class Service(Enum):
     AntiCaptcha = "api.anti-captcha.com"
     TwoCaptcha = "api.2captcha.com"
 
+
 class Capsolver(CaptchaSolver):
     """
     You can automatically unlock the account by passing the `captcha_solver`
@@ -62,7 +63,7 @@ class Capsolver(CaptchaSolver):
     def create_task(self, task_data: dict) -> dict:
         data = {"clientKey": self.api_key, "task": task_data}
         response = httpx.post(
-            "https://%s/createTask" % self.api_url,
+            f"https://{self.api_url}/createTask",
             json=data,
             headers={"content-type": "application/json"},
         ).json()
@@ -71,7 +72,7 @@ class Capsolver(CaptchaSolver):
     def get_task_result(self, task_id: str) -> dict:
         data = {"clientKey": self.api_key, "taskId": task_id}
         response = httpx.post(
-            "https://%s/getTaskResult" % self.api_url,
+            f"https://{self.api_url}/getTaskResult",
             json=data,
             headers={"content-type": "application/json"},
         ).json()
