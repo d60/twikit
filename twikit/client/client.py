@@ -4,6 +4,7 @@ import asyncio
 import io
 import json
 import warnings
+import re
 from functools import partial
 from typing import Any, AsyncGenerator, Literal
 
@@ -98,7 +99,7 @@ class Client:
 
         self._token = TOKEN
         self._user_id = None
-        self._user_agent = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+        self._user_agent = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
                             'AppleWebKit/537.36 (KHTML, like Gecko) '
                             'Chrome/122.0.0.0 Safari/537.36')
         self._act_as = None
@@ -225,11 +226,11 @@ class Client:
         Base headers for Twitter API requests.
         """
         headers = {
-            'authorization': f'Bearer {self._token}',
-            'content-type': 'application/json',
+            'Authorization': f'Bearer {self._token}',
+            'Content-Type': 'application/json',
             'X-Twitter-Auth-Type': 'OAuth2Session',
             'X-Twitter-Active-User': 'yes',
-            'Referer': 'https://twitter.com/',
+            'Referer': 'https://x.com/',
             'User-Agent': self._user_agent,
         }
 
@@ -248,6 +249,12 @@ class Client:
         response, _ = await self.v11.guest_activate()
         guest_token = response['guest_token']
         return guest_token
+
+    async def _ui_metrix(self) -> str:
+        js, _ = await self.get(
+            'https://twitter.com/i/js_inst?c_name=ui_metrics'
+        )
+        return re.findall(r'return ({.*?});', js, re.DOTALL)[0]
 
     async def login(
         self,
@@ -293,8 +300,67 @@ class Client:
 
         flow = Flow(self, guest_token)
 
-        await flow.execute_task(params={'flow_name': 'login'})
-        await flow.execute_task()
+        await flow.execute_task(params={'flow_name': 'login'}, data={
+            'input_flow_data': {
+                'flow_context': {
+                    'debug_overrides': {},
+                    'start_location': {
+                        'location': 'splash_screen'
+                    }
+                }
+            },
+            'subtask_versions': {
+                'action_list': 2,
+                'alert_dialog': 1,
+                'app_download_cta': 1,
+                'check_logged_in_account': 1,
+                'choice_selection': 3,
+                'contacts_live_sync_permission_prompt': 0,
+                'cta': 7,
+                'email_verification': 2,
+                'end_flow': 1,
+                'enter_date': 1,
+                'enter_email': 2,
+                'enter_password': 5,
+                'enter_phone': 2,
+                'enter_recaptcha': 1,
+                'enter_text': 5,
+                'enter_username': 2,
+                'generic_urt': 3,
+                'in_app_notification': 1,
+                'interest_picker': 3,
+                'js_instrumentation': 1,
+                'menu_dialog': 1,
+                'notifications_permission_prompt': 2,
+                'open_account': 2,
+                'open_home_timeline': 1,
+                'open_link': 1,
+                'phone_verification': 4,
+                'privacy_options': 1,
+                'security_key': 3,
+                'select_avatar': 4,
+                'select_banner': 2,
+                'settings_list': 7,
+                'show_code': 1,
+                'sign_up': 2,
+                'sign_up_review': 4,
+                'tweet_selection_urt': 1,
+                'update_users': 1,
+                'upload_media': 1,
+                'user_recommendations_list': 4,
+                'user_recommendations_urt': 1,
+                'wait_spinner': 3,
+                'web_modal': 1
+            }
+        })
+        await flow.sso_init('apple')
+        await flow.execute_task({
+            "subtask_id": "LoginJsInstrumentationSubtask",
+            "js_instrumentation": {
+                "response": await self._ui_metrix(),
+                "link": "next_link"
+            }
+        })
         await flow.execute_task({
             'subtask_id': 'LoginEnterUserIdentifierSSO',
             'settings_list': {
@@ -340,7 +406,7 @@ class Client:
         if not flow.response['subtasks']:
             return
 
-        self._user_id = find_dict(flow.response, 'id_str', find_one=True)[0]
+        self._user_id = flow.response['subtasks'][0]['open_account']['user']['id_str']
 
         if flow.task_id == 'LoginTwoFactorAuthChallenge':
             if totp_secret is None:

@@ -63,7 +63,7 @@ class CaptchaSolver:
             data['language_code'] = 'en'
             params['lang'] = 'en'
         if ui_metrics:
-            data['ui_metrics'] = await self.ui_metrix()
+            data['ui_metrics'] = await self.client._ui_metrix()
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Upgrade-Insecure-Requests': '1',

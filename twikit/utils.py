@@ -90,6 +90,9 @@ class Flow:
         )
         self.response = response
 
+    async def sso_init(self, provider: str) -> None:
+        await self._client.v11.sso_init(provider, self.guest_token)
+
     @property
     def token(self) -> str | None:
         if self.response is None:
@@ -99,6 +102,8 @@ class Flow:
     @property
     def task_id(self) -> str | None:
         if self.response is None:
+            return None
+        if len(self.response['subtasks']) <= 0:
             return None
         return self.response['subtasks'][0]['subtask_id']
 

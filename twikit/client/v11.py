@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 class Endpoint:
     GUEST_ACTIVATE = 'https://api.twitter.com/1.1/guest/activate.json'
+    ONBOARDING_SSO_INIT = 'https://api.x.com/1.1/onboarding/sso_init.json'
     ACCOUNT_LOGOUT = 'https://api.twitter.com/1.1/account/logout.json'
     ONBOARDING_TASK = 'https://api.twitter.com/1.1/onboarding/task.json'
     SETTINGS = 'https://api.twitter.com/1.1/account/settings.json'
@@ -67,8 +68,9 @@ class V11Client:
             headers=self.base._base_headers
         )
 
-    async def onboarding_task(self, guest_token, token, subtask_inputs, **kwargs):
-        data = {}
+    async def onboarding_task(self, guest_token, token, subtask_inputs, data = None, **kwargs):
+        if data is None:
+            data = {}
         if token is not None:
             data['flow_token'] = token
         if subtask_inputs is not None:
@@ -85,6 +87,18 @@ class V11Client:
             json=data,
             headers=headers,
             **kwargs
+        )
+
+    async def sso_init(self, provider, guest_token):
+        headers = self.base._base_headers | {
+            'x-guest-token': guest_token
+        }
+        headers.pop('X-Twitter-Active-User')
+        headers.pop('X-Twitter-Auth-Type')
+        return await self.base.post(
+            Endpoint.ONBOARDING_SSO_INIT,
+            json={'provider': provider},
+            headers=headers
         )
 
     async def settings(self):
