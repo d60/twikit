@@ -169,9 +169,6 @@ class User:
         """
         return await self._client.get_user_tweets(self.id, tweet_type, count)
 
-    async def get_likes(self, count: int = 40, cursor: str | None = None) -> Result[Tweet]:
-        return await self._client.get_user_likes(self.id, count=count, cursor=cursor)
-
     async def follow(self) -> Response:
         """
         Follows the user.

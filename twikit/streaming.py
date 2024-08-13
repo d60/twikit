@@ -35,7 +35,7 @@ class StreamingSession:
         """
         Reconnects the session.
         """
-        stream = await self._client._stream(self.topics)
+        stream = self._client._stream(self.topics)
         config_event = await anext(stream)
         self.id = config_event[1].config.session_id
         self._stream = stream

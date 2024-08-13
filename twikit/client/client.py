@@ -193,9 +193,7 @@ class Client:
     @property
     def proxy(self) -> str:
         ':meta private:'
-        transport: AsyncHTTPTransport = self.http._mounts.get(
-            URLPattern('all://')
-        )
+        transport: AsyncHTTPTransport = self.http._mounts.get(URLPattern('all://'))
         if transport is None:
             return None
         if not hasattr(transport._pool, '_proxy_url'):
@@ -204,9 +202,7 @@ class Client:
 
     @proxy.setter
     def proxy(self, url: str) -> None:
-        self.http._mounts = {
-            URLPattern('all://'): AsyncHTTPTransport(proxy=url)
-        }
+        self.http._mounts = {URLPattern('all://'): AsyncHTTPTransport(proxy=url)}
 
     def _get_csrf_token(self) -> str:
         """
@@ -226,11 +222,11 @@ class Client:
         Base headers for Twitter API requests.
         """
         headers = {
-            'Authorization': f'Bearer {self._token}',
-            'Content-Type': 'application/json',
+            'authorization': f'Bearer {self._token}',
+            'content-type': 'application/json',
             'X-Twitter-Auth-Type': 'OAuth2Session',
             'X-Twitter-Active-User': 'yes',
-            'Referer': 'https://x.com/',
+            'Referer': 'https://twitter.com/',
             'User-Agent': self._user_agent,
         }
 
@@ -251,9 +247,7 @@ class Client:
         return guest_token
 
     async def _ui_metrix(self) -> str:
-        js, _ = await self.get(
-            'https://twitter.com/i/js_inst?c_name=ui_metrics'
-        )
+        js, _ = await self.get('https://twitter.com/i/js_inst?c_name=ui_metrics')
         return re.findall(r'return ({.*?});', js, re.DOTALL)[0]
 
     async def login(
@@ -985,9 +979,7 @@ class Client:
         while bytes_sent < total_bytes:
             chunk = binary[bytes_sent:bytes_sent + MAX_SEGMENT_SIZE]
             chunk_stream = io.BytesIO(chunk)
-            coro = self.v11.upload_media_append(
-                is_long_video, media_id, segment_index, chunk_stream
-            )
+            coro = self.v11.upload_media_append(is_long_video, media_id, segment_index, chunk_stream)
             append_tasks.append(asyncio.create_task(coro))
             chunk_streams.append(chunk_stream)
 
@@ -1130,8 +1122,7 @@ class Client:
         :class:`Poll`
             The Poll object representing the updated poll after voting.
         """
-        response, _ = await self.v11.vote(selected_choice, card_uri,
-                                          tweet_id, card_name)
+        response, _ = await self.v11.vote(selected_choice, card_uri, tweet_id, card_name)
         card_data = {
             'rest_id': response['card']['url'],
             'legacy': response['card']
@@ -1240,16 +1231,13 @@ class Client:
             reply_to, attachment_url, community_id, share_with_followers,
             richtext_options, edit_tweet_id, limit_mode
         )
-        _result = find_dict(response, 'result', find_one=True)
+        _result = response['data']['create_tweet']['tweet_results']
         if not _result:
             raise_exceptions_from_response(response['errors'])
             raise CouldNotTweet(
                 response['errors'][0] if response['errors'] else 'Failed to post a tweet.'
             )
-
-        tweet_info = _result[0]
-        user_info = tweet_info['core']['user_results']['result']
-        return Tweet(self, tweet_info, User(self, user_info))
+        return tweet_from_data(self, _result)
 
     async def create_scheduled_tweet(
         self,
@@ -2605,9 +2593,6 @@ class Client:
         count: int, f, cursor: str
     ) -> Result[User]:
         response, _ = await f(user_id, screen_name, count, cursor)
-        from jlog import log
-        log(response)
-
         users = response['users']
         results = []
         for user in users:

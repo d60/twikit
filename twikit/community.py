@@ -90,8 +90,8 @@ class Community:
         Indicates if the community is pinned.
     rules : list[:class:`CommunityRule`]
         The rules of the community.
-
     """
+
     def __init__(self, client: Client, data: dict) -> None:
         self._client = client
         self.id: str = data['rest_id']
