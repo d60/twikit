@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 import io
 import json
-import warnings
 import re
+import warnings
 from functools import partial
 from typing import Any, AsyncGenerator, Literal
 
@@ -17,24 +17,12 @@ from .._captcha import Capsolver
 from ..bookmark import BookmarkFolder
 from ..community import Community, CommunityMember
 from ..constants import TOKEN
-from ..errors import (
-    AccountLocked,
-    AccountSuspended,
-    BadRequest,
-    CouldNotTweet,
-    Forbidden,
-    InvalidMedia,
-    NotFound,
-    RequestTimeout,
-    ServerError,
-    TooManyRequests,
-    TweetNotAvailable,
-    TwitterException,
-    Unauthorized,
-    UserNotFound,
-    UserUnavailable,
-    raise_exceptions_from_response
-)
+from ..errors import (AccountLocked, AccountSuspended, BadRequest,
+                      CouldNotTweet, Forbidden, InvalidMedia, NotFound,
+                      RequestTimeout, ServerError, TooManyRequests,
+                      TweetNotAvailable, TwitterException, Unauthorized,
+                      UserNotFound, UserUnavailable,
+                      raise_exceptions_from_response)
 from ..geo import Place, _places_from_response
 from ..group import Group, GroupMessage
 from ..list import List
@@ -44,7 +32,8 @@ from ..streaming import Payload, StreamingSession, _payload_from_data
 from ..trend import Location, PlaceTrend, PlaceTrends, Trend
 from ..tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
 from ..user import User
-from ..utils import Flow, Result, build_tweet_data, build_user_data, find_dict, find_entry_by_type, httpx_transport_to_url
+from ..utils import (Flow, Result, build_tweet_data, build_user_data,
+                     find_dict, find_entry_by_type, httpx_transport_to_url)
 from .gql import GQLClient
 from .v11 import V11Client
 
@@ -81,6 +70,7 @@ class Client:
         language: str | None = None,
         proxy: str | None = None,
         captcha_solver: Capsolver | None = None,
+        user_agent: str | None = None,
         **kwargs
     ) -> None:
         if 'proxies' in kwargs:
@@ -99,9 +89,7 @@ class Client:
 
         self._token = TOKEN
         self._user_id = None
-        self._user_agent = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
-                            'AppleWebKit/537.36 (KHTML, like Gecko) '
-                            'Chrome/122.0.0.0 Safari/537.36')
+        self._user_agent = user_agent or 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15'
         self._act_as = None
 
         self.gql = GQLClient(self)
