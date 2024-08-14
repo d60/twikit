@@ -2401,6 +2401,40 @@ class Client:
         response, _ = await self.v11.destroy_blocks(user_id)
         return User(self, build_user_data(response))
 
+    async def get_blocked_users(
+        self, count: int = 20, cursor: str | None = None
+    ) -> Result[User]:
+        """
+        Retrieves blocked users.
+
+        Parameters
+        ----------
+        count : :class:`int`, default=20
+            The number of blocked users to retrieve.
+        cursor : :class:`str`, default=None
+            The cursor for pagination.
+
+        Returns
+        -------
+        Result[:class:`User`]
+            A Result object containing a list of User objects representing
+            blocked users.
+
+        Examples
+        --------
+        >>> blocked_users = await client.get_blocked_users()
+        >>> for user in blocked_users:
+        ...     print(user)
+        <User id="...">
+        <User id="...">
+        ...
+        ...
+        """
+        user_id = await self.user_id()
+        return await self._get_user_friendship(
+            user_id, count, self.gql.blocked_accounts_all, cursor
+        )
+
     async def mute_user(self, user_id: str) -> User:
         """
         Mutes a user.
@@ -2442,6 +2476,40 @@ class Client:
         """
         response, _ = await self.v11.destroy_mutes(user_id)
         return User(self, build_user_data(response))
+
+    async def get_muted_users(
+        self, count: int = 20, cursor: str | None = None
+    ) -> Result[User]:
+        """
+        Retrieves muted users.
+
+        Parameters
+        ----------
+        count : :class:`int`, default=20
+            The number of muted users to retrieve.
+        cursor : :class:`str`, default=None
+            The cursor for pagination.
+
+        Returns
+        -------
+        Result[:class:`User`]
+            A Result object containing a list of User objects representing
+            muted users.
+
+        Examples
+        --------
+        >>> muted_users = await client.get_muted_users()
+        >>> for user in muted_users:
+        ...     print(user)
+        <User id="...">
+        <User id="...">
+        ...
+        ...
+        """
+        user_id = await self.user_id()
+        return await self._get_user_friendship(
+            user_id, count, self.gql.muted_accounts, cursor
+        )
 
     async def get_trends(
         self,
