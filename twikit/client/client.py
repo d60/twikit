@@ -17,12 +17,24 @@ from .._captcha import Capsolver
 from ..bookmark import BookmarkFolder
 from ..community import Community, CommunityMember
 from ..constants import TOKEN
-from ..errors import (AccountLocked, AccountSuspended, BadRequest,
-                      CouldNotTweet, Forbidden, InvalidMedia, NotFound,
-                      RequestTimeout, ServerError, TooManyRequests,
-                      TweetNotAvailable, TwitterException, Unauthorized,
-                      UserNotFound, UserUnavailable,
-                      raise_exceptions_from_response)
+from ..errors import (
+    AccountLocked,
+    AccountSuspended,
+    BadRequest,
+    CouldNotTweet,
+    Forbidden,
+    InvalidMedia,
+    NotFound,
+    RequestTimeout,
+    ServerError,
+    TooManyRequests,
+    TweetNotAvailable,
+    TwitterException,
+    Unauthorized,
+    UserNotFound,
+    UserUnavailable,
+    raise_exceptions_from_response
+)
 from ..geo import Place, _places_from_response
 from ..group import Group, GroupMessage
 from ..list import List
@@ -32,8 +44,15 @@ from ..streaming import Payload, StreamingSession, _payload_from_data
 from ..trend import Location, PlaceTrend, PlaceTrends, Trend
 from ..tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
 from ..user import User
-from ..utils import (Flow, Result, build_tweet_data, build_user_data,
-                     find_dict, find_entry_by_type, httpx_transport_to_url)
+from ..utils import (
+    Flow,
+    Result,
+    build_tweet_data,
+    build_user_data,
+    find_dict,
+    find_entry_by_type,
+    httpx_transport_to_url
+)
 from .gql import GQLClient
 from .v11 import V11Client
 
@@ -388,7 +407,7 @@ class Client:
         if not flow.response['subtasks']:
             return
 
-        self._user_id = flow.response['subtasks'][0]['open_account']['user']['id_str']
+        self._user_id = find_dict(flow.response, 'id_str', find_one=True)[0]
 
         if flow.task_id == 'LoginTwoFactorAuthChallenge':
             if totp_secret is None:
