@@ -430,7 +430,7 @@ class Client:
             await flow.execute_task({
                 'subtask_id': 'LoginAcid',
                 'enter_text': {
-                    'text': input('>>> '),
+                    'text': input('>>> ') if auth_info_2 is None else auth_info_2,
                     'link': 'next_link'
                 }
             })
