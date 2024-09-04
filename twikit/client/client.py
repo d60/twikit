@@ -4243,11 +4243,14 @@ class Client:
         self, 
         response: dict
     ):
-        if response['errors']:
-            if "Status is a duplicate" in response['errors']['message']:
-                raise CreateTweetDuplicate("Status is a duplicate")
-            elif "Tweet needs to be a bit shorter" in response['errors']['message']:
-                raise CreateTweetMaxLengthReached("Tweet needs to be a bit shorter")
+        error_map = {
+            "Status is a duplicate": CreateTweetDuplicate,
+            "Tweet needs to be a bit shorter": CreateTweetMaxLengthReached
+        }
+        message: str = response.get('errors', [])[0].get('message', '')
+        error_msg = message[message.index(": ")+2:message.index(". ")]
+        if error_msg in error_map:
+            raise error_map[error_msg](error_msg)
         # * Print <response> to reach unknown errors in 2024-09-04
         print(response)
 

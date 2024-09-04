@@ -106,7 +106,7 @@ class CreateTweetDuplicate(CreateTweetFailed):
 
 class CreateTweetMaxLengthReached(CreateTweetFailed):
     """
-    Exception raised when create_tweet try to c.
+    Exception raised when create_tweet tries to create a tweet that exceeds the maximum allowed length. (240)
     """
 
 ERROR_CODE_TO_EXCEPTION: dict[int, TwitterException] = {
