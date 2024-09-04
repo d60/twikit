@@ -94,6 +94,21 @@ class AccountLocked(TwitterException):
     Exception raised when the account is locked (very likey is Arkose challenge).
     """
 
+class CreateTweetFailed(TwitterException):
+    """
+    Exception raised when create_tweet fails.
+    """
+
+class CreateTweetDuplicate(CreateTweetFailed):
+    """
+    Exception raised when create_tweet create a duplicate tweet in a short period of time.
+    """
+
+class CreateTweetMaxLengthReached(CreateTweetFailed):
+    """
+    Exception raised when create_tweet try to c.
+    """
+
 ERROR_CODE_TO_EXCEPTION: dict[int, TwitterException] = {
     187: DuplicateTweet,
     324: InvalidMedia

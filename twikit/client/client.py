@@ -33,6 +33,8 @@ from ..errors import (
     Unauthorized,
     UserNotFound,
     UserUnavailable,
+    CreateTweetDuplicate,
+    CreateTweetMaxLengthReached,
     raise_exceptions_from_response
 )
 from ..geo import Place, _places_from_response
@@ -1238,6 +1240,8 @@ class Client:
             reply_to, attachment_url, community_id, share_with_followers,
             richtext_options, edit_tweet_id, limit_mode
         )
+        if not response['data']:
+            self._switch_error(response)
         _result = response['data']['create_tweet']['tweet_results']
         if not _result:
             raise_exceptions_from_response(response['errors'])
@@ -4234,3 +4238,16 @@ class Client:
     async def _get_user_state(self) -> Literal['normal', 'bounced', 'suspended']:
         response, _ = await self.v11.user_state()
         return response['userState']
+    
+    def _switch_error(
+        self, 
+        response: dict
+    ):
+        if response['errors']:
+            if "Status is a duplicate" in response['errors']['message']:
+                raise CreateTweetDuplicate("Status is a duplicate")
+            elif "Tweet needs to be a bit shorter" in response['errors']['message']:
+                raise CreateTweetMaxLengthReached("Tweet needs to be a bit shorter")
+        # * Print <response> to reach unknown errors in 2024-09-04
+        print(response)
+
