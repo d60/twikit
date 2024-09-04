@@ -4244,13 +4244,15 @@ class Client:
         response: dict
     ):
         error_map = {
-            "Status is a duplicate": CreateTweetDuplicate,
-            "Tweet needs to be a bit shorter": CreateTweetMaxLengthReached
+            186: CreateTweetDuplicate,
+            187: CreateTweetMaxLengthReached
         }
-        message: str = response.get('errors', [])[0].get('message', '')
-        error_msg = message[message.index(": ")+2:message.index(". ")]
-        if error_msg in error_map:
-            raise error_map[error_msg](error_msg)
+        message = response.get('errors', [])[0].get('message', '')
+        error_msg: str = message[message.index(": ")+2:message.index(". ")]
+
+        error_code = response.get('errors', [])[0].get('extensions', {}).get('code', '')
+        if error_code in error_map:
+            raise error_map[error_code](error_msg)
         # * Print <response> to reach unknown errors in 2024-09-04
         print(response)
 
