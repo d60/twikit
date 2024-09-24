@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 class Endpoint:
     @staticmethod
     def url(path):
-        return 'https://twitter.com/i/api/graphql/' + path
+        return 'https://x.com/i/api/graphql/' + path
 
     SEARCH_TIMELINE = url('flaR-PUMshxFWZWPNpq4zA/SearchTimeline')
     SIMILAR_POSTS = url('EToazR74i0rJyZYalfVEAQ/SimilarPosts')

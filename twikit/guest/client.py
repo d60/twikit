@@ -167,7 +167,7 @@ class GuestClient:
             'authorization': f'Bearer {self._token}',
             'content-type': 'application/json',
             'X-Twitter-Active-User': 'yes',
-            'Referer': 'https://twitter.com/',
+            'Referer': 'https://x.com/',
         }
 
         if self.language is not None:
