@@ -6,6 +6,15 @@ import httpx
 
 from .base import CaptchaSolver
 
+from enum import Enum
+
+
+class Service(Enum):
+    Capsolver = "api.capsolver.com"
+    CapMonster = "api.capmonster.cloud"
+    AntiCaptcha = "api.anti-captcha.com"
+    TwoCaptcha = "api.2captcha.com"
+
 
 class Capsolver(CaptchaSolver):
     """
@@ -28,6 +37,8 @@ class Capsolver(CaptchaSolver):
     ----------
     api_key : :class:`str`
         Capsolver API key.
+    service : :class:`Service` default=Service.Capsolver
+        Service used for solve captcha
     max_attempts : :class:`int`, default=3
         The maximum number of attempts to solve the captcha.
     get_result_interval : :class:`float`, default=1.0
@@ -38,58 +49,54 @@ class Capsolver(CaptchaSolver):
     def __init__(
         self,
         api_key: str,
+        service: Service = Service.Capsolver,
         max_attempts: int = 3,
         get_result_interval: float = 1.0,
-        use_blob_data: bool = False
+        use_blob_data: bool = False,
     ) -> None:
         self.api_key = api_key
+        self.api_url = service.value
         self.get_result_interval = get_result_interval
         self.max_attempts = max_attempts
         self.use_blob_data = use_blob_data
 
     def create_task(self, task_data: dict) -> dict:
-        data = {
-            'clientKey': self.api_key,
-            'task': task_data
-        }
+        data = {"clientKey": self.api_key, "task": task_data}
         response = httpx.post(
-            'https://api.capsolver.com/createTask',
+            f"https://{self.api_url}/createTask",
             json=data,
-            headers={'content-type': 'application/json'}
+            headers={"content-type": "application/json"},
         ).json()
         return response
 
     def get_task_result(self, task_id: str) -> dict:
-        data = {
-            'clientKey': self.api_key,
-            'taskId': task_id
-        }
+        data = {"clientKey": self.api_key, "taskId": task_id}
         response = httpx.post(
-            'https://api.capsolver.com/getTaskResult',
+            f"https://{self.api_url}/getTaskResult",
             json=data,
-            headers={'content-type': 'application/json'}
+            headers={"content-type": "application/json"},
         ).json()
         return response
 
     def solve_funcaptcha(self, blob: str) -> dict:
         if self.client.proxy is None:
-            captcha_type = 'FunCaptchaTaskProxyLess'
+            captcha_type = "FunCaptchaTaskProxyLess"
         else:
-            captcha_type = 'FunCaptchaTask'
+            captcha_type = "FunCaptchaTask"
 
         task_data = {
-            'type': captcha_type,
-            'websiteURL': 'https://iframe.arkoselabs.com',
-            'websitePublicKey': self.CAPTCHA_SITE_KEY,
-            'funcaptchaApiJSSubdomain': 'https://client-api.arkoselabs.com',
-            'proxy': self.client.proxy
+            "type": captcha_type,
+            "websiteURL": "https://iframe.arkoselabs.com",
+            "websitePublicKey": self.CAPTCHA_SITE_KEY,
+            "funcaptchaApiJSSubdomain": "https://client-api.arkoselabs.com",
+            "proxy": self.client.proxy,
         }
         if self.use_blob_data:
-            task_data['data'] = '{"blob":"%s"}' % blob
-            task_data['userAgent'] = self.client._user_agent
+            task_data["data"] = '{"blob":"%s"}' % blob
+            task_data["userAgent"] = self.client._user_agent
         task = self.create_task(task_data)
         while True:
             sleep(self.get_result_interval)
-            result = self.get_task_result(task['taskId'])
-            if result['status'] in ('ready', 'failed'):
+            result = self.get_task_result(task["taskId"])
+            if result["status"] in ("ready", "failed"):
                 return result
