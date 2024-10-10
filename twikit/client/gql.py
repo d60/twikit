@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..constants import (
+    BLOCKED_ACCOUNTS_ALL_FEATURES,
     BOOKMARK_FOLDER_TIMELINE_FEATURES,
     COMMUNITY_NOTE_FEATURES,
     COMMUNITY_TWEETS_FEATURES,
@@ -96,6 +97,8 @@ class Endpoint:
     MEMBERS_SLICE_TIMELINE_QUERY = url('KDAssJ5lafCy-asH4wm1dw/membersSliceTimeline_Query')
     MODERATORS_SLICE_TIMELINE_QUERY = url('9KI_r8e-tgp3--N5SZYVjg/moderatorsSliceTimeline_Query')
     COMMUNITY_TWEET_SEARCH_MODULE_QUERY = url('5341rmzzvdjqfmPKfoHUBw/CommunityTweetSearchModuleQuery')
+    BLOCKED_ACCOUNTS_ALL = url("ugCclQ08T0qMYjS3SYvMdQ/BlockedAccountsAll")
+    MUTED_ACCOUNTS = url("J0tjDZrm9M6UYRoPtXcvhg/MutedAccounts")
 
 
 class GQLClient:
@@ -689,4 +692,26 @@ class GQLClient:
         }
         return await self.gql_get(
             Endpoint.TWEET_RESULT_BY_REST_ID, variables, TWEET_RESULT_BY_REST_ID_FEATURES, extra_params=params
+        )
+
+    async def blocked_accounts_all(self, user_id, count, cursor):
+        variables = {
+            "count": count,
+            "includePromotedContent": False,
+            "withSafetyModeUserFields": False,
+        }
+        if cursor is not None:
+            variables['cursor'] = cursor
+
+        return await self.gql_get(
+            Endpoint.BLOCKED_ACCOUNTS_ALL, variables, BLOCKED_ACCOUNTS_ALL_FEATURES
+        )
+
+    async def muted_accounts(self, user_id, count, cursor):
+        variables={"count":count,"includePromotedContent":False}
+        if cursor is not None:
+            variables['cursor'] = cursor
+
+        return await self.gql_get(
+            Endpoint.MUTED_ACCOUNTS, variables, BLOCKED_ACCOUNTS_ALL_FEATURES
         )
