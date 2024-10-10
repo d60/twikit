@@ -3039,10 +3039,10 @@ class Client:
             f'{user_id}-{await self.user_id()}', max_id
         )
 
-        items = response['conversation_timeline']['entries']
         if 'entries' not in response['conversation_timeline']:
             return Result([])
-
+        items = response['conversation_timeline']['entries']
+        
         messages = []
         for item in items:
             message_info = item['message']['message_data']
