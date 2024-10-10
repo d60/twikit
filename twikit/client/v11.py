@@ -386,7 +386,7 @@ class V11Client:
         params = {'count': count}
         if user_id is not None:
             params['user_id'] = user_id
-        elif user_id is not None:
+        elif screen_name is not None:
             params['screen_name'] = screen_name
 
         if cursor is not None:
