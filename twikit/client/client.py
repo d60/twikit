@@ -7,11 +7,13 @@ import re
 import warnings
 from functools import partial
 from typing import Any, AsyncGenerator, Literal
+import time
 
 import filetype
 import pyotp
 from httpx import AsyncClient, AsyncHTTPTransport, Response
 from httpx._utils import URLPattern
+
 
 from .._captcha import Capsolver
 from ..bookmark import BookmarkFolder
@@ -113,6 +115,34 @@ class Client:
 
         self.gql = GQLClient(self)
         self.v11 = V11Client(self)
+        self.rate_limits = {}
+
+
+    async def rate_limit_check(self, url) -> bool:
+   
+        if url not in self.rate_limits:
+            self.rate_limits[url] = {"reset": time.time() + 900, "rate_limit_max": 50, "remaining": 50} 
+            return True
+        elif time.time() > self.rate_limits[url]["reset"]:
+            return True
+        elif self.rate_limits[url]["remaining"] > 0:
+            return True
+        else: 
+           
+            return False
+
+    async def rate_limit_update(self, url, response: Response) -> None:
+   #  
+        try:
+            if "x-rate-limit-limit" in response.headers:
+                self.rate_limits[url]["rate_limit_max"] = int(response.headers["x-rate-limit-limit"])
+            if "x-rate-limit-remaining" in response.headers:
+                self.rate_limits[url]["remaining"] = int(response.headers["x-rate-limit-remaining"])
+            if "x-rate-limit-reset" in response.headers:
+                self.rate_limits[url]["reset"] = float(response.headers["x-rate-limit-reset"])
+        except Exception:
+            pass
+        
 
     async def request(
         self,
@@ -123,12 +153,19 @@ class Client:
         **kwargs
     ) -> tuple[dict | Any, Response]:
         ':meta private:'
+
+
+        if not await self.rate_limit_check(url):
+            
+            raise TooManyRequests("Rate limit exceeded, retry after " + str(self.rate_limits[url]["reset"] - time.time()) + " seconds")
+
         cookies_backup = self.get_cookies().copy()
         response = await self.http.request(method, url, **kwargs)
         self._remove_duplicate_ct0_cookie()
 
         try:
             response_data = response.json()
+            
         except json.decoder.JSONDecodeError:
             response_data = response.text
 
@@ -157,6 +194,7 @@ class Client:
                         response_data = response.text
 
         status_code = response.status_code
+        
 
         if status_code >= 400 and raise_exception:
             message = f'status: {status_code}, message: "{response.text}"'
@@ -173,11 +211,17 @@ class Client:
             elif status_code == 429:
                 if await self._get_user_state() == 'suspended':
                     raise AccountSuspended(message, headers=response.headers)
+                await self.rate_limit_update(url, response)
                 raise TooManyRequests(message, headers=response.headers)
             elif 500 <= status_code < 600:
                 raise ServerError(message, headers=response.headers)
             else:
                 raise TwitterException(message, headers=response.headers)
+            
+
+        if status_code == 200:
+            await self.rate_limit_update(url, response)
+            return response_data, response
 
         return response_data, response
 
