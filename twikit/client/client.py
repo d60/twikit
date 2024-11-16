@@ -1242,7 +1242,10 @@ class Client:
         )
         if not response['data']:
             self._switch_error(response)
-        _result = response['data']['create_tweet']['tweet_results']
+        if is_note_tweet:
+            _result = response['data']['notetweet_create']['tweet_results']
+        else:
+            _result = response['data']['create_tweet']['tweet_results']
         if not _result:
             raise_exceptions_from_response(response['errors'])
             raise CouldNotTweet(
