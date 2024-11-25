@@ -1238,6 +1238,11 @@ class Client:
             reply_to, attachment_url, community_id, share_with_followers,
             richtext_options, edit_tweet_id, limit_mode
         )
+        if 'errors' in response.keys():
+            raise_exceptions_from_response(response['errors'])
+            raise CouldNotTweet(
+                response['errors'][0] if response['errors'] else 'Failed to post a tweet.'
+            )
         if is_note_tweet:
             _result = response['data']['notetweet_create']['tweet_results']
         else:
