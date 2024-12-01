@@ -1,0 +1,5 @@
+sphinx_rtd_theme
+httpx
+filetype
+beautifulsoup4
+pyotp
