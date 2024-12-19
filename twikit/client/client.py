@@ -735,7 +735,11 @@ class Client:
             if not item['entryId'].startswith(('tweet', 'search-grid')):
                 continue
 
-            tweet = tweet_from_data(self, item)
+            try:
+                tweet = tweet_from_data(self, item)
+            except KeyError:
+                tweet = None
+                
             if tweet is not None:
                 results.append(tweet)
 
