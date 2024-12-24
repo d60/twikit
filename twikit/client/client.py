@@ -1642,7 +1642,10 @@ class Client:
         <Tweet id="...">
         """
         # regex to search for tweet id in the url
-        tweet_id = re.search(r'status/(\d+)', url).group(1)
+        match = re.search(r'status/(\d+)', url)
+        if not match:
+            raise ValueError(f'Could not extract tweet ID from URL: {url}')
+        tweet_id = match.group(1)
         # call get_tweet_by_id
         return await self.get_tweet_by_id(tweet_id, cursor)
 
