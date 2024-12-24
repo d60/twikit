@@ -1619,6 +1619,32 @@ class Client:
         tweet.related_tweets = related_tweets
 
         return tweet
+    
+    async def get_tweet_by_url(self, url: str, cursor: str | None = None) -> Tweet:
+        """
+        Fetches a tweet by tweet URL.
+
+        Parameters
+        ----------
+        url : :class:`str`
+            The URL of the tweet.
+
+        Returns
+        -------
+        :class:`Tweet`
+            A Tweet object representing the fetched tweet.
+
+        Examples
+        --------
+        >>> tweet_url = 'https://twitter.com/user/status/...'
+        >>> tweet = client.get_tweet_by_url(tweet_url)
+        >>> print(tweet)
+        <Tweet id="...">
+        """
+        # regex to search for tweet id in the url
+        tweet_id = re.search(r'status/(\d+)', url).group(1)
+        # call get_tweet_by_id
+        return await self.get_tweet_by_id(tweet_id, cursor)
 
     async def get_scheduled_tweets(self) -> list[ScheduledTweet]:
         """
