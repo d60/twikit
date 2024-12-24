@@ -1637,7 +1637,7 @@ class Client:
         Examples
         --------
         >>> tweet_url = 'https://twitter.com/user/status/...'
-        >>> tweet = client.get_tweet_by_url(tweet_url)
+        >>> tweet = await client.get_tweet_by_url(tweet_url)
         >>> print(tweet)
         <Tweet id="...">
         """
