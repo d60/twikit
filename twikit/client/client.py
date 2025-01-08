@@ -90,7 +90,7 @@ class Client:
 
     def __init__(
         self,
-        language: str | None = None,
+        language: str = 'en-US',
         proxy: str | None = None,
         captcha_solver: Capsolver | None = None,
         user_agent: str | None = None,
@@ -1619,6 +1619,34 @@ class Client:
         tweet.related_tweets = related_tweets
 
         return tweet
+
+    async def get_tweets_by_ids(self, ids: list[str]) -> list[Tweet]:
+        """
+        Retrieve multiple tweets by IDs.
+
+        Parameters
+        ----------
+        ids : list[:class:`str`]
+            A list of tweet IDs to retrieve.
+
+        Returns
+        -------
+        list[:class:`Tweet`]
+            List of tweets.
+
+        Examples
+        --------
+        >>> tweet_ids = ['1111111111', '1111111112', '111111113']
+        >>> tweets = await client.get_tweets_by_ids(tweet_ids)
+        >>> print(tweets)
+        [<Tweet id="1111111111">, <Tweet id="1111111112">, <Tweet id="111111113">]
+        """
+        response, _ = await self.gql.tweet_results_by_rest_ids(ids)
+        tweet_results = response['data']['tweetResult']
+        results = []
+        for tweet_result in tweet_results:
+            results.append(tweet_from_data(self, tweet_result))
+        return results
 
     async def get_scheduled_tweets(self) -> list[ScheduledTweet]:
         """
