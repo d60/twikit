@@ -24,9 +24,9 @@ You can use functions such as posting or searching for tweets without an API key
 
 🔵 [Discord](https://discord.gg/nCrByrr8cX)
 
-> [!IMPORTANT]
-> With the release of version 2.0.0 on July 11, there have been some specification changes, including the discontinuation of the synchronous version. Existing code will no longer work with v2.0.0 or later, so please refer to the [documentation](https://twikit.readthedocs.io/en/latest/twikit.html) or the code in the [examples folder](https://github.com/d60/twikit/tree/main/examples) for adjustments.
-> We apologize for any inconvenience this may cause.
+> [!NOTE]
+> Released twikit_grok an extension for using Grok AI with Twikit.  
+> For more details, visit: https://github.com/d60/twikit_grok.
 
 
 
