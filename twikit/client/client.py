@@ -287,7 +287,8 @@ class Client:
         auth_info_1: str,
         auth_info_2: str | None = None,
         password: str,
-        totp_secret: str | None = None
+        totp_secret: str | None = None,
+        input_for_login: bool = True
     ) -> dict:
         """
         Logs into the account using the specified login information.
@@ -311,6 +312,8 @@ class Client:
         totp_secret : :class:`str`
             The TOTP (Time-Based One-Time Password) secret key used for
             two-factor authentication (2FA).
+        input_for_login : :class:`bool`, default=True
+            Whether to prompt for input when the account is locked.
 
         Examples
         --------
@@ -425,16 +428,18 @@ class Client:
             raise TwitterException(flow.response['subtasks'][0]['cta']['secondary_text']['text'])
 
         if flow.task_id == 'LoginAcid':
-            print(find_dict(flow.response, 'secondary_text', find_one=True)[0]['text'])
-
-            await flow.execute_task({
-                'subtask_id': 'LoginAcid',
-                'enter_text': {
-                    'text': input('>>> '),
-                    'link': 'next_link'
-                }
-            })
-            return flow.response
+            if input_for_login:
+                print(find_dict(flow.response, 'secondary_text', find_one=True)[0]['text'])
+                await flow.execute_task({
+                    'subtask_id': 'LoginAcid',
+                    'enter_text': {
+                        'text': input('>>> '),
+                        'link': 'next_link'
+                    }
+                })
+                return flow.response
+            
+            raise TwitterException(flow.response['subtasks'][0]['cta']['secondary_text']['text'])
 
         await flow.execute_task({
             'subtask_id': 'AccountDuplicationCheck',
