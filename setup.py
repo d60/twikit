@@ -1,6 +1,6 @@
 import re
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 with open('README.md', encoding='utf-8') as f:
     long_description = f.read()
@@ -10,6 +10,7 @@ with open('./twikit/__init__.py') as f:
 
 setup(
     name='twikit',
+    packages=find_packages(),
     version=version,
     install_requires=[
         'httpx[socks]',
@@ -24,5 +25,5 @@ setup(
     long_description_content_type='text/markdown',
     license='MIT',
     url='https://github.com/d60/twikit',
-    package_data={'twikit': ['py.typed']}
+    include_package_data=True
 )
