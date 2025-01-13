@@ -1,0 +1,7 @@
+lib/
+__pycache__/
+.DS_Store
+twikit.egg-info/
+pyvenv.cfg
+build/
+bin/
