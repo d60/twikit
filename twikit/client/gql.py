@@ -32,7 +32,7 @@ class Endpoint:
     def url(path):
         return f'https://{DOMAIN}/i/api/graphql/{path}'
 
-    SEARCH_TIMELINE = url('flaR-PUMshxFWZWPNpq4zA/SearchTimeline')
+    SEARCH_TIMELINE = url('1BP5aKg8NvTNvRCyyCyq8g/SearchTimeline')
     SIMILAR_POSTS = url('EToazR74i0rJyZYalfVEAQ/SimilarPosts')
     CREATE_NOTE_TWEET = url('iCUB42lIfXf9qPKctjE5rQ/CreateNoteTweet')
     CREATE_TWEET = url('UecQIuYzi2MCOah7-eOpcQ/CreateTweet')
@@ -52,7 +52,7 @@ class Endpoint:
     USER_MEDIA = url('2tLOJWwGuCTytDrGBg8VwQ/UserMedia')
     USER_LIKES = url('IohM3gxQHfvWePH5E3KuNA/Likes')
     USER_HIGHLIGHTS_TWEETS = url('tHFm_XZc_NNi-CfUThwbNw/UserHighlightsTweets')
-    HOME_TIMELINE = url('-X_hcgQzmHGl29-UXxz4sw/HomeTimeline')
+    HOME_TIMELINE = url('oW4ZYHSh434ZZuEs1Kp-xw/HomeTimeline')
     HOME_LATEST_TIMELINE = url('U0cdisy7QFIoTfu3-Okw0A/HomeLatestTimeline')
     FAVORITE_TWEET = url('lI07N6Otwv1PhnEgXILM7A/FavoriteTweet')
     UNFAVORITE_TWEET = url('ZYKSe-w7KEslx3JhSIk5LA/UnfavoriteTweet')
