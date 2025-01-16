@@ -7,6 +7,7 @@ from ..constants import (
     BOOKMARK_FOLDER_TIMELINE_FEATURES,
     COMMUNITY_NOTE_FEATURES,
     COMMUNITY_TWEETS_FEATURES,
+    CREATE_TWEET_FEATURES,
     FEATURES,
     JOIN_COMMUNITY_FEATURES,
     LIST_FEATURES,
@@ -220,7 +221,7 @@ class GQLClient:
             features = NOTE_TWEET_FEATURES
         else:
             endpoint = Endpoint.CREATE_TWEET
-            features = FEATURES
+            features = CREATE_TWEET_FEATURES
         return await self.gql_post(endpoint, variables, features)
 
     async def create_scheduled_tweet(self, scheduled_at, text, media_ids) -> str:
