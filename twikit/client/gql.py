@@ -180,19 +180,6 @@ class GQLClient:
                 'possibly_sensitive': False
             },
             'semantic_annotation_ids': [],
-            'features': {
-                'creator_subscriptions_quote_tweet_preview_enabled': False,
-                'responsive_web_grok_image_annotation_enabled': False,
-                'profile_label_improvements_pcf_label_in_post_enabled': False,
-                'articles_preview_enabled': False,
-                'responsive_web_grok_analyze_post_followups_enabled': False,
-                'responsive_web_grok_share_attachment_enabled': False,
-                'communities_web_enable_tweet_community_results_fetch': False,
-                'rweb_tipjar_consumption_enabled': False,
-                'responsive_web_grok_analyze_button_fetch_trends_enabled': False,
-                'premium_content_api_read_enabled': False,
-                'responsive_web_jetfuel_frame': False
-            }
         }
 
         if poll_uri is not None:
