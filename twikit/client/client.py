@@ -436,18 +436,6 @@ class Client:
             })
             return flow.response
 
-        await flow.execute_task({
-            'subtask_id': 'AccountDuplicationCheck',
-            'check_logged_in_account': {
-                'link': 'AccountDuplicationCheck_false'
-            }
-        })
-
-        if not flow.response['subtasks']:
-            return
-
-        self._user_id = find_dict(flow.response, 'id_str', find_one=True)[0]
-
         if flow.task_id == 'LoginTwoFactorAuthChallenge':
             if totp_secret is None:
                 print(find_dict(flow.response, 'secondary_text', find_one=True)[0]['text'])
@@ -462,6 +450,18 @@ class Client:
                     'link': 'next_link'
                 }
             })
+
+        await flow.execute_task({
+            'subtask_id': 'AccountDuplicationCheck',
+            'check_logged_in_account': {
+                'link': 'AccountDuplicationCheck_false'
+            }
+        })
+
+        if not flow.response['subtasks']:
+            return
+
+        self._user_id = find_dict(flow.response, 'id_str', find_one=True)[0]
 
         return flow.response
 

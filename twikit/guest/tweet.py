@@ -53,6 +53,10 @@ class Tweet:
         The state of the tweet views.
     retweet_count : :class:`int`
         The count of retweets for the tweet.
+    bookmark_count : :class:`int`
+        The count of bookmarks for the tweet.
+    bookmarked : :class:`bool`
+        Indicates if the tweet is bookmarked.
     place : :class:`.Place` | None
         The location associated with the tweet.
     editable_until_msecs : :class:`int`
@@ -107,6 +111,8 @@ class Tweet:
         self.favorited: bool = legacy['favorited']
         self.retweet_count: int = legacy['retweet_count']
         self._place_data = legacy.get('place')
+        self.bookmark_count: int = legacy.get('bookmark_count')
+        self.bookmarked: bool = legacy.get('bookmarked')
         self.editable_until_msecs: int = data['edit_control'].get('editable_until_msecs')
         self.is_translatable: bool = data.get('is_translatable')
         self.is_edit_eligible: bool = data['edit_control'].get('is_edit_eligible')
