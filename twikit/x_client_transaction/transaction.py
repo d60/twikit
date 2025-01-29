@@ -5,7 +5,6 @@ import time
 import random
 import base64
 import hashlib
-import requests
 from typing import Union, List
 from functools import reduce
 from .cubic_curve import Cubic
@@ -56,10 +55,10 @@ class ClientTransaction:
         key_byte_indices = list(map(int, key_byte_indices))
         return key_byte_indices[0], key_byte_indices[1:]
 
-    def validate_response(self, response: Union[bs4.BeautifulSoup, requests.models.Response]):
-        if not isinstance(response, (bs4.BeautifulSoup, requests.models.Response)):
+    def validate_response(self, response: bs4.BeautifulSoup):
+        if not isinstance(response, bs4.BeautifulSoup):
             raise Exception("invalid response")
-        return response if isinstance(response, bs4.BeautifulSoup) else bs4.BeautifulSoup(response.content, 'lxml')
+        return response
 
     def get_key(self, response=None):
         response = self.validate_response(response) or self.home_page_response
@@ -158,7 +157,3 @@ class ClientTransaction:
         out = bytearray(
             [random_num, *[item ^ random_num for item in bytes_arr]])
         return base64_encode(out).strip("=")
-
-
-if __name__ == "__main__":
-    pass
