@@ -80,6 +80,30 @@ Example Code:
    :undoc-members:
    :member-order: bysource
 
+Media
+-------------------
+
+.. autoclass:: twikit.media.Media
+   :undoc-members:
+   :member-order: bysource
+
+.. autoclass:: twikit.media.Photo
+   :show-inheritance:
+   :undoc-members:
+   :member-order: bysource
+
+.. autoclass:: twikit.media.AnimatedGif
+   :show-inheritance:
+   :undoc-members:
+   :member-order: bysource
+
+.. autoclass:: twikit.media.Video
+   :show-inheritance:
+   :undoc-members:
+   :member-order: bysource
+   :members: get_subtitles
+
+
 Trend
 -------------------
 

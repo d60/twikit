@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from .geo import Place
+from .media import MEDIA_TYPE, _media_from_data
 from .user import User
 from .utils import find_dict, timestamp_to_datetime
 
@@ -45,7 +46,7 @@ class Tweet:
         Indicates if the tweet's sensitivity can be edited.
     quote_count : :class:`int`
         The count of quotes for the tweet.
-    media : :class:`list`
+    media : list[:class:`.media.Photo` | :class:`.media.AnimatedGif` | :class:`.media.Video`]
         A list of media entities associated with the tweet.
     reply_count : :class:`int`
         The count of replies to the tweet.
@@ -114,7 +115,7 @@ class Tweet:
         self.possibly_sensitive: bool = legacy.get('possibly_sensitive')
         self.possibly_sensitive_editable: bool = legacy.get('possibly_sensitive_editable')
         self.quote_count: int = legacy['quote_count']
-        self.media: list = legacy['entities'].get('media')
+        self._media: list = legacy['entities'].get('media')
         self.reply_count: int = legacy['reply_count']
         self.favorite_count: int = legacy['favorite_count']
         self.favorited: bool = legacy['favorited']
@@ -212,11 +213,9 @@ class Tweet:
             if (
                 'thumbnail_image_original' in binding_values and
                 'image_value' in binding_values['thumbnail_image_original'] and
-                'url' in binding_values['thumbnail_image_original'
-                                        ]['image_value']
+                'url' in binding_values['thumbnail_image_original']['image_value']
             ):
-                self.thumbnail_url = binding_values['thumbnail_image_original'
-                                                    ]['image_value']['url']
+                self.thumbnail_url = binding_values['thumbnail_image_original']['image_value']['url']
 
     @property
     def created_at_datetime(self) -> datetime:
@@ -229,6 +228,16 @@ class Tweet:
     @property
     def place(self) -> Place:
         return self._place_data and Place(self._client, self._place_data)
+
+    @property
+    def media(self) -> list[MEDIA_TYPE]:
+        m = []
+        for entry in self._media:
+            media_obj = _media_from_data(self._client, entry)
+            if not media_obj:
+                continue
+            m.append(media_obj)
+        return m
 
     async def delete(self) -> Response:
         """Deletes the tweet.
