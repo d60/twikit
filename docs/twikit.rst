@@ -92,16 +92,21 @@ Media
    :undoc-members:
    :member-order: bysource
 
-.. autoclass:: twikit.media.AnimatedGif
-   :show-inheritance:
-   :undoc-members:
-   :member-order: bysource
-
 .. autoclass:: twikit.media.Video
    :show-inheritance:
    :undoc-members:
    :member-order: bysource
    :members: get_subtitles
+
+.. autoclass:: twikit.media.AnimatedGif
+   :show-inheritance:
+   :undoc-members:
+   :member-order: bysource
+
+.. autoclass:: twikit.media.Stream
+   :undoc-members:
+   :member-order: bysource
+   :members: get, download
 
 
 Trend

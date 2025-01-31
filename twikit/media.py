@@ -8,7 +8,6 @@ from m3u8 import M3U8
 
 if TYPE_CHECKING:
     from .client.client import Client
-    from .guest.client import GuestClient
 
 
 class Media:
@@ -42,7 +41,7 @@ class Media:
         The height of the media.
     focus_rects : :class:`list`
     """
-    def __init__(self, client: Client | GuestClient, data: dict) -> None:
+    def __init__(self, client: Client, data: dict) -> None:
         self._client = client
         self._data = data
 
@@ -99,6 +98,14 @@ class Media:
     def focus_rects(self) -> list:
         return self.original_info.get('focus_rects')
 
+    async def get(self) -> bytes:
+        response = await self._client.http.get(self.media_url)
+        return response.content
+
+    async def download(self, output_path: str) -> None:
+        with open(output_path, 'wb') as f:
+            f.write(await self.get())
+
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__} id={self.id}>'
 
@@ -117,6 +124,63 @@ class Photo(Media):
         return self._data.get('features')
 
 
+class Stream:
+    """
+    The Stream class represents a media stream
+
+    Attributes
+    ----------
+    url : :class:`str`
+        The url of the stream.
+    bitrate : :class:`int`
+        The bitrate of the stream.
+    content_type : :class:`str`
+        The mimetype of the stream content.
+    """
+    def __init__(self, client: Client, data: dict) -> None:
+        self._client = client
+        self._data = data
+
+    @property
+    def url(self) -> str:
+        return self._data.get('url')
+
+    @property
+    def bitrate(self) -> int:
+        return self._data.get('bitrate')
+
+    @property
+    def content_type(self) -> str:
+        return self._data.get('content-type')
+
+    async def get(self) -> bytes:
+        """
+        Retrieves the stream content.
+
+        Returns
+        -------
+        :class:`bytes`
+            The raw content of the stream.
+        """
+        response = await self._client.http.get(self.url)
+        return response.content
+
+    async def download(self, output_path: str) -> None:
+        """
+        Downloads the stream content and saves it to the specified file.
+
+        Parameters
+        ----------
+        output_path : :class:`str`
+            The path where the downloaded file will be saved.
+        """
+        with open(output_path, 'wb') as f:
+            f.write(await self.get())
+
+    def __repr__(self) -> str:
+        return f'<Stream url="{self.url}">'
+
+
 class AnimatedGif(Media):
     """
     A class representing an animated GIF media object.
@@ -127,7 +191,7 @@ class AnimatedGif(Media):
         The video information of the GIF.
     aspect_ratio : :class:`tuple[int, int]`
         The aspect ratio of the GIF.
-    streams : :class:`list`
+    streams : list[:class:`Stream`]
         The list of video streams for the GIF.
     """
     @property
@@ -140,12 +204,21 @@ class AnimatedGif(Media):
 
     @property
     def streams(self) -> list:
-        return self.video_info.get('variants')
+        return [Stream(self._client, stream_data) for stream_data in self.video_info.get('variants')]
 
 
 class Video(Media):
     """
     A class representing a video media object.
+
+
+    .. code-block:: python
+
+        # Video download example
+        tweet = await client.get_tweet_by_id('00000000000')
+        video = tweet.media[0]
+        streams = video.streams
+        await streams[0].download('output.mp4')
 
     Attributes
     ----------
@@ -155,7 +228,7 @@ class Video(Media):
         The aspect ratio of the video.
     duration_millis : :class:`int`
         The duration of the video in milliseconds.
-    streams : :class:`list`
+    streams : list[:class:`Stream`]
         The list of video streams for the video.
     """
     def __init__(self, client: Client, data: dict) -> None:
@@ -177,22 +250,30 @@ class Video(Media):
         return self.video_info.get('duration_millis')
 
     @property
-    def streams(self) -> list:
+    def _streams(self) -> list:
         return self.video_info.get('variants')
 
-    async def _get_playlist(self) -> M3U8:
+    @property
+    def streams(self) -> list[Stream]:
+        video_streams = filter(
+            lambda x: x['content_type'].startswith('video'),
+            self._streams
+        )
+        return [Stream(self._client, stream_data) for stream_data in video_streams]
+
+    async def _get_playlist(self) -> M3U8 | None:
         # Returns M3U8 object includes stream information.
         if self._playlist:
             return self._playlist
         m3u8_stream = next(
             filter(
                 lambda x: x['content_type'] == 'application/x-mpegURL',
-                self.streams
+                self._streams
             ),
             None
         )
         if not m3u8_stream:
-            raise ValueError('M3U8 stream not found')
+            raise None
         response, _ = await self._client.get(m3u8_stream['url'])
         playlist = m3u8.loads(response)
         self._playlist = playlist
@@ -203,6 +284,8 @@ class Video(Media):
         if self._subtitles_playlist:
             return self._subtitles_playlist
         playlist = await self._get_playlist()
+        if not playlist:
+            return None
         subtitles_media = next(
             filter(
                 lambda x: x.type == 'SUBTITLES',
