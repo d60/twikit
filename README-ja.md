@@ -73,7 +73,7 @@ client = Client('en-US')
 
 async def main():
     # アカウントにログイン
-    client.login(
+    await client.login(
         auth_info_1=USERNAME ,
         auth_info_2=EMAIL,
         password=PASSWORD
