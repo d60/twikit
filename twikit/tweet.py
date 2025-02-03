@@ -98,6 +98,7 @@ class Tweet:
     def __init__(self, client: Client, data: dict, user: User = None) -> None:
         self._client = client
         self._data = data
+        self._legacy: dict = self._data['legacy']
         self.user = user
 
         self.replies: Result[Tweet] | None = None
@@ -105,118 +106,187 @@ class Tweet:
         self.related_tweets: list[Tweet] | None = None
         self.thread: list[Tweet] | None = None
 
-        self.id: str = data['rest_id']
-        legacy = data['legacy']
-        self.created_at: str = legacy['created_at']
-        self.text: str = legacy['full_text']
-        self.lang: str = legacy['lang']
-        self.is_quote_status: bool = legacy['is_quote_status']
-        self.in_reply_to: str | None = self._data['legacy'].get('in_reply_to_status_id_str')
-        self.is_quote_status: bool = legacy['is_quote_status']
-        self.possibly_sensitive: bool = legacy.get('possibly_sensitive')
-        self.possibly_sensitive_editable: bool = legacy.get('possibly_sensitive_editable')
-        self.quote_count: int = legacy['quote_count']
-        self._media: list = legacy['entities'].get('media')
-        self.reply_count: int = legacy['reply_count']
-        self.favorite_count: int = legacy['favorite_count']
-        self.favorited: bool = legacy['favorited']
-        self.retweet_count: int = legacy['retweet_count']
-        self._place_data = legacy.get('place')
-        self.bookmark_count: int = legacy.get('bookmark_count')
-        self.bookmarked: bool = legacy.get('bookmarked')
-        self.editable_until_msecs: int = data['edit_control'].get('editable_until_msecs')
-        self.is_translatable: bool = data.get('is_translatable')
-        self.is_edit_eligible: bool = data['edit_control'].get('is_edit_eligible')
-        self.edits_remaining: int = data['edit_control'].get('edits_remaining')
-        self.view_count: str = data['views'].get('count') if 'views' in data else None
-        self.view_count_state: str = data['views'].get('state') if 'views' in data else None
-        self.has_community_notes: bool = data.get('has_birdwatch_notes')
+    @property
+    def id(self) -> str:
+        return self._data['rest_id']
 
-        if data.get('quoted_status_result'):
-            quoted_tweet = data.pop('quoted_status_result')['result']
-            if 'tweet' in quoted_tweet:
-                quoted_tweet = quoted_tweet['tweet']
-            if quoted_tweet.get('__typename') != 'TweetTombstone':
-                quoted_user = User(client, quoted_tweet['core']['user_results']['result'])
-                self.quote: Tweet = Tweet(client, quoted_tweet, quoted_user)
-        else:
-            self.quote = None
+    @property
+    def created_at(self) -> str:
+        return self._legacy['created_at']
 
-        if legacy.get('retweeted_status_result'):
-            retweeted_tweet = legacy.pop('retweeted_status_result')['result']
-            if 'tweet' in retweeted_tweet:
-                retweeted_tweet = retweeted_tweet['tweet']
-            retweeted_user = User(
-                client, retweeted_tweet['core']['user_results']['result']
-            )
-            self.retweeted_tweet: Tweet = Tweet(
-                client, retweeted_tweet, retweeted_user
-            )
-        else:
-            self.retweeted_tweet = None
+    @property
+    def text(self) -> str:
+        return self._legacy['full_text']
 
-        note_tweet_results = find_dict(data, 'note_tweet_results', find_one=True)
-        self.full_text: str = self.text
+    @property
+    def lang(self) -> str:
+        return self._legacy['lang']
+
+    @property
+    def in_reply_to(self) -> str | None:
+        return self._legacy.get('in_reply_to_status_id_str')
+
+    @property
+    def is_quote_status(self) -> bool:
+        return self._legacy['is_quote_status']
+
+    @property
+    def possibly_sensitive(self) -> bool:
+        return self._legacy.get('possibly_sensitive')
+
+    @property
+    def possibly_sensitive_editable(self) -> bool:
+        return self._legacy.get('possibly_sensitive_editable')
+
+    @property
+    def quote_count(self) -> int:
+        return self._legacy.get('quote_count')
+
+    @property
+    def reply_count(self) -> int:
+        return self._legacy['reply_count']
+
+    @property
+    def favorite_count(self) -> int:
+        return self._legacy['favorite_count']
+
+    @property
+    def favorited(self) -> bool:
+        return self._legacy['favorited']
+
+    @property
+    def retweet_count(self) -> int:
+        return self._legacy['retweet_count']
+
+    @property
+    def _place_data(self):
+        return self._legacy.get('place')
+
+    @property
+    def bookmark_count(self) -> int:
+        return self._legacy.get('bookmark_count')
+
+    @property
+    def bookmarked(self) -> bool:
+        return self._legacy.get('bookmarked')
+
+    @property
+    def editable_until_msecs(self) -> int:
+        return self._data['edit_control'].get('editable_until_msecs')
+
+    @property
+    def is_translatable(self) -> bool:
+        return self._data.get('is_translatable')
+
+    @property
+    def is_edit_eligible(self) -> bool:
+        return self._data['edit_control'].get('is_edit_eligible')
+
+    @property
+    def edits_remaining(self) -> int:
+        return self._data['edit_control'].get('edits_remaining')
+
+    @property
+    def view_count(self) -> int | None:
+        return self._data.get('views', {}).get('count')
+
+    @property
+    def view_count_state(self) -> str | None:
+        return self._data.get('views', {}).get('state')
+
+    @property
+    def has_community_notes(self) -> bool:
+        return self._data.get('has_birdwatch_notes')
+
+    @property
+    def quote(self) -> Tweet | None:
+        if self._data.get('quoted_status_result'):
+            quoted_tweet = self._data['quoted_status_result']
+            return tweet_from_data(self._client, quoted_tweet)
+
+    @property
+    def retweeted_tweet(self) -> Tweet | None:
+        if self._legacy.get('retweeted_status_result'):
+            retweeted_tweet = self._legacy['retweeted_status_result']
+            return tweet_from_data(self._client, retweeted_tweet)
+
+    @property
+    def _note_tweet_results(self) -> dict | None:
+        if 'note_tweet' in self._data and 'note_tweet_results' in self._data['note_tweet']:
+            return self._data['note_tweet']['note_tweet_results']
+
+    @property
+    def full_text(self) -> str:
+        note_tweet_results = self._note_tweet_results
         if note_tweet_results:
-            text_list = find_dict(note_tweet_results, 'text', find_one=True)
-            if text_list:
-                self.full_text = text_list[0]
+            return note_tweet_results['result']['text']
+        return self.text
 
-            entity_set = note_tweet_results[0]['result']['entity_set']
-            self.urls: list = entity_set.get('urls')
+    @property
+    def hashtags(self) -> list[str]:
+        note_tweet_results = self._note_tweet_results
+        if note_tweet_results:
+            entity_set = note_tweet_results['result']['entity_set']
             hashtags = entity_set.get('hashtags', [])
         else:
-            self.urls: list = legacy['entities'].get('urls')
-            hashtags = legacy['entities'].get('hashtags', [])
+            hashtags = self._legacy['entities'].get('hashtags', [])
+        return [i['text'] for i in hashtags]
 
-        self.hashtags: list[str] = [
-            i['text'] for i in hashtags
-        ]
+    @property
+    def urls(self) -> list[str]:
+        note_tweet_results = self._note_tweet_results
+        if note_tweet_results:
+            entity_set = note_tweet_results['result']['entity_set']
+            return entity_set.get('urls')
+        return self._legacy['entities'].get('urls')
 
-        self.community_note = None
-        if 'birdwatch_pivot' in data:
-            community_note_data = data['birdwatch_pivot']
-            if 'note' in community_note_data:
-                self.community_note = {
-                    'id': community_note_data['note']['rest_id'],
-                    'text': community_note_data['subtitle']['text']
-                }
+    @property
+    def community_note(self) -> dict | None:
+        community_note_data = self._data.get('birdwatch_pivot')
+        if community_note_data and 'note' in community_note_data:
+            return {
+                'id': community_note_data['note']['rest_id'],
+                'text': community_note_data['subtitle']['text']
+            }
 
+    @property
+    def _binding_values(self) -> dict | None:
         if (
-            'card' in data and
-            'legacy' in data['card'] and
-            'name' in data['card']['legacy'] and
-            data['card']['legacy']['name'].startswith('poll')
+            'card' in self._data and
+            'legacy' in self._data['card'] and
+            'binding_values' in self._data['card']['legacy']
         ):
-            self._poll_data = data['card']
-        else:
-            self._poll_data = None
-
-        self.thumbnail_url = None
-        self.thumbnail_title = None
-        self.has_card = 'card' in data
-        if (
-            'card' in data and
-            'legacy' in data['card'] and
-            'binding_values' in data['card']['legacy']
-        ):
-            card_data = data['card']['legacy']['binding_values']
-
+            card_data = self._data['card']['legacy']['binding_values']
             if isinstance(card_data, list):
-                binding_values = {
+                return {
                     i.get('key'): i.get('value')
                     for i in card_data
                 }
 
-            if 'title' in binding_values and 'string_value' in binding_values['title']:
-                self.thumbnail_title = binding_values['title']['string_value']
+    @property
+    def has_card(self) -> bool:
+        return 'card' in self._data
 
-            if (
-                'thumbnail_image_original' in binding_values and
-                'image_value' in binding_values['thumbnail_image_original'] and
-                'url' in binding_values['thumbnail_image_original']['image_value']
-            ):
-                self.thumbnail_url = binding_values['thumbnail_image_original']['image_value']['url']
+    @property
+    def thumbnail_title(self) -> str | None:
+        binding_values = self._binding_values
+        if (
+            binding_values and
+            'title' in binding_values and
+            'string_value' in binding_values['title']
+        ):
+            return binding_values['title']['string_value']
+
+    @property
+    def thumbnail_url(self) -> str | None:
+        binding_values = self._binding_values
+        if (
+            binding_values and
+            'thumbnail_image_original' in binding_values and
+            'image_value' in binding_values['thumbnail_image_original'] and
+            'url' in binding_values['thumbnail_image_original']['image_value']
+        ):
+            return binding_values['thumbnail_image_original']['image_value']['url']
 
     @property
     def created_at_datetime(self) -> datetime:
@@ -224,16 +294,24 @@ class Tweet:
 
     @property
     def poll(self) -> Poll:
-        return self._poll_data and Poll(self._client, self._poll_data, self)
+        if (
+            'card' in self._data and
+            'legacy' in self._data['card'] and
+            'name' in self._data['card']['legacy'] and
+            self._data['card']['legacy']['name'].startswith('poll')
+        ):
+            return Poll(self._client, self._data['card'], self)
 
     @property
     def place(self) -> Place:
-        return self._place_data and Place(self._client, self._place_data)
+        if self._place_data:
+            return Place(self._client, self._place_data)
 
     @property
     def media(self) -> list[MEDIA_TYPE]:
+        media_data = self._legacy['entities'].get('media', [])
         m = []
-        for entry in self._media:
+        for entry in media_data:
             media_obj = _media_from_data(self._client, entry)
             if not media_obj:
                 continue
