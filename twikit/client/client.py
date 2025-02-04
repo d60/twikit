@@ -290,7 +290,8 @@ class Client:
         auth_info_2: str | None = None,
         password: str,
         totp_secret: str | None = None,
-        cookies_file: str | None = None
+        cookies_file: str | None = None,
+        enable_ui_metrics: bool = False
     ) -> dict:
         """
         Logs into the account using the specified login information.
@@ -318,7 +319,11 @@ class Client:
             The file path used for storing and loading cookies.
             If the specified file exists, cookies will be loaded from it, potentially bypassing the login process.
             After a successful login, cookies will be saved to this file for future use.
-
+        enable_ui_metrics : :class:`bool`, default=False
+            If set to `True`, obfuscated ui_metrics functions will be executed using JSDom and the
+            results will be sent to the API. Enabling this may reduce the risk of account suspension.
+            Node.js and JSDom must be installed to use this feature.
+            If your environment supports Node.js, it is recommended to enable this option.
         Examples
         --------
         >>> await client.login(
@@ -391,11 +396,19 @@ class Client:
             }
         })
         await flow.sso_init('apple')
+
+        if enable_ui_metrics:
+            ui_metrics_response = run_js_metrics(
+                await self._ui_metrics()
+            )
+        else:
+            ui_metrics_response = ''
+
         await flow.execute_task({
-            "subtask_id": "LoginJsInstrumentationSubtask",
-            "js_instrumentation": {
-                "response": await self._ui_metrics(),
-                "link": "next_link"
+            'subtask_id': 'LoginJsInstrumentationSubtask',
+            'js_instrumentation': {
+                'response': ui_metrics_response,
+                'link': 'next_link'
             }
         })
         await flow.execute_task({
