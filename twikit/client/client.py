@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import io
 import json
+import os
 import re
 
 import warnings
@@ -39,6 +40,7 @@ from ..errors import (
 )
 from ..geo import Place, _places_from_response
 from ..group import Group, GroupMessage
+from ..js_metrics import run_js_metrics
 from ..list import List
 from ..message import Message
 from ..notification import Notification
@@ -277,9 +279,9 @@ class Client:
         guest_token = response['guest_token']
         return guest_token
 
-    async def _ui_metrix(self) -> str:
-        js, _ = await self.get(f'https://twitter.com/i/js_inst?c_name=ui_metrics') # keep twitter.com here
-        return re.findall(r'return ({.*?});', js, re.DOTALL)[0]
+    async def _ui_metrics(self) -> str:
+        response, _ = await self.get(f'https://twitter.com/i/js_inst?c_name=ui_metrics') # keep twitter.com here
+        return response
 
     async def login(
         self,
@@ -287,7 +289,8 @@ class Client:
         auth_info_1: str,
         auth_info_2: str | None = None,
         password: str,
-        totp_secret: str | None = None
+        totp_secret: str | None = None,
+        cookies_file: str | None = None
     ) -> dict:
         """
         Logs into the account using the specified login information.
@@ -308,9 +311,13 @@ class Client:
             It can be a username, email address, or phone number.
         password : :class:`str`
             The password associated with the account.
-        totp_secret : :class:`str`
+        totp_secret : :class:`str`, default=None
             The TOTP (Time-Based One-Time Password) secret key used for
             two-factor authentication (2FA).
+        cookies_file : :class:`str`, default=None
+            The file path used for storing and loading cookies.
+            If the specified file exists, cookies will be loaded from it, potentially bypassing the login process.
+            After a successful login, cookies will be saved to this file for future use.
 
         Examples
         --------
@@ -321,6 +328,11 @@ class Client:
         ... )
         """
         self.http.cookies.clear()
+
+        if cookies_file and os.path.exists(cookies_file):
+            self.load_cookies(cookies_file)
+            return
+
         guest_token = await self._get_guest_token()
 
         flow = Flow(self, guest_token)
@@ -382,7 +394,7 @@ class Client:
         await flow.execute_task({
             "subtask_id": "LoginJsInstrumentationSubtask",
             "js_instrumentation": {
-                "response": await self._ui_metrix(),
+                "response": await self._ui_metrics(),
                 "link": "next_link"
             }
         })
@@ -458,11 +470,13 @@ class Client:
             }
         })
 
+        if cookies_file:
+            self.save_cookies(cookies_file)
+
         if not flow.response['subtasks']:
             return
 
         self._user_id = find_dict(flow.response, 'id_str', find_one=True)[0]
-
         return flow.response
 
     async def logout(self) -> Response:
