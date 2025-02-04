@@ -320,10 +320,11 @@ class Client:
             If the specified file exists, cookies will be loaded from it, potentially bypassing the login process.
             After a successful login, cookies will be saved to this file for future use.
         enable_ui_metrics : :class:`bool`, default=False
-            If set to `True`, obfuscated ui_metrics functions will be executed using JSDom and the
-            results will be sent to the API. Enabling this may reduce the risk of account suspension.
-            Node.js and JSDom must be installed to use this feature.
-            If your environment supports Node.js, it is recommended to enable this option.
+            If set to True, obfuscated ui_metrics function will be executed using JSDom,
+            and the results will be sent to the API. Enabling this may reduce the risk of account suspension.
+            To use this feature, Node.js and JSDom must be installed.
+            If Node.js is available in your environment, enabling this option is recommended.
+
         Examples
         --------
         >>> await client.login(
