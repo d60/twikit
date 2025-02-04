@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..media import MEDIA_TYPE, _media_from_data
 from ..utils import find_dict
 from .user import User
 
@@ -39,7 +40,7 @@ class Tweet:
         Indicates if the tweet's sensitivity can be edited.
     quote_count : :class:`int`
         The count of quotes for the tweet.
-    media : :class:`list`
+    media : list[:class:`.media.Photo` | :class:`.media.AnimatedGif` | :class:`.media.Video`]
         A list of media entities associated with the tweet.
     reply_count : :class:`int`
         The count of replies to the tweet.
@@ -105,7 +106,7 @@ class Tweet:
         self.possibly_sensitive: bool = legacy.get('possibly_sensitive')
         self.possibly_sensitive_editable: bool = legacy.get('possibly_sensitive_editable')
         self.quote_count: int = legacy['quote_count']
-        self.media: list = legacy['entities'].get('media')
+        self._media: list = legacy['entities'].get('media')
         self.reply_count: int = legacy['reply_count']
         self.favorite_count: int = legacy['favorite_count']
         self.favorited: bool = legacy['favorited']
@@ -206,6 +207,16 @@ class Tweet:
                 'url' in binding_values['thumbnail_image_original']['image_value']
             ):
                 self.thumbnail_url = binding_values['thumbnail_image_original']['image_value']['url']
+
+    @property
+    def media(self) -> list[MEDIA_TYPE]:
+        m = []
+        for entry in self._media:
+            media_obj = _media_from_data(self._client, entry)
+            if not media_obj:
+                continue
+            m.append(media_obj)
+        return m
 
     async def update(self) -> None:
         new = await self._client.get_tweet_by_id(self.id)

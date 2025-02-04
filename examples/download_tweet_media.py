@@ -12,12 +12,11 @@ async def main():
     tweet = await client.get_tweet_by_id('...')
 
     for i, media in enumerate(tweet.media):
-        media_url = media.get('media_url_https')
-        extension = media_url.rsplit('.', 1)[-1]
-
-        response = await client.get(media_url, headers=client._base_headers)
-
-        with open(f'media_{i}.{extension}', 'wb') as f:
-            f.write(response.content)
+        if media.type == 'photo':
+            await media.download(f'media_{i}.jpg')
+        if media.type == 'animated_gif':
+            await media.streams[-1].download(f'media_{i}.mp4')
+        if media.type == 'video':
+            await media.streams[-1].download(f'media_{i}.mp4')
 
 asyncio.run(main())
