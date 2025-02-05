@@ -6,4 +6,4 @@ pyotp
 lxml
 webvtt-py
 m3u8
-js2py
+git+https://github.com/felixonmars/Js2Py.git@py3.12
