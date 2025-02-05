@@ -19,7 +19,7 @@ setup(
         'lxml',
         'webvtt-py',
         'm3u8',
-        'git+https://github.com/felixonmars/Js2Py.git@py3.12'
+        'js2py @ git+https://github.com/felixonmars/Js2Py.git@py3.12'
     ],
     python_requires='>=3.8',
     description='Twitter API wrapper for python with **no API key required**.',
