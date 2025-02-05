@@ -4,7 +4,6 @@ import asyncio
 import io
 import json
 import os
-import re
 
 import warnings
 from functools import partial
@@ -40,13 +39,13 @@ from ..errors import (
 )
 from ..geo import Place, _places_from_response
 from ..group import Group, GroupMessage
-from ..js_metrics import run_js_metrics
 from ..list import List
 from ..message import Message
 from ..notification import Notification
 from ..streaming import Payload, StreamingSession, _payload_from_data
 from ..trend import Location, PlaceTrend, PlaceTrends, Trend
 from ..tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
+from ..ui_metrics import solve_ui_metrics
 from ..user import User
 from ..utils import (
     Flow,
@@ -291,7 +290,7 @@ class Client:
         password: str,
         totp_secret: str | None = None,
         cookies_file: str | None = None,
-        enable_ui_metrics: bool = False
+        enable_ui_metrics: bool = True
     ) -> dict:
         """
         Logs into the account using the specified login information.
@@ -319,11 +318,9 @@ class Client:
             The file path used for storing and loading cookies.
             If the specified file exists, cookies will be loaded from it, potentially bypassing the login process.
             After a successful login, cookies will be saved to this file for future use.
-        enable_ui_metrics : :class:`bool`, default=False
-            If set to True, obfuscated ui_metrics function will be executed using JSDom,
-            and the results will be sent to the API. Enabling this may reduce the risk of account suspension.
-            To use this feature, Node.js and JSDom must be installed.
-            If Node.js is available in your environment, enabling this option is recommended.
+        enable_ui_metrics : :class:`bool`, default=True
+            If set to True, obfuscated ui_metrics function will be executed using js2py,
+            and the result will be sent to the API. Enabling this may reduce the risk of account suspension.
 
         Examples
         --------
@@ -399,7 +396,7 @@ class Client:
         await flow.sso_init('apple')
 
         if enable_ui_metrics:
-            ui_metrics_response = run_js_metrics(
+            ui_metrics_response = solve_ui_metrics(
                 await self._ui_metrics()
             )
         else:

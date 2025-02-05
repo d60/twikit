@@ -5,3 +5,4 @@ pyotp
 lxml
 webvtt-py
 m3u8
+js2py
