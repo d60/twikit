@@ -5,4 +5,4 @@ pyotp
 lxml
 webvtt-py
 m3u8
-git+https://github.com/felixonmars/Js2Py.git@py3.12
+git+https://github.com/d60/Js2Py.git@py3.12
