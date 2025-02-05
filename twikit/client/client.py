@@ -449,20 +449,12 @@ class Client:
 
         if flow.task_id == 'LoginAcid':
             print(find_dict(flow.response, 'secondary_text', find_one=True)[0]['text'])
-
-            await flow.execute_task({
-                'subtask_id': 'LoginAcid',
-                'enter_text': {
-                    'text': input('>>> '),
-                    'link': 'next_link'
-                }
-            })
-            return flow.response
+            raise Exception('LoginAcid')
 
         if flow.task_id == 'LoginTwoFactorAuthChallenge':
             if totp_secret is None:
                 print(find_dict(flow.response, 'secondary_text', find_one=True)[0]['text'])
-                totp_code = input('>>>')
+                raise Exception('LoginTwoFactorAuthChallenge')
             else:
                 totp_code = pyotp.TOTP(totp_secret).now()
 
