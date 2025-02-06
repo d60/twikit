@@ -11,7 +11,7 @@ with open('./twikit/__init__.py') as f:
 
 
 if version_info >= (3, 12, 0):
-    js2py_version = 'git+https://github.com/a-j-albert/Js2Py---supports-python-3.13.git'
+    js2py_version = 'js2py @ git+https://github.com/a-j-albert/Js2Py---supports-python-3.13.git'
 else:
     js2py_version = 'js2py'
 
