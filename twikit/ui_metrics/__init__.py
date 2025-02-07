@@ -19,4 +19,4 @@ def solve_ui_metrics(ui_metrics: str) -> str:
     context.document = MockDocument()
     function = 'function main()' + inner_function
     context.eval(function)
-    return str(context.main())
+    return str(context.main()).replace('\'', '"')

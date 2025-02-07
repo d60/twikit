@@ -399,6 +399,7 @@ class Client:
             ui_metrics_response = solve_ui_metrics(
                 await self._ui_metrics()
             )
+            print(ui_metrics_response)
         else:
             ui_metrics_response = ''
 
