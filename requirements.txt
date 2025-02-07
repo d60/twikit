@@ -5,5 +5,4 @@ pyotp
 lxml
 webvtt-py
 m3u8
-js2py; python_version < '3.12'
-git+https://github.com/a-j-albert/Js2Py---supports-python-3.13.git; python_version >= '3.12'
+Js2Py-3.13

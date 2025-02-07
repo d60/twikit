@@ -1,6 +1,6 @@
 import re
 
-import js2py
+import js2py_
 
 from .dom import MockDocument
 
@@ -15,7 +15,7 @@ def solve_ui_metrics(ui_metrics: str) -> str:
     inner_function = match.group(1)
     # Replace '==' with '===' to ensure proper object comparison in js2py
     inner_function = EQUAL_PATTERN.sub(r'\1===\2', inner_function)
-    context = js2py.EvalJs()
+    context = js2py_.EvalJs()
     context.document = MockDocument()
     function = 'function main()' + inner_function
     context.eval(function)
