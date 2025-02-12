@@ -117,6 +117,8 @@ class Client:
         self._user_agent = user_agent or 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15'
         self._act_as = None
 
+        self._cached_user = None
+
         self.gql = GQLClient(self)
         self.v11 = V11Client(self)
 
@@ -671,11 +673,16 @@ class Client:
         self._user_id = (await self.get_user_by_screen_name(screen_name)).id
         return self._user_id
 
+    @property
+    def cached_user(self) -> User:
+        return self._cached_user
+
     async def user(self) -> User:
         """
         Retrieve detailed information about the authenticated user.
         """
-        return await self.get_user_by_id(await self.user_id())
+        self._cached_user = await self.get_user_by_id(await self.user_id())
+        return self._cached_user
 
     async def search_tweet(
         self,
