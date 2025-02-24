@@ -199,6 +199,10 @@ class Tweet:
         return self._data.get('has_birdwatch_notes')
 
     @property
+    def source(self) -> str | None:
+        return self._data.get('source')
+    
+    @property
     def quote(self) -> Tweet | None:
         if self._data.get('quoted_status_result'):
             quoted_tweet = self._data['quoted_status_result']
