@@ -165,7 +165,7 @@ def timestamp_to_datetime(timestamp: str) -> datetime:
 def build_tweet_data(raw_data: dict) -> dict:
     return {
         **raw_data,
-        'rest_id': raw_data['id'],
+        'rest_id': raw_data['id_str'],
         'is_translatable': None,
         'views': {},
         'edit_control': {},
