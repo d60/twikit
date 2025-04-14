@@ -171,6 +171,10 @@ class Tweet:
         return self._legacy.get('bookmarked')
 
     @property
+    def edit_tweet_ids(self) -> list[int]:
+        return self._data['edit_control'].get('edit_tweet_ids')
+
+    @property
     def editable_until_msecs(self) -> int:
         return self._data['edit_control'].get('editable_until_msecs')
 
