@@ -75,6 +75,8 @@ class Tweet:
         Indicates if the tweet is eligible for editing.
     edits_remaining : :class:`int`
         The remaining number of edits allowed for the tweet.
+    edit_tweet_ids : :class:`list`[:class:`int`]
+        List of tweet IDs representing the edit history of the tweet.
     replies: Result[:class:`Tweet`] | None
         Replies to the tweet.
     reply_to: list[:class:`Tweet`] | None
@@ -172,7 +174,7 @@ class Tweet:
 
     @property
     def edit_tweet_ids(self) -> list[int]:
-        return self._data['edit_control'].get('edit_tweet_ids')
+        return self._data['edit_control'].get('edit_tweet_ids', [])
 
     @property
     def editable_until_msecs(self) -> int:

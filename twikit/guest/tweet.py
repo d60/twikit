@@ -68,6 +68,8 @@ class Tweet:
         Indicates if the tweet is eligible for editing.
     edits_remaining : :class:`int`
         The remaining number of edits allowed for the tweet.
+    edit_tweet_ids : :class:`list`[:class:`int`]
+        List of tweet IDs representing the edit history of the tweet.
     reply_to: list[:class:`Tweet`] | None
         A list of Tweet objects representing the tweets to which to reply.
     related_tweets : list[:class:`Tweet`] | None
@@ -114,6 +116,7 @@ class Tweet:
         self._place_data = legacy.get('place')
         self.bookmark_count: int = legacy.get('bookmark_count')
         self.bookmarked: bool = legacy.get('bookmarked')
+        self.edit_tweet_ids: list[int] = data['edit_control'].get('edit_tweet_ids', [])
         self.editable_until_msecs: int = data['edit_control'].get('editable_until_msecs')
         self.is_translatable: bool = data.get('is_translatable')
         self.is_edit_eligible: bool = data['edit_control'].get('is_edit_eligible')
