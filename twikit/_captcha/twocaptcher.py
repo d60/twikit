@@ -2,23 +2,25 @@ from __future__ import annotations
 
 from time import sleep
 
+from typing import Optional
+
 import httpx
 
 from .base import CaptchaSolver
 
 
-class Capsolver(CaptchaSolver):
+class TwoCaptcher(CaptchaSolver):
     """
     You can automatically unlock the account by passing the `captcha_solver`
     argument when initialising the :class:`.Client`.
 
-    First, visit https://capsolver.com and obtain your Capsolver API key.
-    Next, pass the Capsolver instance to the client as shown in the example.
+    First, visit https://2captcha.com and obtain your 2Captcha API key.
+    Next, pass the 2Captcha instance to the client as shown in the example.
 
     .. code-block:: python
 
-        from twikit.twikit_async import Capsolver, Client
-        solver = Capsolver(
+        from twikit.twikit_async import TwoCaptcher, Client
+        solver = TwoCaptcher(
             api_key='your_api_key',
             max_attempts=10
         )
@@ -27,7 +29,7 @@ class Capsolver(CaptchaSolver):
     Parameters
     ----------
     api_key : :class:`str`
-        Capsolver API key.
+        2Captcha API key.
     max_attempts : :class:`int`, default=3
         The maximum number of attempts to solve the captcha.
     get_result_interval : :class:`float`, default=1.0
@@ -53,7 +55,7 @@ class Capsolver(CaptchaSolver):
             'task': task_data
         }
         response = httpx.post(
-            'https://api.capsolver.com/createTask',
+            'https://api.2captcha.com/createTask',
             json=data,
             headers={'content-type': 'application/json'}
         ).json()
@@ -65,25 +67,20 @@ class Capsolver(CaptchaSolver):
             'taskId': task_id
         }
         response = httpx.post(
-            'https://api.capsolver.com/getTaskResult',
+            'https://api.2captcha.com/getTaskResult',
             json=data,
             headers={'content-type': 'application/json'}
         ).json()
         return response
 
-    def solve_funcaptcha(self, blob: str) -> dict:
-        if self.client.proxy is None:
-            captcha_type = 'FunCaptchaTaskProxyLess'
-        else:
-            captcha_type = 'FunCaptchaTask'
-
+    def solve_funcaptcha(self, blob: Optional[str] = None, websiteURL: Optional[str] = None, siteKey: Optional[str] = None) -> dict:
         task_data = {
-            'type': captcha_type,
-            'websiteURL': 'https://iframe.arkoselabs.com',
-            'websitePublicKey': self.CAPTCHA_SITE_KEY,
+            'type': 'FunCaptchaTaskProxyless',
+            'websiteURL': websiteURL if websiteURL else 'https://iframe.arkoselabs.com',
+            'websitePublicKey': siteKey if siteKey else self.CAPTCHA_SITE_KEY,
             'funcaptchaApiJSSubdomain': 'https://client-api.arkoselabs.com',
-            'proxy': self.client.proxy
         }
+
         if self.use_blob_data:
             task_data['data'] = '{"blob":"%s"}' % blob
             task_data['userAgent'] = self.client._user_agent
@@ -91,5 +88,7 @@ class Capsolver(CaptchaSolver):
         while True:
             sleep(self.get_result_interval)
             result = self.get_task_result(task['taskId'])
-            if result['status'] in ('ready', 'failed'):
+            if result.get('status') in ('ready', 'failed'):
+                return result
+            if result.get('errorCode'):
                 return result

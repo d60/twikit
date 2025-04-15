@@ -15,7 +15,7 @@ import pyotp
 from httpx import AsyncClient, AsyncHTTPTransport, Response
 from httpx._utils import URLPattern
 
-from .._captcha import Capsolver
+from .._captcha import TwoCaptcher
 from ..bookmark import BookmarkFolder
 from ..community import Community, CommunityMember
 from ..constants import TOKEN, DOMAIN
@@ -75,8 +75,8 @@ class Client:
     proxy : :class:`str` | None, default=None
         The proxy server URL to use for request
         (e.g., 'http://0.0.0.0:0000').
-    captcha_solver : :class:`.Capsolver` | None, default=None
-        See :class:`.Capsolver`.
+    captcha_solver : :class:`.TwoCaptcher` | None, default=None
+        See :class:`.TwoCaptcher`.
 
     Examples
     --------
@@ -93,7 +93,7 @@ class Client:
         self,
         language: str = 'en-US',
         proxy: str | None = None,
-        captcha_solver: Capsolver | None = None,
+        captcha_solver: TwoCaptcher | None = None,
         user_agent: str | None = None,
         **kwargs
     ) -> None:
@@ -436,6 +436,29 @@ class Client:
         if flow.task_id == 'DenyLoginSubtask':
             raise TwitterException(flow.response['subtasks'][0]['cta']['secondary_text']['text'])
 
+        if flow.task_id == 'ArkoseLogin':
+            websiteURL = flow.response['subtasks'][0].get('web_modal').get('url')
+            access_token = await self.solve_captcha(websiteURL=websiteURL)
+            await flow.execute_task({
+                'subtask_id': 'ArkoseLogin',
+                'web_modal': {
+                    'completion_deeplink': f'twitter://onboarding/web_modal/next_link?access_token={access_token}',
+                    'link': 'next_link'
+                }
+            })
+
+        if flow.task_id == 'LoginEnterAlternateIdentifierSubtask':
+            await flow.execute_task({
+                'subtask_id': 'LoginEnterAlternateIdentifierSubtask',
+                'enter_text': {
+                    'text': auth_info_2,
+                    'link': 'next_link'
+                }
+            })
+
+        if flow.task_id == 'DenyLoginSubtask':
+            raise TwitterException(flow.response['subtasks'][0]['cta']['secondary_text']['text'])
+
         await flow.execute_task({
             'subtask_id': 'LoginEnterPassword',
             'enter_password': {
@@ -495,7 +518,7 @@ class Client:
 
         See Also
         --------
-        .capsolver
+        .TwoCaptcher
         """
         if self.captcha_solver is None:
             raise ValueError('Captcha solver is not provided.')
@@ -525,8 +548,8 @@ class Client:
             if html.authenticity_token is None:
                 response, html = await self.captcha_solver.get_unlock_html()
 
-            result = self.captcha_solver.solve_funcaptcha(html.blob)
-            if result['errorId'] == 1:
+            result = self.captcha_solver.solve_funcaptcha(blob=html.blob)
+            if result['errorId'] == 12:
                 continue
 
             self.set_cookies(cookies_backup, clear_cookies=True)
@@ -549,6 +572,35 @@ class Client:
             if finished:
                 return
         raise Exception('could not unlock the account.')
+
+    async def solve_captcha(self, websiteURL:str) -> None:
+        """
+        solve captcha using the provided CAPTCHA solver.
+
+        See Also
+        --------
+        .TwoCaptcher
+        """
+
+
+        siteKey = '2F4F0B28-BC94-4271-8AD7-A51662E3C91C'
+
+
+        if self.captcha_solver is None:
+            raise ValueError('Captcha solver is not provided.')
+
+        max_unlock_attempts = self.captcha_solver.max_attempts
+        attempt = 0
+        while attempt < max_unlock_attempts:
+            attempt += 1
+
+            result = self.captcha_solver.solve_funcaptcha(websiteURL=websiteURL,siteKey=siteKey)
+            if result['errorId'] in (12, 16):
+                continue
+
+            if result['solution']['token']:
+                return result['solution']['token']
+        raise Exception('could solve your captcha')
 
     def get_cookies(self) -> dict:
         """

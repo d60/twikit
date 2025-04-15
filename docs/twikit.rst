@@ -149,10 +149,10 @@ Geo
    :undoc-members:
    :member-order: bysource
 
-Capsolver
+TwoCaptcher
 -------------------
 
-.. autoclass:: twikit._captcha.capsolver.Capsolver
+.. autoclass:: twikit._captcha.twocaptcher.TwoCaptcher
    :members:
    :undoc-members:
    :member-order: bysource
