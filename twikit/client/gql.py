@@ -441,7 +441,6 @@ class GQLClient:
         variables = {}
         if cursor is not None:
             variables['cursor'] = cursor
-        variables = {'variables': variables}
         return await self.gql_get(Endpoint.BOOKMARK_FOLDERS_SLICE, variables)
 
     async def edit_bookmark_folder(self, folder_id, name):
