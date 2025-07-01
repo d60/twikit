@@ -7,7 +7,7 @@ import os
 
 import warnings
 from functools import partial
-from typing import Any, AsyncGenerator, Literal
+from typing import Any, AsyncGenerator, Literal, List
 from urllib.parse import urlparse
 
 import filetype
@@ -817,12 +817,11 @@ class Client:
 
         """
         result = await self.search_tweet(f"@{handle}", "Latest", count=search_count)
-        mentions = []
-        for tweet in result:
-            tweet_id = str(tweet.id)
-            if f"@{handle.lower()}" in (tweet.full_text or tweet.text or "").strip().lower():
-                mentions.append(tweet)
-        mentions.sort(key=lambda x: int(x[0]))
+        mentions = [
+            tweet for tweet in result
+            if f"@{handle.lower()}" in (tweet.full_text or tweet.text or "").strip().lower()
+        ]
+        mentions.sort(key=lambda x: int(x.id))
         return mentions
 
     async def search_user(
