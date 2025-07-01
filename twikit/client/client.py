@@ -785,6 +785,20 @@ class Client:
             previous_cursor
         )
 
+    async def get_user_mentions(
+        self,
+        handle: str,
+        search_count: int = 20
+    ) -> List[Tweet]:
+        result = await self.search_tweet(f"@{handle}", "Latest", count=search_count)
+        mentions = []
+        for tweet in result:
+            tweet_id = str(tweet.id)
+            if f"@{handle.lower()}" in (tweet.full_text or tweet.text or "").strip().lower():
+                mentions.append((tweet_id, tweet))
+        mentions.sort(key=lambda x: int(x[0]))
+        return mentions
+
     async def search_user(
         self,
         query: str,
