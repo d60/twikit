@@ -821,7 +821,7 @@ class Client:
         for tweet in result:
             tweet_id = str(tweet.id)
             if f"@{handle.lower()}" in (tweet.full_text or tweet.text or "").strip().lower():
-                mentions.append((tweet_id, tweet))
+                mentions.append(tweet)
         mentions.sort(key=lambda x: int(x[0]))
         return mentions
 
