@@ -8,12 +8,14 @@ async def handle_x_migration(session, headers):
     home_page = None
     migration_redirection_regex = re.compile(
         r"""(http(?:s)?://(?:www\.)?(twitter|x){1}\.com(/x)?/migrate([/?])?tok=[a-zA-Z0-9%\-_]+)+""", re.VERBOSE)
+    headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0.0.0 Safari/537.36"
     response = await session.request(method="GET", url="https://x.com", headers=headers)
     home_page = bs4.BeautifulSoup(response.content, 'lxml')
     migration_url = home_page.select_one("meta[http-equiv='refresh']")
     migration_redirection_url = re.search(migration_redirection_regex, str(
         migration_url)) or re.search(migration_redirection_regex, str(response.content))
     if migration_redirection_url:
+        headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0.0.0 Safari/537.36"
         response = await session.request(method="GET", url=migration_redirection_url.group(0), headers=headers)
         home_page = bs4.BeautifulSoup(response.content, 'lxml')
     migration_form = home_page.select_one("form[name='f']") or home_page.select_one(f"form[action='https://x.com/x/migrate']")
@@ -21,6 +23,7 @@ async def handle_x_migration(session, headers):
         url = migration_form.attrs.get("action", "https://x.com/x/migrate") + "/?mx=2"
         method = migration_form.attrs.get("method", "POST")
         request_payload = {input_field.get("name"): input_field.get("value") for input_field in migration_form.select("input")}
+        headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0.0.0 Safari/537.36"
         response = await session.request(method=method, url=url, data=request_payload, headers=headers)
         home_page = bs4.BeautifulSoup(response.content, 'lxml')
     return home_page
