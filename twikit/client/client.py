@@ -2371,7 +2371,7 @@ class Client:
 
         Returns
         -------
-        :class:`BookmarkFolder`
+               :class:`BookmarkFolder`
             Updated bookmark folder.
 
         Examples
@@ -3580,12 +3580,6 @@ class Client:
         ...
 
         >>> more_tweets = await tweets.next()  # Retrieve more tweets
-        >>> for tweet in more_tweets:
-        ...     print(tweet)
-        <Tweet id="...">
-        <Tweet id="...">
-        ...
-        ...
         """
         response, _ = await self.gql.list_latest_tweets_timeline(list_id, count, cursor)
 
@@ -4213,7 +4207,7 @@ class Client:
         url = f'https://api.{DOMAIN}/live_pipeline/events'
         params = {'topics': ','.join(topics)}
         headers = self._base_headers
-        headers.pop('content-type')
+        headers.pop('content-type', None)
 
         async with self.http.stream('GET', url, params=params, headers=headers, timeout=None) as response:
             self._remove_duplicate_ct0_cookie()
@@ -4261,12 +4255,12 @@ class Client:
         ...         user_id = payload.dm_update.user_id
         ...         print(f'{conversation_id}: {user_id} sent a message')
         >>>
-        >>>     if payload.dm_typing:
+        ...     if payload.dm_typing:
         ...         conversation_id = payload.dm_typing.conversation_id
         ...         user_id = payload.dm_typing.user_id
         ...         print(f'{conversation_id}: {user_id} is typing')
         >>>
-        >>>     if payload.tweet_engagement:
+        ...     if payload.tweet_engagement:
         ...         like = payload.tweet_engagement.like_count
         ...         retweet = payload.tweet_engagement.retweet_count
         ...         view = payload.tweet_engagement.view_count
