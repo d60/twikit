@@ -4,13 +4,14 @@ import json
 import warnings
 from functools import partial
 from typing import Any, Literal
+from urllib.parse import urlparse
 
 from httpx import AsyncClient, AsyncHTTPTransport, Response
 from httpx._utils import URLPattern
 
 from ..client.gql import GQLClient
 from ..client.v11 import V11Client
-from ..constants import TOKEN
+from ..constants import DOMAIN, TOKEN
 from ..errors import (
     BadRequest,
     Forbidden,
@@ -22,6 +23,7 @@ from ..errors import (
     Unauthorized
 )
 from ..utils import Result, find_dict, find_entry_by_type, httpx_transport_to_url
+from ..x_client_transaction import ClientTransaction
 from .tweet import Tweet
 from .user import User
 
@@ -48,7 +50,6 @@ def tweet_from_data(client: GuestClient, data: dict) -> Tweet:
     return Tweet(client, tweet_data, User(client, user_data))
 
 
-
 class GuestClient:
     """
     A client for interacting with the Twitter API as a guest.
@@ -71,7 +72,7 @@ class GuestClient:
 
     def __init__(
         self,
-        language: str | None = None,
+        language: str = 'en-US',
         proxy: str | None = None,
         **kwargs
     ) -> None:
@@ -93,6 +94,7 @@ class GuestClient:
         self._guest_token: str | None = None  # set when activate method is called
         self.gql = GQLClient(self)
         self.v11 = V11Client(self)
+        self.client_transaction = ClientTransaction()
 
     async def request(
         self,
@@ -102,7 +104,23 @@ class GuestClient:
         **kwargs
     ) -> tuple[dict | Any, Response]:
         ':meta private:'
-        response = await self.http.request(method, url, **kwargs)
+        headers = kwargs.pop('headers', {})
+
+        if not self.client_transaction.home_page_response:
+            cookies_backup = dict(self.http.cookies).copy()
+            ct_headers = {
+                'Accept-Language': f'{self.language},{self.language.split("-")[0]};q=0.9',
+                'Cache-Control': 'no-cache',
+                'Referer': f'https://{DOMAIN}',
+                'User-Agent': self._user_agent
+            }
+            await self.client_transaction.init(self.http, ct_headers)
+            self.http.cookies = cookies_backup
+
+        tid = self.client_transaction.generate_transaction_id(method=method, path=urlparse(url).path)
+        headers['X-Client-Transaction-Id'] = tid
+
+        response = await self.http.request(method, url, headers=headers, **kwargs)
 
         try:
             response_data = response.json()
@@ -167,7 +185,7 @@ class GuestClient:
             'authorization': f'Bearer {self._token}',
             'content-type': 'application/json',
             'X-Twitter-Active-User': 'yes',
-            'Referer': 'https://twitter.com/',
+            'Referer': f'https://{DOMAIN}',
         }
 
         if self.language is not None:

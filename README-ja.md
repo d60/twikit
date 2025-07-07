@@ -58,7 +58,7 @@ pip install twikit
 
 ## 使用例
 
-**クライアントを定義し、アカウントにログインする。**
+**クライアントを初期化し、アカウントにログインする。**
 
 ```python
 import asyncio
@@ -73,7 +73,7 @@ client = Client('en-US')
 
 async def main():
     # アカウントにログイン
-    client.login(
+    await client.login(
         auth_info_1=USERNAME ,
         auth_info_2=EMAIL,
         password=PASSWORD

@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import io
 import json
-import re
+import os
 
 import warnings
 from functools import partial
@@ -45,6 +45,7 @@ from ..notification import Notification
 from ..streaming import Payload, StreamingSession, _payload_from_data
 from ..trend import Location, PlaceTrend, PlaceTrends, Trend
 from ..tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
+from ..ui_metrics import solve_ui_metrics
 from ..user import User
 from ..utils import (
     Flow,
@@ -277,9 +278,9 @@ class Client:
         guest_token = response['guest_token']
         return guest_token
 
-    async def _ui_metrix(self) -> str:
-        js, _ = await self.get(f'https://twitter.com/i/js_inst?c_name=ui_metrics') # keep twitter.com here
-        return re.findall(r'return ({.*?});', js, re.DOTALL)[0]
+    async def _ui_metrics(self) -> str:
+        response, _ = await self.get(f'https://twitter.com/i/js_inst?c_name=ui_metrics') # keep twitter.com here
+        return response
 
     async def login(
         self,
@@ -287,7 +288,9 @@ class Client:
         auth_info_1: str,
         auth_info_2: str | None = None,
         password: str,
-        totp_secret: str | None = None
+        totp_secret: str | None = None,
+        cookies_file: str | None = None,
+        enable_ui_metrics: bool = True
     ) -> dict:
         """
         Logs into the account using the specified login information.
@@ -308,9 +311,16 @@ class Client:
             It can be a username, email address, or phone number.
         password : :class:`str`
             The password associated with the account.
-        totp_secret : :class:`str`
+        totp_secret : :class:`str`, default=None
             The TOTP (Time-Based One-Time Password) secret key used for
             two-factor authentication (2FA).
+        cookies_file : :class:`str`, default=None
+            The file path used for storing and loading cookies.
+            If the specified file exists, cookies will be loaded from it, potentially bypassing the login process.
+            After a successful login, cookies will be saved to this file for future use.
+        enable_ui_metrics : :class:`bool`, default=True
+            If set to True, obfuscated ui_metrics function will be executed using js2py,
+            and the result will be sent to the API. Enabling this may reduce the risk of account suspension.
 
         Examples
         --------
@@ -321,6 +331,11 @@ class Client:
         ... )
         """
         self.http.cookies.clear()
+
+        if cookies_file and os.path.exists(cookies_file):
+            self.load_cookies(cookies_file)
+            return
+
         guest_token = await self._get_guest_token()
 
         flow = Flow(self, guest_token)
@@ -379,11 +394,19 @@ class Client:
             }
         })
         await flow.sso_init('apple')
+
+        if enable_ui_metrics:
+            ui_metrics_response = solve_ui_metrics(
+                await self._ui_metrics()
+            )
+        else:
+            ui_metrics_response = ''
+
         await flow.execute_task({
-            "subtask_id": "LoginJsInstrumentationSubtask",
-            "js_instrumentation": {
-                "response": await self._ui_metrix(),
-                "link": "next_link"
+            'subtask_id': 'LoginJsInstrumentationSubtask',
+            'js_instrumentation': {
+                'response': ui_metrics_response,
+                'link': 'next_link'
             }
         })
         await flow.execute_task({
@@ -436,18 +459,6 @@ class Client:
             })
             return flow.response
 
-        await flow.execute_task({
-            'subtask_id': 'AccountDuplicationCheck',
-            'check_logged_in_account': {
-                'link': 'AccountDuplicationCheck_false'
-            }
-        })
-
-        if not flow.response['subtasks']:
-            return
-
-        self._user_id = find_dict(flow.response, 'id_str', find_one=True)[0]
-
         if flow.task_id == 'LoginTwoFactorAuthChallenge':
             if totp_secret is None:
                 print(find_dict(flow.response, 'secondary_text', find_one=True)[0]['text'])
@@ -463,6 +474,20 @@ class Client:
                 }
             })
 
+        await flow.execute_task({
+            'subtask_id': 'AccountDuplicationCheck',
+            'check_logged_in_account': {
+                'link': 'AccountDuplicationCheck_false'
+            }
+        })
+
+        if cookies_file:
+            self.save_cookies(cookies_file)
+
+        if not flow.response['subtasks']:
+            return
+
+        self._user_id = find_dict(flow.response, 'id_str', find_one=True)[0]
         return flow.response
 
     async def logout(self) -> Response:
@@ -735,7 +760,11 @@ class Client:
             if not item['entryId'].startswith(('tweet', 'search-grid')):
                 continue
 
-            tweet = tweet_from_data(self, item)
+            try:
+                tweet = tweet_from_data(self, item)
+            except KeyError:
+                tweet = None
+                
             if tweet is not None:
                 results.append(tweet)
 

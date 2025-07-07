@@ -18,7 +18,7 @@ def callback(tweet: Tweet) -> None:
 
 
 async def get_latest_tweet() -> Tweet:
-    return await client.get_user_tweets(USER_ID, 'Replies')[0]
+    return (await client.get_user_tweets(USER_ID, 'Replies'))[0]
 
 
 async def main() -> NoReturn:

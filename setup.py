@@ -8,6 +8,7 @@ with open('README.md', encoding='utf-8') as f:
 with open('./twikit/__init__.py') as f:
     version = re.findall(r"__version__ = '(.+)'", f.read())[0]
 
+
 setup(
     name='twikit',
     version=version,
@@ -16,7 +17,10 @@ setup(
         'filetype',
         'beautifulsoup4',
         'pyotp',
-        'lxml'
+        'lxml',
+        'webvtt-py',
+        'm3u8',
+        'Js2Py-3.13'
     ],
     python_requires='>=3.8',
     description='Twitter API wrapper for python with **no API key required**.',

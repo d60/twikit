@@ -83,9 +83,10 @@ client = Client('en-US')
 
 async def main():
     await client.login(
-        auth_info_1=USERNAME ,
+        auth_info_1=USERNAME,
         auth_info_2=EMAIL,
-        password=PASSWORD
+        password=PASSWORD,
+        cookies_file='cookies.json'
     )
 
 asyncio.run(main())
