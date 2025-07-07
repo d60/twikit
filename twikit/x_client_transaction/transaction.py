@@ -131,6 +131,7 @@ class ClientTransaction:
         row_index = key_bytes[self.DEFAULT_ROW_INDEX] % 16
         frame_time = reduce(lambda num1, num2: num1*num2,
                             [key_bytes[index] % 16 for index in self.DEFAULT_KEY_BYTES_INDICES])
+        frame_time = round(frame_time / 10) * 10
         arr = self.get_2d_array(key_bytes, response)
         frame_row = arr[row_index]
 
