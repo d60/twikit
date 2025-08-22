@@ -84,11 +84,14 @@ class User:
         The type of profile interstitial.
     withheld_in_countries : list[:class:`str`]
         Countries where the user's content is withheld.
+    notifications : :class:`bool`
+        Indicates if notifications were enabled for this user.
     """
 
     def __init__(self, client: Client, data: dict) -> None:
         self._client = client
         legacy = data['legacy']
+        self._legacy: dict = legacy
 
         self.id: str = data['rest_id']
         self.created_at: str = legacy['created_at']
@@ -123,6 +126,7 @@ class User:
         self.translator_type: str = legacy['translator_type']
         self.withheld_in_countries: list[str] = legacy['withheld_in_countries']
         self.protected: bool = legacy.get('protected', False)
+        self.notifications: bool = legacy.get('notifications', False)
 
     @property
     def created_at_datetime(self) -> datetime:
