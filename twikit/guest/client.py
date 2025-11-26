@@ -19,9 +19,12 @@ from ..errors import (
     RequestTimeout,
     ServerError,
     TooManyRequests,
+    UserNotFound,
+    UserUnavailable,
     TwitterException,
     Unauthorized
 )
+from ..user import AccountAbout
 from ..utils import Result, find_dict, find_entry_by_type, httpx_transport_to_url
 from ..x_client_transaction import ClientTransaction
 from .tweet import Tweet
@@ -227,6 +230,29 @@ class GuestClient:
         """
         response, _ = await self.gql.user_by_screen_name(screen_name)
         return User(self, response['data']['user']['result'])
+
+    async def get_user_about(self, screen_name: str) -> AccountAbout:
+        """
+        Retrieves "About this account" information for the specified username.
+
+        Parameters
+        ----------
+        screen_name : :class:`str`
+            The screen name of the user to retrieve.
+
+        Returns
+        -------
+        :class:`AccountAbout`
+            A data object containing profile provenance details.
+        """
+        response, _ = await self.gql.about_account(screen_name)
+        user_result = response.get('data', {}).get('user_result_by_screen_name')
+        if not user_result or 'result' not in user_result:
+            raise UserNotFound('The user does not exist.')
+        user_data = user_result['result']
+        if user_data.get('__typename') == 'UserUnavailable':
+            raise UserUnavailable(user_data.get('message'))
+        return AccountAbout(user_data)
 
     async def get_user_by_id(self, user_id: str) -> User:
         """

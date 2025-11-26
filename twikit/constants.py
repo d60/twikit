@@ -41,6 +41,10 @@ USER_FEATURES = {
     'responsive_web_graphql_timeline_navigation_enabled': True
 }
 
+ABOUT_ACCOUNT_FEATURES = {
+    'responsive_web_graphql_timeline_navigation_enabled': True
+}
+
 LIST_FEATURES = {
     'responsive_web_graphql_exclude_directive_enabled': True,
     'verified_phone_label_enabled': False,

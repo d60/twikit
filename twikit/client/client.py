@@ -46,7 +46,7 @@ from ..streaming import Payload, StreamingSession, _payload_from_data
 from ..trend import Location, PlaceTrend, PlaceTrends, Trend
 from ..tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
 from ..ui_metrics import solve_ui_metrics
-from ..user import User
+from ..user import AccountAbout, User
 from ..utils import (
     Flow,
     Result,
@@ -1400,6 +1400,29 @@ class Client:
             raise UserUnavailable(user_data.get('message'))
 
         return User(self, user_data)
+
+    async def get_user_about(self, screen_name: str) -> AccountAbout:
+        """
+        Fetches "About this account" information by screen name.
+
+        Parameter
+        ---------
+        screen_name : :class:`str`
+            The screen name of the Twitter user.
+
+        Returns
+        -------
+        :class:`AccountAbout`
+            A data object containing profile provenance details.
+        """
+        response, _ = await self.gql.about_account(screen_name)
+        user_result = response.get('data', {}).get('user_result_by_screen_name')
+        if not user_result or 'result' not in user_result:
+            raise UserNotFound('The user does not exist.')
+        user_data = user_result['result']
+        if user_data.get('__typename') == 'UserUnavailable':
+            raise UserUnavailable(user_data.get('message'))
+        return AccountAbout(user_data)
 
     async def get_user_by_id(self, user_id: str) -> User:
         """

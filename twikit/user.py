@@ -14,6 +14,72 @@ if TYPE_CHECKING:
     from .utils import Result
 
 
+class AccountAbout:
+    """
+    Represents data returned from Twitter's "About this account" panel.
+
+    Attributes
+    ----------
+    id : :class:`str` | None
+        User rest id.
+    screen_name : :class:`str` | None
+        The username of the account.
+    name : :class:`str` | None
+        The display name of the account.
+    account_based_in : :class:`str` | None
+        Region Twitter believes the account is based in.
+    location_accurate : :class:`bool` | None
+        Whether the location is considered accurate.
+    affiliate_username : :class:`str` | None
+        Linked affiliate username, if present.
+    source : :class:`str` | None
+        How the account source was determined.
+    username_changes : :class:`int` | None
+        Number of username changes Twitter recorded.
+    username_last_changed_at : :class:`int` | None
+        Timestamp in milliseconds of the last username change.
+    is_identity_verified : :class:`bool` | None
+        Whether the account has identity verification.
+    verified_since_msec : :class:`int` | None
+        Timestamp in milliseconds since verification.
+    """
+
+    def __init__(self, data: dict) -> None:
+        about = data.get('about_profile') or {}
+        core = data.get('core') or {}
+        verification = data.get('verification_info') or {}
+        reason = verification.get('reason') or {}
+        username_changes = about.get('username_changes') or {}
+
+        rest_id = data.get('rest_id')
+        self.id: str | None = rest_id
+        self.rest_id: str | None = rest_id
+        self.screen_name: str | None = core.get('screen_name')
+        self.name: str | None = core.get('name')
+        self.account_based_in: str | None = about.get('account_based_in')
+        self.location_accurate: bool | None = about.get('location_accurate')
+        self.affiliate_username: str | None = about.get('affiliate_username')
+        self.source: str | None = about.get('source')
+        self.username_changes: int | None = self._to_int(username_changes.get('count'))
+        self.username_last_changed_at: int | None = self._to_int(
+            username_changes.get('last_changed_at_msec')
+        )
+        self.is_identity_verified: bool | None = verification.get('is_identity_verified')
+        self.verified_since_msec: int | None = self._to_int(reason.get('verified_since_msec'))
+
+    @staticmethod
+    def _to_int(value) -> int | None:
+        if value is None:
+            return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    def __repr__(self) -> str:
+        return f'<AccountAbout id="{self.id}" screen_name="{self.screen_name}">'
+
+
 class User:
     """
     Attributes
@@ -168,6 +234,17 @@ class User:
         ...
         """
         return await self._client.get_user_tweets(self.id, tweet_type, count)
+
+    async def get_about(self) -> AccountAbout:
+        """
+        Retrieves the "About this account" information for the user.
+
+        Returns
+        -------
+        :class:`AccountAbout`
+            Account about profile data.
+        """
+        return await self._client.get_user_about(self.screen_name)
 
     async def follow(self) -> Response:
         """
