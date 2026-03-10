@@ -31,8 +31,9 @@ class Capsolver(CaptchaSolver):
     max_attempts : :class:`int`, default=3
         The maximum number of attempts to solve the captcha.
     get_result_interval : :class:`float`, default=1.0
-
     use_blob_data : :class:`bool`, default=False
+    api_url : :class:`str`, default='https://api.capsolver.com'
+        Base URL for Capsolver API. Can be changed to use alternative API endpoints.
     """
 
     def __init__(
@@ -40,12 +41,14 @@ class Capsolver(CaptchaSolver):
         api_key: str,
         max_attempts: int = 3,
         get_result_interval: float = 1.0,
-        use_blob_data: bool = False
+        use_blob_data: bool = False,
+        api_url: str = 'https://api.capsolver.com'
     ) -> None:
         self.api_key = api_key
         self.get_result_interval = get_result_interval
         self.max_attempts = max_attempts
         self.use_blob_data = use_blob_data
+        self.api_url = api_url.rstrip('/')  
 
     def create_task(self, task_data: dict) -> dict:
         data = {
@@ -53,7 +56,7 @@ class Capsolver(CaptchaSolver):
             'task': task_data
         }
         response = httpx.post(
-            'https://api.capsolver.com/createTask',
+            f'{self.api_url}/createTask',
             json=data,
             headers={'content-type': 'application/json'}
         ).json()
@@ -65,7 +68,7 @@ class Capsolver(CaptchaSolver):
             'taskId': task_id
         }
         response = httpx.post(
-            'https://api.capsolver.com/getTaskResult',
+            f'{self.api_url}/getTaskResult',
             json=data,
             headers={'content-type': 'application/json'}
         ).json()
