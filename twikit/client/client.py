@@ -3596,13 +3596,18 @@ class Client:
         next_cursor = items[-1]['content']['value']
 
         results = []
-        for item in items:
-            if not item['entryId'].startswith('tweet'):
-                continue
 
+        def handle_item(item):
             tweet = tweet_from_data(self, item)
             if tweet is not None:
                 results.append(tweet)
+
+        for item in items:
+            if item['entryId'].startswith('tweet'):
+                handle_item(item)
+            elif item['entryId'].startswith('list-conversation'):
+                for item in item['content']['items']:
+                    handle_item(item)
 
         return Result(
             results,
