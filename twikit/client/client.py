@@ -58,6 +58,7 @@ from ..utils import (
 )
 from ..x_client_transaction.utils import handle_x_migration
 from ..x_client_transaction import ClientTransaction
+from ..castle_token import CastleToken
 from .gql import GQLClient
 from .v11 import V11Client
 
@@ -77,6 +78,12 @@ class Client:
         (e.g., 'http://0.0.0.0:0000').
     captcha_solver : :class:`.Capsolver` | None, default=None
         See :class:`.Capsolver`.
+    user_agent : :class:`str` | None, default=None
+        Custom user agent string for requests.
+    castle_api_key : :class:`str` | None, default=None
+        Optional API key for castle.botwitter.com Castle Token service.
+        Without API key: 3 requests/second, 100 requests/hour (default).
+        With API key: Custom rate limits, higher quotas, priority support.
 
     Examples
     --------
@@ -87,6 +94,9 @@ class Client:
     ...     auth_info_2='email@example.com',
     ...     password='00000000'
     ... )
+
+    >>> # With Castle API key for better rate limits
+    >>> client = Client(castle_api_key='premium_key_abc123def456ghi789')
     """
 
     def __init__(
@@ -95,6 +105,7 @@ class Client:
         proxy: str | None = None,
         captcha_solver: Capsolver | None = None,
         user_agent: str | None = None,
+        castle_api_key: str | None = None,
         **kwargs
     ) -> None:
         if 'proxies' in kwargs:
@@ -111,6 +122,7 @@ class Client:
         if captcha_solver is not None:
             captcha_solver.client = self
         self.client_transaction = ClientTransaction()
+        self.castle_token = CastleToken(self, api_key=castle_api_key)
 
         self._token = TOKEN
         self._user_id = None

@@ -78,6 +78,12 @@ class V11Client:
         if subtask_inputs is not None:
             data['subtask_inputs'] = subtask_inputs
 
+            # Inject castle_token if settings_list is present
+            for subtask_input in subtask_inputs:
+                if isinstance(subtask_input, dict) and 'settings_list' in subtask_input:
+                    castle_token = await self.base.castle_token.get_castle_token()
+                    subtask_input['settings_list']['castle_token'] = castle_token
+
         headers = {
             'x-guest-token': guest_token,
             'Authorization': 'Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA'
