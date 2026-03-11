@@ -116,6 +116,7 @@ class Client:
         self._user_id = None
         self._user_agent = user_agent or 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15'
         self._act_as = None
+        self._response_headers = None
 
         self.gql = GQLClient(self)
         self.v11 = V11Client(self)
@@ -148,6 +149,8 @@ class Client:
         cookies_backup = self.get_cookies().copy()
         response = await self.http.request(method, url, headers=headers, **kwargs)
         self._remove_duplicate_ct0_cookie()
+
+        self._response_headers = response.headers
 
         try:
             response_data = response.json()
