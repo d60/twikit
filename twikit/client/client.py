@@ -18,7 +18,7 @@ from httpx._utils import URLPattern
 from .._captcha import Capsolver
 from ..bookmark import BookmarkFolder
 from ..community import Community, CommunityMember
-from ..constants import TOKEN, DOMAIN
+from ..constants import TOKEN, DOMAIN, TIMELINE_IDS
 from ..errors import (
     AccountLocked,
     AccountSuspended,
@@ -1523,8 +1523,10 @@ class Client:
                 results.append(tweet)
 
         if entries[-1]['entryId'].startswith('cursor'):
-            next_cursor = entries[-1]['content']['itemContent']['value']
-            _fetch_next_result = partial(self._get_more_replies, tweet_id, next_cursor)
+            item_content = entry.get('content', {}).get('itemContent', {})
+            next_cursor = item_content.get('value')
+            if next_cursor:
+              _fetch_next_result = partial(self._get_more_replies, tweet_id, next_cursor)
         else:
             next_cursor = None
             _fetch_next_result = None
@@ -1613,7 +1615,10 @@ class Client:
                                 continue
                             replies.append(rpl)
                         if 'cursor' in reply.get('entryId'):
-                            sr_cursor = reply['item']['itemContent']['value']
+                            item_content = entry.get('item', {}).get('itemContent', {})
+                            sr_cursor = item_content.get('value')
+                            if not sr_cursor:
+                                continue
                             show_replies = partial(
                                 self._show_more_replies,
                                 tweet_id,
@@ -1630,14 +1635,15 @@ class Client:
                     if display_type and display_type[0] == 'SelfThread':
                         tweet.thread = [tweet_object, *replies]
 
+        _fetch_more_replies = None
+        reply_next_cursor = None
         if entries[-1]['entryId'].startswith('cursor'):
             # if has more replies
-            reply_next_cursor = entries[-1]['content']['itemContent']['value']
-            _fetch_more_replies = partial(self._get_more_replies,
-                                          tweet_id, reply_next_cursor)
-        else:
-            reply_next_cursor = None
-            _fetch_more_replies = None
+            item_content = entry.get('content', {}).get('itemContent', {})
+            reply_next_cursor = item_content.get('value')
+            if reply_next_cursor:
+              _fetch_more_replies = partial(self._get_more_replies,
+                                            tweet_id, reply_next_cursor)
 
         tweet.replies = Result(
             replies_list,
@@ -2594,30 +2600,30 @@ class Client:
         ...
         """
         category = category.lower()
-        if category in ['news', 'sports', 'entertainment']:
-            category += '_unified'
-        response, _ = await self.v11.guide(category, count, additional_request_params)
-
-        entry_id_prefix = 'trends' if category == 'trending' else 'Guide'
+        timeline_id = TIMELINE_IDS.get(category)
+        if timeline_id is None:
+            return []
+        
+        response, _ = await self.gql.generic_timeline_by_id(timeline_id, count)
+        entry_id_prefix = "trend"
         entries = [
             i for i in find_dict(response, 'entries', find_one=True)[0]
             if i['entryId'].startswith(entry_id_prefix)
         ]
-
         if not entries:
-            if not retry:
-                return []
-            # Recall the method again, as the trend information
-            # may not be returned due to a Twitter error.
-            return await self.get_trends(category, count, retry, additional_request_params)
-
-        items = entries[-1]['content']['timelineModule']['items']
-
+          if not retry:
+              return []
+          # Recall the method again, as the trend information
+          # may not be returned due to a Twitter error.
+          return await self.get_trends(category, count, retry, additional_request_params)
+        
         results = []
-        for item in items:
-            trend_info = item['item']['content']['trend']
+        for entry in entries:
+            item_content = entry['content'].get('itemContent', {})
+            trend_info = item_content.get('trend')
+            if not trend_info:
+                continue
             results.append(Trend(self, trend_info))
-
         return results
 
     async def get_available_locations(self) -> list[Location]:

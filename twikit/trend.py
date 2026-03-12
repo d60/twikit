@@ -23,12 +23,13 @@ class Trend:
     def __init__(self, client: Client, data: dict) -> None:
         self._client = client
 
-        metadata: dict = data['trendMetadata']
+        metadata: dict = data['trend_metadata']
         self.name: str = data['name']
-        self.tweets_count: int | None = metadata.get('metaDescription')
-        self.domain_context: str = metadata.get('domainContext')
+        # TODO: parse to int
+        self.tweets_count: str | None = metadata.get('meta_description')
+        self.domain_context: str = metadata.get('domain_context')
         self.grouped_trends: list[str] = [
-            trend['name'] for trend in data.get('groupedTrends', [])
+            trend['name'] for trend in data.get('grouped_trends', [])
         ]
 
     def __repr__(self) -> str:
