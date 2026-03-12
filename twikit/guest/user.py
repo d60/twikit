@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
+from ..user import AccountAbout
 from ..utils import Result, timestamp_to_datetime
 
 if TYPE_CHECKING:
@@ -118,6 +119,17 @@ class User:
     @property
     def created_at_datetime(self) -> datetime:
         return timestamp_to_datetime(self.created_at)
+
+    async def get_about(self) -> AccountAbout:
+        """
+        Retrieves the "About this account" information for the user.
+
+        Returns
+        -------
+        :class:`AccountAbout`
+            Account about profile data.
+        """
+        return await self._client.get_user_about(self.screen_name)
 
     async def get_tweets(self, tweet_type: Literal['Tweets'] = 'Tweets', count: int = 40) -> list[Tweet]:
         """

@@ -132,6 +132,12 @@ for tweet in tweets:
     print(tweet.text)
 ```
 
+**Check "About this account" info**
+```python
+about = await client.get_user_about('sama')
+print(about.account_based_in, about.username_changes)
+```
+
 **Send a dm**
 ```python
 await client.send_dm('123456789', 'Hello')

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..constants import (
+    ABOUT_ACCOUNT_FEATURES,
     DOMAIN,
     BOOKMARK_FOLDER_TIMELINE_FEATURES,
     COMMUNITY_NOTE_FEATURES,
@@ -39,6 +40,7 @@ class Endpoint:
     DELETE_TWEET = url('VaenaVgh5q5ih7kvyVjgtg/DeleteTweet')
     USER_BY_SCREEN_NAME = url('NimuplG1OB7Fd2btCLdBOw/UserByScreenName')
     USER_BY_REST_ID = url('tD8zKvQzwY3kdx5yz6YmOw/UserByRestId')
+    ABOUT_ACCOUNT = url('zs_jFPFT78rBpXv9Z3U2YQ/AboutAccountQuery')
     TWEET_DETAIL = url('U0HTv-bAWTBYylwEMT7x5A/TweetDetail')
     TWEET_RESULT_BY_REST_ID = url('Xl5pC_lBk_gcO2ItU39DQw/TweetResultByRestId')
     FETCH_SCHEDULED_TWEETS = url('ITtjAzvlZni2wWXwf295Qg/FetchScheduledTweets')
@@ -258,6 +260,12 @@ class GQLClient:
             'withSafetyModeUserFields': True
         }
         return await self.gql_get(Endpoint.USER_BY_REST_ID, variables, USER_FEATURES)
+
+    async def about_account(self, screen_name):
+        variables = {
+            'screenName': screen_name
+        }
+        return await self.gql_get(Endpoint.ABOUT_ACCOUNT, variables, ABOUT_ACCOUNT_FEATURES)
 
     async def tweet_detail(self, tweet_id, cursor):
         variables = {
