@@ -7,7 +7,7 @@ import os
 
 import warnings
 from functools import partial
-from typing import Any, AsyncGenerator, Literal
+from typing import Any, AsyncGenerator, Literal, List
 from urllib.parse import urlparse
 
 import filetype
@@ -784,6 +784,45 @@ class Client:
             partial(self.search_tweet, query, product, count, previous_cursor),
             previous_cursor
         )
+
+    async def get_user_mentions(
+        self,
+        handle: str,
+        search_count: int = 20
+    ) -> List[Tweet]:
+        """
+        Fetches user mentions via search method.
+
+        Parameters
+        ----------
+        handle : :class:`str`
+            The target user handle (eg: 5mknc5, elonmusk).
+        search_count : :class:`int`, default=20
+            The number of latest tweets to retrieve in each request.
+
+        Returns
+        -------
+        List[:class:`Tweet`]
+            A list of `Tweet` results.
+
+        Examples
+        --------
+        >>> mentions = await client.get_user_mentions('5mknc5', search_count=30)
+        >>> for mention in mentions:
+        ...     print(mention)
+        <Tweet id="...">
+        <Tweet id="...">
+        ...
+        ...
+
+        """
+        result = await self.search_tweet(f"@{handle}", "Latest", count=search_count)
+        mentions = [
+            tweet for tweet in result
+            if f"@{handle.lower()}" in (tweet.full_text or tweet.text or "").strip().lower()
+        ]
+        mentions.sort(key=lambda x: int(x.id))
+        return mentions
 
     async def search_user(
         self,
