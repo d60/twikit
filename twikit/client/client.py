@@ -2064,13 +2064,21 @@ class Client:
         next_cursor = items[-1]['content']['value']
         results = []
 
-        for item in items:
-            if 'itemContent' not in item['content']:
-                continue
+        def handle_item(item):
             tweet = tweet_from_data(self, item)
-            if tweet is None:
-                continue
-            results.append(tweet)
+            if tweet is not None:
+                results.append(tweet)
+
+        for item in items:
+            if 'items' in item['content']: # home-conversation entries
+                for item in item['content']['items']:
+                    if 'itemContent' not in item['item']:
+                        continue
+                    handle_item(item)
+            else: # tweet entries
+                if 'itemContent' not in item['content']:
+                    continue
+                handle_item(item)
 
         return Result(
             results,
