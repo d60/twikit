@@ -6,6 +6,7 @@ from typing import Union
 
 async def handle_x_migration(session, headers):
     home_page = None
+    headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0.0.0 Safari/537.36"
     migration_redirection_regex = re.compile(
         r"""(http(?:s)?://(?:www\.)?(twitter|x){1}\.com(/x)?/migrate([/?])?tok=[a-zA-Z0-9%\-_]+)+""", re.VERBOSE)
     response = await session.request(method="GET", url="https://x.com", headers=headers)
