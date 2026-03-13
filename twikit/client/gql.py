@@ -99,6 +99,7 @@ class Endpoint:
     MODERATORS_SLICE_TIMELINE_QUERY = url('9KI_r8e-tgp3--N5SZYVjg/moderatorsSliceTimeline_Query')
     COMMUNITY_TWEET_SEARCH_MODULE_QUERY = url('5341rmzzvdjqfmPKfoHUBw/CommunityTweetSearchModuleQuery')
     TWEET_RESULTS_BY_REST_IDS = url('PTN9HhBAlpoCTHfspDgqLA/TweetResultsByRestIds')
+    PROFILE_SPOTLIGHTS = url('1sAf0uU4-B2ZLJGUX5O7LQ/ProfileSpotlightsQuery')
 
 
 class GQLClient:
@@ -681,6 +682,10 @@ class GQLClient:
             'withCommunity': True
         }
         return await self.gql_get(Endpoint.TWEET_RESULTS_BY_REST_IDS, variables, TWEET_RESULTS_BY_REST_IDS_FEATURES)
+
+    async def profile_spotlights(self, screen_name):
+        variables = {'screen_name': screen_name}
+        return await self.gql_get(Endpoint.PROFILE_SPOTLIGHTS, variables)
 
     ####################
     # For guest client

@@ -14,6 +14,24 @@ if TYPE_CHECKING:
     from .utils import Result
 
 
+class ProfileSpotlights:
+    def __init__(self, data: dict):
+        self._data = data
+        relationship_perspectives = data.get('relationship_perspectives', {})
+        privacy = data.get('privacy', {})
+        core = data.get('core', {})
+
+        self.protected = privacy.get('protected', {})
+        self.blocking = relationship_perspectives.get('blocking', False)
+        self.blocked_by = relationship_perspectives.get('blocked_by', False)
+        self.following = relationship_perspectives.get('following', False)
+        self.followed_by = relationship_perspectives.get('followed_by', False)
+        self.is_verified_organisation = data.get('is_verified_organisation', False)
+        self.rest_id = data.get('rest_id', None)
+        self.name = core.get('name', None)
+        self.screen_name = core.get('screen_name', None)
+
+
 class User:
     """
     Attributes
@@ -506,6 +524,9 @@ class User:
         ...
         """
         return await self._client.get_user_highlights_tweets(self.id, count, cursor)
+
+    async def get_profile_spotlights(self) -> ProfileSpotlights:
+        return await self._client.get_profile_spotlights(self.screen_name)
 
     async def update(self) -> None:
         new = await self._client.get_user_by_id(self.id)

@@ -46,7 +46,7 @@ from ..streaming import Payload, StreamingSession, _payload_from_data
 from ..trend import Location, PlaceTrend, PlaceTrends, Trend
 from ..tweet import CommunityNote, Poll, ScheduledTweet, Tweet, tweet_from_data
 from ..ui_metrics import solve_ui_metrics
-from ..user import User
+from ..user import User, ProfileSpotlights
 from ..utils import (
     Flow,
     Result,
@@ -4322,3 +4322,8 @@ class Client:
     async def _get_user_state(self) -> Literal['normal', 'bounced', 'suspended']:
         response, _ = await self.v11.user_state()
         return response['userState']
+
+    async def get_profile_spotlights(self, display_name: str) -> ProfileSpotlights:
+        response, _ = await self.gql.profile_spotlights(display_name)
+        result = find_dict(response, 'result', find_one=True)[0]
+        return ProfileSpotlights(result)
