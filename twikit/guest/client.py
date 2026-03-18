@@ -90,7 +90,7 @@ class GuestClient:
         self._token = TOKEN
         self._user_agent = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                             'AppleWebKit/537.36 (KHTML, like Gecko) '
-                            'Chrome/122.0.0.0 Safari/537.36')
+                            'Chrome/133.0.0.0 Safari/537.36')
         self._guest_token: str | None = None  # set when activate method is called
         self.gql = GQLClient(self)
         self.v11 = V11Client(self)
@@ -109,10 +109,19 @@ class GuestClient:
         if not self.client_transaction.home_page_response:
             cookies_backup = dict(self.http.cookies).copy()
             ct_headers = {
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
                 'Accept-Language': f'{self.language},{self.language.split("-")[0]};q=0.9',
                 'Cache-Control': 'no-cache',
                 'Referer': f'https://{DOMAIN}',
-                'User-Agent': self._user_agent
+                'User-Agent': self._user_agent,
+                'sec-ch-ua': '"Not(A:Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'sec-fetch-dest': 'document',
+                'sec-fetch-mode': 'navigate',
+                'sec-fetch-site': 'none',
+                'sec-fetch-user': '?1',
+                'upgrade-insecure-requests': '1'
             }
             await self.client_transaction.init(self.http, ct_headers)
             self.http.cookies = cookies_backup
@@ -186,6 +195,12 @@ class GuestClient:
             'content-type': 'application/json',
             'X-Twitter-Active-User': 'yes',
             'Referer': f'https://{DOMAIN}',
+            'sec-ch-ua': '"Not(A:Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
         }
 
         if self.language is not None:
