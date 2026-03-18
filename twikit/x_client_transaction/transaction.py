@@ -49,7 +49,7 @@ class ClientTransaction:
                 key_bytes=self.key_bytes, response=self.home_page_response)
         except (AttributeError, ValueError, KeyError, Exception) as e:
             # Fallback to defaults to prevent complete initialization failure
-            self.key = getattr(self, 'key', FALLBACK_KEY)
+            self.key = FALLBACK_KEY
             self.key_bytes = self.get_key_bytes(self.key)
             self.DEFAULT_ROW_INDEX = FALLBACK_ROW_INDEX
             self.DEFAULT_KEY_BYTES_INDICES = FALLBACK_KEY_BYTES_INDICES
@@ -167,8 +167,11 @@ class ClientTransaction:
             except Exception:
                 key = FALLBACK_KEY
         key_bytes = self.get_key_bytes(key)
-        animation_key = animation_key or getattr(self, 'animation_key', None) or self.get_animation_key(
-            key_bytes, response)
+        try:
+            animation_key = animation_key or getattr(self, 'animation_key', None) or self.get_animation_key(
+                key_bytes, response)
+        except Exception:
+            animation_key = "0"
         # hash_val = hashlib.sha256(f"{method}!{path}!{time_now}bird{animation_key}".encode()).digest()
         hash_val = hashlib.sha256(
             f"{method}!{path}!{time_now}{self.DEFAULT_KEYWORD}{animation_key}".encode()).digest()
