@@ -1,4 +1,5 @@
 import re
+import logging
 import bs4
 import math
 import time
@@ -16,6 +17,14 @@ ON_DEMAND_FILE_REGEX = re.compile(
     r"""['|\"]{1}ondemand\.s['|\"]{1}:\s*['|\"]{1}([\w]*)['|\"]{1}""", flags=(re.VERBOSE | re.MULTILINE))
 INDICES_REGEX = re.compile(
     r"""\(?(\w+)\[(\d{1,2})\]\s*,\s*16\)?""", flags=(re.VERBOSE | re.MULTILINE))
+
+
+logger = logging.getLogger(__name__)
+
+# Fallback constants for when key extraction fails
+FALLBACK_KEY = 'mentUisV_1yPzH_3IcNS_nRaF_R_b'
+FALLBACK_ROW_INDEX = 2
+FALLBACK_KEY_BYTES_INDICES = [13, 14, 7]
 
 
 class ClientTransaction:
@@ -38,14 +47,14 @@ class ClientTransaction:
             self.key_bytes = self.get_key_bytes(key=self.key)
             self.animation_key = self.get_animation_key(
                 key_bytes=self.key_bytes, response=self.home_page_response)
-        except Exception as e:
+        except (AttributeError, ValueError, KeyError, Exception) as e:
             # Fallback to defaults to prevent complete initialization failure
-            self.key = getattr(self, 'key', 'mentUisV_1yPzH_3IcNS_nRaF_R_b') # Current common site verification key
+            self.key = getattr(self, 'key', FALLBACK_KEY)
             self.key_bytes = self.get_key_bytes(self.key)
-            self.DEFAULT_ROW_INDEX = 2
-            self.DEFAULT_KEY_BYTES_INDICES = [13, 14, 7]
+            self.DEFAULT_ROW_INDEX = FALLBACK_ROW_INDEX
+            self.DEFAULT_KEY_BYTES_INDICES = FALLBACK_KEY_BYTES_INDICES
             self.animation_key = "0"
-            print(f"DEBUG: Twikit Patch Initialization Warning: {e}")
+            logger.warning(f"Twikit Patch Initialization Warning: {e}, using fallback defaults")
 
     async def get_indices(self, home_page_response, session, headers):
         key_byte_indices = []
@@ -155,8 +164,8 @@ class ClientTransaction:
         if not key:
             try:
                 key = self.get_key(response)
-            except:
-                key = 'mentUisV_1yPzH_3IcNS_nRaF_R_b'
+            except Exception:
+                key = FALLBACK_KEY
         key_bytes = self.get_key_bytes(key)
         animation_key = animation_key or getattr(self, 'animation_key', None) or self.get_animation_key(
             key_bytes, response)
