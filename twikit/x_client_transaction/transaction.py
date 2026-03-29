@@ -12,8 +12,8 @@ from .interpolate import interpolate
 from .rotation import convert_rotation_to_matrix
 from .utils import float_to_hex, is_odd, base64_encode, handle_x_migration
 
-ON_DEMAND_FILE_REGEX = re.compile(
-    r"""['|\"]{1}ondemand\.s['|\"]{1}:\s*['|\"]{1}([\w]*)['|\"]{1}""", flags=(re.VERBOSE | re.MULTILINE))
+ON_DEMAND_FILE_REGEX: re.Pattern = re.compile(r""",(\d+):["']ondemand\.s["']""", flags=(re.VERBOSE | re.MULTILINE))
+ON_DEMAND_HASH_PATTERN: str = r',{}:\"([0-9a-f]+)\"'
 INDICES_REGEX = re.compile(
     r"""(\(\w{1}\[(\d{1,2})\],\s*16\))+""", flags=(re.VERBOSE | re.MULTILINE))
 
@@ -42,14 +42,15 @@ class ClientTransaction:
         key_byte_indices = []
         response = self.validate_response(
             home_page_response) or self.home_page_response
-        on_demand_file = ON_DEMAND_FILE_REGEX.search(str(response))
-        if on_demand_file:
-            on_demand_file_url = f"https://abs.twimg.com/responsive-web/client-web/ondemand.s.{on_demand_file.group(1)}a.js"
-            on_demand_file_response = await session.request(method="GET", url=on_demand_file_url, headers=headers)
-            key_byte_indices_match = INDICES_REGEX.finditer(
-                str(on_demand_file_response.text))
-            for item in key_byte_indices_match:
-                key_byte_indices.append(item.group(2))
+        on_demand_file_index = ON_DEMAND_FILE_REGEX.search(str(response)).group(1)
+        regex = re.compile(ON_DEMAND_HASH_PATTERN.format(on_demand_file_index))
+        filename = regex.search(str(response)).group(1)
+        on_demand_file_url = f"https://abs.twimg.com/responsive-web/client-web/ondemand.s.{filename}a.js"
+        on_demand_file_response = await session.request(method="GET", url=on_demand_file_url, headers=headers)
+        key_byte_indices_match = INDICES_REGEX.finditer(
+            str(on_demand_file_response.text))
+        for item in key_byte_indices_match:
+            key_byte_indices.append(item.group(2))
         if not key_byte_indices:
             raise Exception("Couldn't get KEY_BYTE indices")
         key_byte_indices = list(map(int, key_byte_indices))
