@@ -156,7 +156,7 @@ class GQLClient:
         }
         if cursor is not None:
             variables['cursor'] = cursor
-        return await self.gql_get(Endpoint.SEARCH_TIMELINE, variables, FEATURES)
+        return await self.gql_post(Endpoint.SEARCH_TIMELINE, variables, FEATURES)
 
     async def similar_posts(self, tweet_id: str):
         variables = {'tweet_id': tweet_id}
