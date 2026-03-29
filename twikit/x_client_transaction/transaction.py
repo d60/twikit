@@ -43,11 +43,12 @@ class ClientTransaction:
         response = self.validate_response(
             home_page_response) or self.home_page_response
         on_demand_file_index = ON_DEMAND_FILE_REGEX.search(str(response)).group(1)
-        regex = re.compile(ON_DEMAND_HASH_PATTERN.format(on_demand_file_index))
-        #on_demand_file = ON_DEMAND_FILE_REGEX.search(str(response))
-        #if on_demand_file:
-           #on_demand_file_url = f"https://abs.twimg.com/responsive-web/client-web/ondemand.s.{on_demand_file.group(1)}a.js"  
+        if not on_demand_file_index:
+            raise Exception("Failed to match ON_DEMAND_FILE_REGEX in the home page response") 
+        regex = re.compile(ON_DEMAND_HASH_PATTERN.format(on_demand_file_index)) 
         filename = regex.search(str(response)).group(1)
+        if not filename:
+            raise Exception(f"Failed to match the hash pattern for on_demand_file index {on_demand_file_index}")
         on_demand_file_url = f"https://abs.twimg.com/responsive-web/client-web/ondemand.s.{filename}a.js"
         on_demand_file_response = await session.request(method="GET", url=on_demand_file_url, headers=headers)
         key_byte_indices_match = INDICES_REGEX.finditer(
