@@ -14,6 +14,8 @@ from .utils import float_to_hex, is_odd, base64_encode, handle_x_migration
 
 ON_DEMAND_FILE_REGEX = re.compile(
     r"""['|\"]{1}ondemand\.s['|\"]{1}:\s*['|\"]{1}([\w]*)['|\"]{1}""", flags=(re.VERBOSE | re.MULTILINE))
+# New webpack format: chunk ID maps to name, separate hash map
+CHUNK_NAME_REGEX = re.compile(r'(\d+):"ondemand\.s"')
 INDICES_REGEX = re.compile(
     r"""(\(\w{1}\[(\d{1,2})\],\s*16\))+""", flags=(re.VERBOSE | re.MULTILINE))
 
@@ -42,9 +44,30 @@ class ClientTransaction:
         key_byte_indices = []
         response = self.validate_response(
             home_page_response) or self.home_page_response
-        on_demand_file = ON_DEMAND_FILE_REGEX.search(str(response))
+        response_str = str(response)
+
+        # Try old format first: 'ondemand.s': 'hash'
+        on_demand_file = ON_DEMAND_FILE_REGEX.search(response_str)
         if on_demand_file:
-            on_demand_file_url = f"https://abs.twimg.com/responsive-web/client-web/ondemand.s.{on_demand_file.group(1)}a.js"
+            file_hash = on_demand_file.group(1)
+        else:
+            # New webpack format: chunk_id:"ondemand.s" with hash in a separate map
+            chunk_id_match = CHUNK_NAME_REGEX.search(response_str)
+            if chunk_id_match:
+                chunk_id = chunk_id_match.group(1)
+                hash_pattern = re.compile(rf'{chunk_id}:"([\w]+)"')
+                all_matches = list(hash_pattern.finditer(response_str))
+                file_hash = None
+                for m in all_matches:
+                    val = m.group(1)
+                    if val != 'ondemand' and len(val) <= 12:
+                        file_hash = val
+                        break
+            else:
+                file_hash = None
+
+        if file_hash:
+            on_demand_file_url = f"https://abs.twimg.com/responsive-web/client-web/ondemand.s.{file_hash}a.js"
             on_demand_file_response = await session.request(method="GET", url=on_demand_file_url, headers=headers)
             key_byte_indices_match = INDICES_REGEX.finditer(
                 str(on_demand_file_response.text))
