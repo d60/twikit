@@ -1522,12 +1522,22 @@ class Client:
             if tweet is not None:
                 results.append(tweet)
 
-        if entries[-1]['entryId'].startswith('cursor'):
-            next_cursor = entries[-1]['content']['itemContent']['value']
-            _fetch_next_result = partial(self._get_more_replies, tweet_id, next_cursor)
-        else:
-            next_cursor = None
-            _fetch_next_result = None
+        # Mirror the two-shape handling added to `get_tweet_by_id`: without it
+        # the first `await tweet.replies.next()` call would re-introduce the
+        # KeyError that the parent fix eliminated (X serves the trailing cursor
+        # as either `content.itemContent.value` or flat `content.value`).
+        next_cursor = None
+        _fetch_next_result = None
+        if entries and entries[-1].get('entryId', '').startswith('cursor'):
+            content = entries[-1].get('content') or {}
+            item_content = content.get('itemContent')
+            if isinstance(item_content, dict) and 'value' in item_content:
+                next_cursor = item_content['value']
+            elif 'value' in content:
+                next_cursor = content['value']
+            if next_cursor is not None:
+                _fetch_next_result = partial(
+                    self._get_more_replies, tweet_id, next_cursor)
 
         return Result(
             results,
@@ -1632,7 +1642,7 @@ class Client:
 
         reply_next_cursor = None
         _fetch_more_replies = None
-        if entries and entries[-1]['entryId'].startswith('cursor'):
+        if entries and entries[-1].get('entryId', '').startswith('cursor'):
             # X has two shapes for the trailing cursor entry: the legacy
             # `content.itemContent.value` and a newer, flatter `content.value`
             # (TimelineTimelineCursor without an itemContent wrapper). Reading
