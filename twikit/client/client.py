@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 import filetype
 import pyotp
-from httpx import AsyncClient, AsyncHTTPTransport, Response
+from httpx import AsyncClient, AsyncHTTPTransport, HTTPError, Response
 from httpx._utils import URLPattern
 
 from .._captcha import Capsolver
@@ -4348,11 +4348,16 @@ class Client:
         # branch and recurse until Python raises `RecursionError`. That
         # masks the real 429 with an unrelated crash.
         #
-        # Trap any exception from the nested call and fall back to
-        # 'normal'. The original 429 is still raised by the outer
-        # `request()`; we just avoid turning it into a recursive crash.
+        # Trap only the failure modes that would otherwise feed the
+        # recursion loop, or an unrelated transport failure from the
+        # nested GET. The outer `request()` still raises
+        # `TooManyRequests` for the original 429 — callers see the
+        # correct exception, we just avoid the recursive crash.
+        #
+        # Anything else (unexpected JSON shape, programming errors,
+        # auth failures) should keep propagating so real bugs surface.
         try:
             response, _ = await self.v11.user_state()
             return response['userState']
-        except Exception:
+        except (TooManyRequests, RecursionError, HTTPError):
             return 'normal'
