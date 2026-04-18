@@ -72,17 +72,26 @@ class ClientTransaction:
             hash_match = re.search(
                 ON_DEMAND_HASH_PATTERN.format(chunk_id=chunk_id),
                 response_text)
-            if hash_match:
-                on_demand_file_url = (
-                    f"https://abs.twimg.com/responsive-web/client-web/"
-                    f"ondemand.s.{hash_match.group(1)}a.js"
+            if not hash_match:
+                # Distinct failure mode from "couldn't get indices": we found
+                # the `ondemand.s` label but the hash mapping for that chunk
+                # id isn't in the page. Surface this separately so diagnosis
+                # doesn't conflate "page layout changed" with "hash missing"
+                # (they need different fixes — regex vs. re-capture).
+                raise Exception(
+                    f"Couldn't find ondemand.s hash for chunk id {chunk_id!r} "
+                    f"(page layout may have changed)"
                 )
-                on_demand_file_response = await session.request(
-                    method="GET", url=on_demand_file_url, headers=headers)
-                key_byte_indices_match = INDICES_REGEX.finditer(
-                    str(on_demand_file_response.text))
-                for item in key_byte_indices_match:
-                    key_byte_indices.append(item.group(2))
+            on_demand_file_url = (
+                f"https://abs.twimg.com/responsive-web/client-web/"
+                f"ondemand.s.{hash_match.group(1)}a.js"
+            )
+            on_demand_file_response = await session.request(
+                method="GET", url=on_demand_file_url, headers=headers)
+            key_byte_indices_match = INDICES_REGEX.finditer(
+                str(on_demand_file_response.text))
+            for item in key_byte_indices_match:
+                key_byte_indices.append(item.group(2))
         if not key_byte_indices:
             raise Exception("Couldn't get KEY_BYTE indices")
         key_byte_indices = list(map(int, key_byte_indices))
