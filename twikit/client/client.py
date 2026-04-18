@@ -4330,5 +4330,19 @@ class Client:
         return _payload_from_data(response)
 
     async def _get_user_state(self) -> Literal['normal', 'bounced', 'suspended']:
-        response, _ = await self.v11.user_state()
-        return response['userState']
+        # `request()` calls this method whenever it receives a 429, to
+        # decide between `TooManyRequests` and `AccountSuspended`. But the
+        # call itself goes through `request()` as well, so if the
+        # user_state endpoint is ALSO rate-limited (very common — X rate
+        # limits the whole account, not per-endpoint), we re-enter this
+        # branch and recurse until Python raises `RecursionError`. That
+        # masks the real 429 with an unrelated crash.
+        #
+        # Trap any exception from the nested call and fall back to
+        # 'normal'. The original 429 is still raised by the outer
+        # `request()`; we just avoid turning it into a recursive crash.
+        try:
+            response, _ = await self.v11.user_state()
+            return response['userState']
+        except Exception:
+            return 'normal'
