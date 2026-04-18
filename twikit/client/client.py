@@ -154,9 +154,11 @@ class Client:
         except json.decoder.JSONDecodeError:
             response_data = response.text
 
-        if isinstance(response_data, dict) and 'errors' in response_data:
-            error_code = response_data['errors'][0].get('code')
-            error_message = response_data['errors'][0].get('message')
+        errors = response_data.get('errors') if isinstance(response_data, dict) else None
+        if errors and isinstance(errors, list):
+            first_error = errors[0] if isinstance(errors[0], dict) else {}
+            error_code = first_error.get('code')
+            error_message = first_error.get('message')
             if error_code in (37, 64):
                 # Account suspended
                 raise AccountSuspended(error_message)
