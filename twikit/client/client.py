@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 import filetype
 import pyotp
-from httpx import AsyncClient, AsyncHTTPTransport, Response
+from httpx import AsyncClient, AsyncHTTPTransport, HTTPError, Response
 from httpx._utils import URLPattern
 
 from .._captcha import Capsolver
@@ -126,6 +126,7 @@ class Client:
         url: str,
         auto_unlock: bool = True,
         raise_exception: bool = True,
+        check_user_state: bool = True,
         **kwargs
     ) -> tuple[dict | Any, Response]:
         ':meta private:'
@@ -193,7 +194,11 @@ class Client:
             elif status_code == 408:
                 raise RequestTimeout(message, headers=response.headers)
             elif status_code == 429:
-                if await self._get_user_state() == 'suspended':
+                # `check_user_state=False` when called recursively from
+                # `_get_user_state()` itself — otherwise a 429 on the nested
+                # user_state GET would re-enter this branch, call
+                # `_get_user_state()` again, and loop until RecursionError.
+                if check_user_state and await self._get_user_state() == 'suspended':
                     raise AccountSuspended(message, headers=response.headers)
                 raise TooManyRequests(message, headers=response.headers)
             elif 500 <= status_code < 600:
@@ -1522,12 +1527,22 @@ class Client:
             if tweet is not None:
                 results.append(tweet)
 
-        if entries[-1]['entryId'].startswith('cursor'):
-            next_cursor = entries[-1]['content']['itemContent']['value']
-            _fetch_next_result = partial(self._get_more_replies, tweet_id, next_cursor)
-        else:
-            next_cursor = None
-            _fetch_next_result = None
+        # Mirror the two-shape handling added to `get_tweet_by_id`: without it
+        # the first `await tweet.replies.next()` call would re-introduce the
+        # KeyError that the parent fix eliminated (X serves the trailing cursor
+        # as either `content.itemContent.value` or flat `content.value`).
+        next_cursor = None
+        _fetch_next_result = None
+        if entries and entries[-1].get('entryId', '').startswith('cursor'):
+            content = entries[-1].get('content') or {}
+            item_content = content.get('itemContent')
+            if isinstance(item_content, dict) and 'value' in item_content:
+                next_cursor = item_content['value']
+            elif 'value' in content:
+                next_cursor = content['value']
+            if next_cursor is not None:
+                _fetch_next_result = partial(
+                    self._get_more_replies, tweet_id, next_cursor)
 
         return Result(
             results,
@@ -1630,14 +1645,24 @@ class Client:
                     if display_type and display_type[0] == 'SelfThread':
                         tweet.thread = [tweet_object, *replies]
 
-        if entries[-1]['entryId'].startswith('cursor'):
-            # if has more replies
-            reply_next_cursor = entries[-1]['content']['itemContent']['value']
-            _fetch_more_replies = partial(self._get_more_replies,
-                                          tweet_id, reply_next_cursor)
-        else:
-            reply_next_cursor = None
-            _fetch_more_replies = None
+        reply_next_cursor = None
+        _fetch_more_replies = None
+        if entries and entries[-1].get('entryId', '').startswith('cursor'):
+            # X has two shapes for the trailing cursor entry: the legacy
+            # `content.itemContent.value` and a newer, flatter `content.value`
+            # (TimelineTimelineCursor without an itemContent wrapper). Reading
+            # the old path unconditionally raises KeyError: 'itemContent' for
+            # any tweet served with the new shape, which breaks the whole
+            # `get_tweet_by_id` call — not just pagination of further replies.
+            content = entries[-1].get('content') or {}
+            item_content = content.get('itemContent')
+            if isinstance(item_content, dict) and 'value' in item_content:
+                reply_next_cursor = item_content['value']
+            elif 'value' in content:
+                reply_next_cursor = content['value']
+            if reply_next_cursor is not None:
+                _fetch_more_replies = partial(self._get_more_replies,
+                                              tweet_id, reply_next_cursor)
 
         tweet.replies = Result(
             replies_list,
@@ -4320,5 +4345,27 @@ class Client:
         return _payload_from_data(response)
 
     async def _get_user_state(self) -> Literal['normal', 'bounced', 'suspended']:
-        response, _ = await self.v11.user_state()
-        return response['userState']
+        # `request()` calls this method whenever it receives a 429, to
+        # decide between `TooManyRequests` and `AccountSuspended`. But the
+        # call itself goes through `request()` as well, so if the
+        # user_state endpoint is ALSO rate-limited (very common — X rate
+        # limits the whole account, not per-endpoint), we re-enter this
+        # branch and recurse until Python raises `RecursionError`. That
+        # masks the real 429 with an unrelated crash.
+        #
+        # Pass `check_user_state=False` to the nested request so that if
+        # this user_state GET also 429s, `request()` raises `TooManyRequests`
+        # directly instead of re-entering this branch. That eliminates the
+        # recursion at the source — not just after N levels deep — so we
+        # don't burn through HTTP calls climbing back up the stack.
+        #
+        # We still trap the remaining failure modes: the expected
+        # `TooManyRequests` (now raised on the first retry, not at the
+        # recursion limit), and any transport-level `HTTPError`. Anything
+        # else (unexpected JSON, auth issues, programming errors) keeps
+        # propagating so real bugs surface.
+        try:
+            response, _ = await self.v11.user_state(check_user_state=False)
+            return response['userState']
+        except (TooManyRequests, HTTPError):
+            return 'normal'
