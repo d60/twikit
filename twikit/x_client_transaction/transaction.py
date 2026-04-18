@@ -12,8 +12,14 @@ from .interpolate import interpolate
 from .rotation import convert_rotation_to_matrix
 from .utils import float_to_hex, is_odd, base64_encode, handle_x_migration
 
+# The ondemand.s hash is no longer placed directly next to the
+# "ondemand.s" label in the webpack bundle. The current layout emits
+# the chunk id first, then the hash is listed against the same id
+# elsewhere on the page. Two-step lookup: find the id, then find the
+# hash that was shipped for that id.
 ON_DEMAND_FILE_REGEX = re.compile(
-    r"""['|\"]{1}ondemand\.s['|\"]{1}:\s*['|\"]{1}([\w]*)['|\"]{1}""", flags=(re.VERBOSE | re.MULTILINE))
+    r""",(\d+):["']ondemand\.s["']""", flags=(re.VERBOSE | re.MULTILINE))
+ON_DEMAND_HASH_PATTERN = r',{}:\"([0-9a-f]+)\"'
 INDICES_REGEX = re.compile(
     r"""(\(\w{1}\[(\d{1,2})\],\s*16\))+""", flags=(re.VERBOSE | re.MULTILINE))
 
@@ -42,14 +48,30 @@ class ClientTransaction:
         key_byte_indices = []
         response = self.validate_response(
             home_page_response) or self.home_page_response
-        on_demand_file = ON_DEMAND_FILE_REGEX.search(str(response))
+        response_text = str(response)
+        on_demand_file = ON_DEMAND_FILE_REGEX.search(response_text)
         if on_demand_file:
-            on_demand_file_url = f"https://abs.twimg.com/responsive-web/client-web/ondemand.s.{on_demand_file.group(1)}a.js"
-            on_demand_file_response = await session.request(method="GET", url=on_demand_file_url, headers=headers)
-            key_byte_indices_match = INDICES_REGEX.finditer(
-                str(on_demand_file_response.text))
-            for item in key_byte_indices_match:
-                key_byte_indices.append(item.group(2))
+            # `on_demand_file.group(1)` is the webpack chunk id (a number
+            # like "123"), not the file hash itself. Look up the hash shipped
+            # for that id via a second regex. Previously we concatenated
+            # the match with 'a.js' directly, which matched the old bundle
+            # layout where `"ondemand.s":"HASH"` appeared together — that
+            # layout no longer exists, so the old path raised
+            # "Couldn't get KEY_BYTE indices" on every init.
+            chunk_id = on_demand_file.group(1)
+            hash_match = re.search(
+                ON_DEMAND_HASH_PATTERN.format(chunk_id), response_text)
+            if hash_match:
+                on_demand_file_url = (
+                    f"https://abs.twimg.com/responsive-web/client-web/"
+                    f"ondemand.s.{hash_match.group(1)}a.js"
+                )
+                on_demand_file_response = await session.request(
+                    method="GET", url=on_demand_file_url, headers=headers)
+                key_byte_indices_match = INDICES_REGEX.finditer(
+                    str(on_demand_file_response.text))
+                for item in key_byte_indices_match:
+                    key_byte_indices.append(item.group(2))
         if not key_byte_indices:
             raise Exception("Couldn't get KEY_BYTE indices")
         key_byte_indices = list(map(int, key_byte_indices))
