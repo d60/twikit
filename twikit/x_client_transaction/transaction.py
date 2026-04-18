@@ -17,9 +17,19 @@ from .utils import float_to_hex, is_odd, base64_encode, handle_x_migration
 # the chunk id first, then the hash is listed against the same id
 # elsewhere on the page. Two-step lookup: find the id, then find the
 # hash that was shipped for that id.
+#
+# Leading boundary is `[,{]` (not just `,`) so we also match the entry
+# when `ondemand.s` happens to be the first key of the webpack chunk
+# map (`{123:"ondemand.s",...}`). Quote class accepts both single and
+# double quotes on both halves — X has shipped both styles depending
+# on the minifier run, and a mismatch caused the hash lookup to miss.
 ON_DEMAND_FILE_REGEX = re.compile(
-    r""",(\d+):["']ondemand\.s["']""", flags=(re.VERBOSE | re.MULTILINE))
-ON_DEMAND_HASH_PATTERN = r',{}:\"([0-9a-f]+)\"'
+    r"""[,{](\d+):["']ondemand\.s["']""", flags=(re.VERBOSE | re.MULTILINE))
+# `{{` / `}}` escape the literal braces so `str.format()` substitutes
+# only the `{chunk_id}` placeholder. Otherwise the `{` at the start of
+# the character class is parsed as an unnamed format field and raises
+# `ValueError: unexpected '{' in field name`.
+ON_DEMAND_HASH_PATTERN = r'[,{{]{chunk_id}:["\']([0-9a-f]+)["\']'
 INDICES_REGEX = re.compile(
     r"""(\(\w{1}\[(\d{1,2})\],\s*16\))+""", flags=(re.VERBOSE | re.MULTILINE))
 
@@ -60,7 +70,8 @@ class ClientTransaction:
             # "Couldn't get KEY_BYTE indices" on every init.
             chunk_id = on_demand_file.group(1)
             hash_match = re.search(
-                ON_DEMAND_HASH_PATTERN.format(chunk_id), response_text)
+                ON_DEMAND_HASH_PATTERN.format(chunk_id=chunk_id),
+                response_text)
             if hash_match:
                 on_demand_file_url = (
                     f"https://abs.twimg.com/responsive-web/client-web/"
