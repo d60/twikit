@@ -505,8 +505,14 @@ class V11Client:
             Endpoint.LIVE_PIPELINE_UPDATE_SUBSCRIPTIONS, data=data, headers=headers
         )
 
-    async def user_state(self):
+    async def user_state(self, **kwargs):
+        # `**kwargs` is forwarded to `base.get` → `base.request`. The 429
+        # recovery path in `Client.request` calls `_get_user_state()`, which
+        # ends up back here; we need to pass `check_user_state=False` down
+        # so that if this nested call also returns 429 we don't retry the
+        # recovery check and loop.
         return await self.base.get(
             Endpoint.USER_STATE,
-            headers=self.base._base_headers
+            headers=self.base._base_headers,
+            **kwargs
         )

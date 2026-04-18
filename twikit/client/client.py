@@ -126,6 +126,7 @@ class Client:
         url: str,
         auto_unlock: bool = True,
         raise_exception: bool = True,
+        check_user_state: bool = True,
         **kwargs
     ) -> tuple[dict | Any, Response]:
         ':meta private:'
@@ -193,7 +194,11 @@ class Client:
             elif status_code == 408:
                 raise RequestTimeout(message, headers=response.headers)
             elif status_code == 429:
-                if await self._get_user_state() == 'suspended':
+                # `check_user_state=False` when called recursively from
+                # `_get_user_state()` itself — otherwise a 429 on the nested
+                # user_state GET would re-enter this branch, call
+                # `_get_user_state()` again, and loop until RecursionError.
+                if check_user_state and await self._get_user_state() == 'suspended':
                     raise AccountSuspended(message, headers=response.headers)
                 raise TooManyRequests(message, headers=response.headers)
             elif 500 <= status_code < 600:
@@ -4348,16 +4353,19 @@ class Client:
         # branch and recurse until Python raises `RecursionError`. That
         # masks the real 429 with an unrelated crash.
         #
-        # Trap only the failure modes that would otherwise feed the
-        # recursion loop, or an unrelated transport failure from the
-        # nested GET. The outer `request()` still raises
-        # `TooManyRequests` for the original 429 — callers see the
-        # correct exception, we just avoid the recursive crash.
+        # Pass `check_user_state=False` to the nested request so that if
+        # this user_state GET also 429s, `request()` raises `TooManyRequests`
+        # directly instead of re-entering this branch. That eliminates the
+        # recursion at the source — not just after N levels deep — so we
+        # don't burn through HTTP calls climbing back up the stack.
         #
-        # Anything else (unexpected JSON shape, programming errors,
-        # auth failures) should keep propagating so real bugs surface.
+        # We still trap the remaining failure modes: the expected
+        # `TooManyRequests` (now raised on the first retry, not at the
+        # recursion limit), and any transport-level `HTTPError`. Anything
+        # else (unexpected JSON, auth issues, programming errors) keeps
+        # propagating so real bugs surface.
         try:
-            response, _ = await self.v11.user_state()
+            response, _ = await self.v11.user_state(check_user_state=False)
             return response['userState']
-        except (TooManyRequests, RecursionError, HTTPError):
+        except (TooManyRequests, HTTPError):
             return 'normal'
