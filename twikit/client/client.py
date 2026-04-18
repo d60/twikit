@@ -1630,14 +1630,24 @@ class Client:
                     if display_type and display_type[0] == 'SelfThread':
                         tweet.thread = [tweet_object, *replies]
 
-        if entries[-1]['entryId'].startswith('cursor'):
-            # if has more replies
-            reply_next_cursor = entries[-1]['content']['itemContent']['value']
-            _fetch_more_replies = partial(self._get_more_replies,
-                                          tweet_id, reply_next_cursor)
-        else:
-            reply_next_cursor = None
-            _fetch_more_replies = None
+        reply_next_cursor = None
+        _fetch_more_replies = None
+        if entries and entries[-1]['entryId'].startswith('cursor'):
+            # X has two shapes for the trailing cursor entry: the legacy
+            # `content.itemContent.value` and a newer, flatter `content.value`
+            # (TimelineTimelineCursor without an itemContent wrapper). Reading
+            # the old path unconditionally raises KeyError: 'itemContent' for
+            # any tweet served with the new shape, which breaks the whole
+            # `get_tweet_by_id` call — not just pagination of further replies.
+            content = entries[-1].get('content') or {}
+            item_content = content.get('itemContent')
+            if isinstance(item_content, dict) and 'value' in item_content:
+                reply_next_cursor = item_content['value']
+            elif 'value' in content:
+                reply_next_cursor = content['value']
+            if reply_next_cursor is not None:
+                _fetch_more_replies = partial(self._get_more_replies,
+                                              tweet_id, reply_next_cursor)
 
         tweet.replies = Result(
             replies_list,
