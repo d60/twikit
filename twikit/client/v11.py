@@ -505,8 +505,9 @@ class V11Client:
             Endpoint.LIVE_PIPELINE_UPDATE_SUBSCRIPTIONS, data=data, headers=headers
         )
 
-    async def user_state(self):
+    async def user_state(self, **kwargs):
         return await self.base.get(
             Endpoint.USER_STATE,
-            headers=self.base._base_headers
+            headers=self.base._base_headers,
+            **kwargs
         )

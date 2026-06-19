@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 import filetype
 import pyotp
-from httpx import AsyncClient, AsyncHTTPTransport, Response
+from httpx import AsyncClient, AsyncHTTPTransport, HTTPError, Response
 from httpx._utils import URLPattern
 
 from .._captcha import Capsolver
@@ -60,6 +60,12 @@ from ..x_client_transaction.utils import handle_x_migration
 from ..x_client_transaction import ClientTransaction
 from .gql import GQLClient
 from .v11 import V11Client
+
+
+def _get_cursor_value(entry: dict) -> str | None:
+    content = entry.get('content', entry)
+    item_content = content.get('itemContent', entry.get('itemContent', {}))
+    return item_content.get('value') or content.get('value') or entry.get('value')
 
 
 class Client:
@@ -125,6 +131,7 @@ class Client:
         method: str,
         url: str,
         auto_unlock: bool = True,
+        check_user_state: bool = True,
         raise_exception: bool = True,
         **kwargs
     ) -> tuple[dict | Any, Response]:
@@ -193,7 +200,7 @@ class Client:
             elif status_code == 408:
                 raise RequestTimeout(message, headers=response.headers)
             elif status_code == 429:
-                if await self._get_user_state() == 'suspended':
+                if check_user_state and await self._get_user_state() == 'suspended':
                     raise AccountSuspended(message, headers=response.headers)
                 raise TooManyRequests(message, headers=response.headers)
             elif 500 <= status_code < 600:
@@ -1523,7 +1530,7 @@ class Client:
                 results.append(tweet)
 
         if entries[-1]['entryId'].startswith('cursor'):
-            next_cursor = entries[-1]['content']['itemContent']['value']
+            next_cursor = _get_cursor_value(entries[-1])
             _fetch_next_result = partial(self._get_more_replies, tweet_id, next_cursor)
         else:
             next_cursor = None
@@ -1613,7 +1620,7 @@ class Client:
                                 continue
                             replies.append(rpl)
                         if 'cursor' in reply.get('entryId'):
-                            sr_cursor = reply['item']['itemContent']['value']
+                            sr_cursor = _get_cursor_value(reply.get('item', {}))
                             show_replies = partial(
                                 self._show_more_replies,
                                 tweet_id,
@@ -1632,7 +1639,7 @@ class Client:
 
         if entries[-1]['entryId'].startswith('cursor'):
             # if has more replies
-            reply_next_cursor = entries[-1]['content']['itemContent']['value']
+            reply_next_cursor = _get_cursor_value(entries[-1])
             _fetch_more_replies = partial(self._get_more_replies,
                                           tweet_id, reply_next_cursor)
         else:
@@ -4320,5 +4327,8 @@ class Client:
         return _payload_from_data(response)
 
     async def _get_user_state(self) -> Literal['normal', 'bounced', 'suspended']:
-        response, _ = await self.v11.user_state()
+        try:
+            response, _ = await self.v11.user_state(check_user_state=False)
+        except (TooManyRequests, HTTPError):
+            return 'normal'
         return response['userState']

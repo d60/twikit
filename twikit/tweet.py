@@ -194,7 +194,13 @@ class Tweet:
 
     @property
     def view_count(self) -> int | None:
-        return self._data.get('views', {}).get('count')
+        count = self._data.get('views', {}).get('count')
+        if count is None:
+            return None
+        try:
+            return int(count)
+        except (TypeError, ValueError):
+            return None
 
     @property
     def view_count_state(self) -> str | None:
@@ -562,23 +568,36 @@ class Tweet:
 
 def tweet_from_data(client: Client, data: dict) -> Tweet:
     ':meta private:'
-    tweet_data_ = find_dict(data, 'result', True)
-    if not tweet_data_:
-        return None
-    tweet_data = tweet_data_[0]
+    tweet_data = (
+        data.get('content', {})
+        .get('itemContent', {})
+        .get('tweet_results', {})
+        .get('result')
+    )
+    if tweet_data is None:
+        tweet_data_ = find_dict(data, 'result', True)
+        if not tweet_data_:
+            return None
+        tweet_data = tweet_data_[0]
 
     if tweet_data.get('__typename') == 'TweetTombstone':
         return None
-    if 'tweet' in tweet_data:
+    if tweet_data.get('__typename') == 'TweetWithVisibilityResults':
+        tweet_data = tweet_data.get('tweet')
+    elif 'tweet' in tweet_data:
         tweet_data = tweet_data['tweet']
+    if not tweet_data:
+        return None
     if 'core' not in tweet_data:
         return None
-    if 'result' not in tweet_data['core']['user_results']:
+    if 'result' not in tweet_data['core'].get('user_results', {}):
         return None
     if 'legacy' not in tweet_data:
         return None
 
     user_data = tweet_data['core']['user_results']['result']
+    if user_data.get('__typename') == 'UserUnavailable':
+        return None
     return Tweet(client, tweet_data, User(client, user_data))
 
 

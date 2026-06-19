@@ -14,6 +14,9 @@ from .utils import float_to_hex, is_odd, base64_encode, handle_x_migration
 
 ON_DEMAND_FILE_REGEX = re.compile(
     r"""['|\"]{1}ondemand\.s['|\"]{1}:\s*['|\"]{1}([\w]*)['|\"]{1}""", flags=(re.VERBOSE | re.MULTILINE))
+CHUNK_NAME_REGEX = re.compile(
+    r"""[,{](\d+):["']ondemand\.s["']""", flags=(re.VERBOSE | re.MULTILINE))
+ON_DEMAND_HASH_PATTERN = r"""[,{{]{chunk_id}:["']([0-9a-f]+)["']"""
 INDICES_REGEX = re.compile(
     r"""(\(\w{1}\[(\d{1,2})\],\s*16\))+""", flags=(re.VERBOSE | re.MULTILINE))
 
@@ -42,10 +45,30 @@ class ClientTransaction:
         key_byte_indices = []
         response = self.validate_response(
             home_page_response) or self.home_page_response
-        on_demand_file = ON_DEMAND_FILE_REGEX.search(str(response))
+        response_text = str(response)
+        file_hash = None
+        on_demand_file = ON_DEMAND_FILE_REGEX.search(response_text)
         if on_demand_file:
-            on_demand_file_url = f"https://abs.twimg.com/responsive-web/client-web/ondemand.s.{on_demand_file.group(1)}a.js"
-            on_demand_file_response = await session.request(method="GET", url=on_demand_file_url, headers=headers)
+            file_hash = on_demand_file.group(1)
+        else:
+            chunk_id_match = CHUNK_NAME_REGEX.search(response_text)
+            if chunk_id_match:
+                chunk_id = chunk_id_match.group(1)
+                hash_match = re.search(
+                    ON_DEMAND_HASH_PATTERN.format(chunk_id=chunk_id),
+                    response_text
+                )
+                if not hash_match:
+                    raise Exception(
+                        f"Couldn't find ondemand.s hash for chunk id {chunk_id!r} "
+                        "(page layout may have changed)"
+                    )
+                file_hash = hash_match.group(1)
+
+        if file_hash:
+            on_demand_file_url = f"https://abs.twimg.com/responsive-web/client-web/ondemand.s.{file_hash}a.js"
+            on_demand_file_response = await session.request(
+                method="GET", url=on_demand_file_url, headers=headers)
             key_byte_indices_match = INDICES_REGEX.finditer(
                 str(on_demand_file_response.text))
             for item in key_byte_indices_match:
