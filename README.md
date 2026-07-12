@@ -1,3 +1,34 @@
+> [!IMPORTANT]
+> ## This is an unofficial community patch fork
+> This fork exists because [d60/twikit](https://github.com/d60/twikit) broke
+> against X's current frontend (`Exception: Couldn't get KEY_BYTE indices`,
+> see [#408](https://github.com/d60/twikit/issues/408) /
+> [#409](https://github.com/d60/twikit/issues/409)) and, as of this writing,
+> no fix has been merged/released to PyPI.
+>
+> **What's fixed here, on top of the latest `d60/twikit` release:**
+> - `ondemand.s` webpack-chunk regex updated to match X's current bundle
+>   format, adapted from community PR
+>   [d60/twikit#411](https://github.com/d60/twikit/pull/411) by
+>   [@ryanstoic](https://github.com/ryanstoic), plus hardening so the hash
+>   lookup accepts both single- and double-quoted values (the original PR
+>   only handled double quotes).
+> - `User.description_urls`, `User.withheld_in_countries`, and
+>   `User.pinned_tweet_ids` (both the authenticated and guest-mode `User`
+>   classes) now tolerate X omitting those fields from the response,
+>   instead of raising `KeyError`. `pinned_tweet_ids_str` in particular is
+>   commonly missing for accounts that have never pinned a tweet
+>   (observed on several corporate/official accounts).
+>
+> **Install this fork directly:**
+> ```
+> pip install git+https://github.com/leslienwu/twikit-patched.git@fix/ondemand-key-byte-indices-2026
+> ```
+>
+> This is a personal patch maintained on a best-effort basis, not a
+> long-term fork of the project — if/when these fixes (or better ones) land
+> upstream in `d60/twikit`, prefer that instead.
+
 > [!NOTE]
 > https://github.com/d60/twitter_login (under development)
 
