@@ -205,7 +205,7 @@ class DMTypingEvent(NamedTuple):
     user_id: str  #: The ID of the typing user.
 
 StreamEventType = (ConfigEvent | SubscriptionsEvent |
-                   TweetEngagementEvent | DMTypingEvent | DMTypingEvent)
+                   TweetEngagementEvent | DMUpdateEvent | DMTypingEvent)
 
 
 class Topic:

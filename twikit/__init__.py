@@ -29,3 +29,4 @@ from .notification import Notification
 from .trend import Trend
 from .tweet import CommunityNote, Poll, ScheduledTweet, Tweet
 from .user import User
+from .xquik import XquikSearchClient, XquikSearchResult, XquikTweet
