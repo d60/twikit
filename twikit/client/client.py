@@ -106,7 +106,8 @@ class Client:
 
         self.http = AsyncClient(proxy=proxy, **kwargs)
         self.language = language
-        self.proxy = proxy
+        if proxy is not None or kwargs.get('transport') is None:
+            self.proxy = proxy
         self.captcha_solver = captcha_solver
         if captcha_solver is not None:
             captcha_solver.client = self
